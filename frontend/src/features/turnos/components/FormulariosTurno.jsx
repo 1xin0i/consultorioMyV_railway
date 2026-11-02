@@ -11,10 +11,12 @@ import {
   ChevronDown,
   UserRoundX,
   XCircle,
-  BanknoteArrowDown,
   CalendarDays,
 } from "lucide-react";
 import { formatDateTimeInput } from "../../../utils";
+import toast from "react-hot-toast";
+import { manejarErrorApi } from "../../../utils/errorHandler";
+import InputFiltro from "../../../components/common/InputFiltro";
 
 export function FormularioCrearEditar({
   modalAbierto,
@@ -24,7 +26,6 @@ export function FormularioCrearEditar({
   setPacientes,
   datosFormulario,
   actualizarDatos,
-  setDatosFormulario,
   guardarTurno,
   procesarFormulario,
   abrirParaAtender,
@@ -33,7 +34,6 @@ export function FormularioCrearEditar({
   abrirModalCancelarDesdeEdicion,
   abrirParaInasistente,
   abrirModalInasistenteDesdeEdicion,
-  abrirModalCobrarDesdeEdicion, // Prop opcional para cobrar
   abrirParaReprogramar,
   abrirModalReprogramarDesdeEdicion,
 }) {
@@ -80,25 +80,24 @@ export function FormularioCrearEditar({
         setPacientes((prev) => [...prev, nuevoPaciente]);
       }
 
-      if (typeof setDatosFormulario === "function") {
-        setDatosFormulario((prev) => ({
-          ...prev,
-          id_paciente: nuevoId,
-        }));
+      if (typeof actualizarDatos === "function") {
+        actualizarDatos({
+          target: { name: "id_paciente", value: nuevoId },
+        });
       }
 
+      toast.success("Paciente creado correctamente");
       setDatosPacienteRapido({ nombre: "", apellido: "", telefono: "" });
       setModalPacienteRapidoAbierto(false);
     } catch (error) {
       console.error("Error al crear paciente rápido:", error);
-      alert("No se pudo registrar el paciente de forma rápida.");
+      manejarErrorApi(error, "No se pudo crear el paciente.");
     }
   };
 
   // Identificar el estado del turno
   const idEstadoActual = Number(datosFormulario?.id_estado);
   const esProgramado = idEstadoActual === 1 || !editando;
-  const esAtendido = idEstadoActual === 2;
 
   // Normalizar callbacks de acciones
   const onAtender = abrirParaAtender || abrirModalAtenderDesdeEdicion;
@@ -142,68 +141,73 @@ export function FormularioCrearEditar({
                   <span>+ Nuevo Paciente</span>
                 </button>
               </div>
-              <select
-                name="id_paciente"
-                value={datosFormulario.id_paciente || ""}
-                onChange={actualizarDatos}
-                required
-                className="w-full border border-gray-300 p-2.5 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#2eb086]/50 focus:border-[#2eb086]"
-              >
-                <option value="">Seleccione un paciente...</option>
-                {pacientes.map((p) => (
-                  <option key={p.id_paciente} value={p.id_paciente}>
-                    {p.nombre} {p.apellido} - DNI: {p.dni || "S/D"} - Telefono: {p.telefono || "S/D"}
-                  </option>
-                ))}
-              </select>
+              <InputFiltro
+                datos={pacientes}
+                camposFiltrado={["nombre", "apellido", "dni", "telefono", "domicilio"]}
+                formatoVisual={(p) =>
+                  `${p.nombre} ${p.apellido} - DNI: ${p.dni || "S/D"} - Telefono: ${p.telefono || "S/D"}`
+                }
+                placeholder="Busca un paciente..."
+                alSeleccionar={(p) =>
+                  actualizarDatos({ target: { name: "id_paciente", value: p.id_paciente } })
+                }
+                valorInicial={datosFormulario.id_paciente || ""}
+              />
             </div>
 
             {/* Fecha y Hora de Inicio */}
-            <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-1">
-                Fecha y Hora de Inicio *
-              </label>
-              <input
-                type="datetime-local"
-                name="fecha_hora_inicio"
-                value={formatDateTimeInput(datosFormulario.fecha_hora_inicio) || ""}
-                onChange={actualizarDatos}
-                required
-                className="w-full border border-gray-300 p-2.5 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#2eb086]/50 focus:border-[#2eb086]"
-              />
-            </div>
+            {!editando && (
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-1">
+                  Fecha y Hora de Inicio *
+                </label>
+                <input
+                  type="datetime-local"
+                  name="fecha_hora_inicio"
+                  value={formatDateTimeInput(datosFormulario.fecha_hora_inicio) || ""}
+                  onChange={actualizarDatos}
+                  required
+                  className="w-full border border-gray-300 p-2.5 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#2eb086]/50 focus:border-[#2eb086]"
+                />
+                
+              </div>
+            )}
 
             {/* Duración (Minutos) */}
-            <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-1">Duración (Minutos)</label>
-              <select
-                name="duracion_minutos"
-                value={datosFormulario.duracion_minutos || 30}
-                onChange={actualizarDatos}
-                className="w-full border border-gray-300 p-2.5 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#2eb086]/50 focus:border-[#2eb086]"
-              >
-                <option value={15}>15 minutos</option>
-                <option value={30}>30 minutos</option>
-                <option value={45}>45 minutos</option>
-                <option value={60}>60 minutos (1 hora)</option>
-                <option value={90}>90 minutos (1h 30m)</option>
-                <option value={120}>120 minutos (2 horas)</option>
-              </select>
-            </div>
+            {!editando && (
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-1">Duración (Minutos)</label>
+                <select
+                  name="duracion_minutos"
+                  value={datosFormulario.duracion_minutos || 30}
+                  onChange={actualizarDatos}
+                  className="w-full border border-gray-300 p-2.5 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#2eb086]/50 focus:border-[#2eb086]"
+                >
+                  <option value={15}>15 minutos</option>
+                  <option value={30}>30 minutos</option>
+                  <option value={45}>45 minutos</option>
+                  <option value={60}>60 minutos (1 hora)</option>
+                  <option value={90}>90 minutos (1h 30m)</option>
+                  <option value={120}>120 minutos (2 horas)</option>
+                </select>
+              </div>
+            )}
 
             {/* Fecha y Hora de Fin (Calculado) */}
-            <div className="col-span-1 md:col-span-2 bg-gray-50 p-3 rounded-xl border border-gray-200">
-              <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">
-                Fecha y Hora de Fin (Calculado automáticamente)
-              </label>
-              <input
-                type="datetime-local"
-                name="fecha_hora_fin"
-                value={datosFormulario.fecha_hora_fin || ""}
-                disabled
-                className="w-full bg-gray-100 border border-gray-300 p-2 rounded-lg text-sm text-gray-600 cursor-not-allowed font-medium"
-              />
-            </div>
+            {!editando && (
+              <div className="col-span-1 md:col-span-2 bg-gray-50 p-3 rounded-xl border border-gray-200">
+                <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">
+                  Fecha y Hora de Fin (Calculado automáticamente)
+                </label>
+                <input
+                  type="datetime-local"
+                  name="fecha_hora_fin"
+                  value={datosFormulario.fecha_hora_fin || ""}
+                  disabled
+                  className="w-full bg-gray-100 border border-gray-300 p-2 rounded-lg text-sm text-gray-600 cursor-not-allowed font-medium"
+                />
+              </div>
+            )}
 
             {/* Notas / Observaciones */}
             <div className="col-span-1 md:col-span-2">
@@ -223,9 +227,9 @@ export function FormularioCrearEditar({
           <div className="border-t border-gray-200 my-5" />
 
           {/* Acciones del Modal */}
-          <div className="flex items-center justify-between">
+          <div className={`flex items-center ${editando ? "justify-between" : "justify-end"}`}>
             {/* LÓGICA CONDICIONAL DE ACCIONES SEGÚN EL ESTADO */}
-            {editando ? (
+            {editando && esProgramado && (
               <div className="relative">
                 {/* 1. SI ESTÁ PROGRAMADO / PENDIENTE */}
                 {esProgramado && (
@@ -298,23 +302,7 @@ export function FormularioCrearEditar({
                     )}
                   </div>
                 )}
-
-                {/* 2. SI ESTÁ ATENDIDO -> MOSTRAR OPCIÓN DE COBRAR */}
-                {esAtendido && (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      if (abrirModalCobrarDesdeEdicion) abrirModalCobrarDesdeEdicion();
-                    }}
-                    className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-xs sm:text-sm transition-all"
-                  >
-                    <BanknoteArrowDown size={16} />
-                    <span>Cobrar</span>
-                  </button>
-                )}
               </div>
-            ) : (
-              <div />
             )}
 
             {/* Botones Estándar de Guardado / Cancelar */}
@@ -416,11 +404,11 @@ export function FormularioAtender({
   cerrarModal,
   turnoSeleccionado,
   datosAtencion,
-  setDatosAtencion,
   practicasLista,
   pacientesObrasSociales,
   agregarPracticaAtencion,
   actualizarPracticaAtencion,
+  actualizarDatosAtencion,
   eliminarPracticaAtencion,
   procesarAtencionTurno,
 }) {
@@ -441,20 +429,20 @@ export function FormularioAtender({
             <div className="bg-emerald-50/70 border border-emerald-200/80 p-4 rounded-2xl flex items-center justify-between shadow-xs">
               <div className="w-full flex flex-col gap-1.5">
                 <label className="block text-xs font-bold text-emerald-800 uppercase tracking-wider">
-                  Precio Base Calculado (Suma de Prácticas)
+                  Monto a Cobrar / Precio Final
                 </label>
                 <div className="relative flex items-center max-w-xs">
                   <span className="absolute left-3.5 text-emerald-700 font-bold text-sm">$</span>
                   <input
-                    type="number"
-                    step="0.01"
-                    value={datosAtencion.precio_final}
-                    onChange={(e) =>
-                      setDatosAtencion((prev) => ({
-                        ...prev,
-                        precio_final: e.target.value === "" ? "" : parseFloat(e.target.value),
-                      }))
-                    }
+                    type="text"
+                    inputMode="decimal"
+                    value={datosAtencion?.precio_final ?? ""}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      if (val === "" || /^[0-9]*[.,]?[0-9]*$/.test(val)) {
+                        actualizarDatosAtencion("precio_final", val);
+                      }
+                    }}
                     placeholder="0.00"
                     required
                     className="w-full pl-8 pr-4 py-2.5 bg-white border border-emerald-300/80 rounded-xl text-emerald-950 font-bold text-lg shadow-2xs focus:outline-none focus:ring-2 focus:ring-[#2eb086]/50 focus:border-[#2eb086]"
@@ -492,34 +480,33 @@ export function FormularioAtender({
                       key={index}
                       className="flex flex-col sm:flex-row items-center gap-2 bg-gray-50 p-3 rounded-xl border border-gray-200"
                     >
-                      <select
-                        value={practicaItem.id_practica}
-                        onChange={(e) => actualizarPracticaAtencion(index, "id_practica", e.target.value)}
-                        required
-                        className="flex-1 w-full border border-gray-300 p-2 rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[#2eb086]/50"
-                      >
-                        <option value="">Seleccione práctica...</option>
-                        {practicasLista.map((p) => (
-                          <option key={p.id_practica} value={p.id_practica}>
-                            {p.nombre_referencia} ($
-                            {Number(p.precio_referencia).toLocaleString("es-AR")})
-                          </option>
-                        ))}
-                      </select>
+                      <InputFiltro
+                        datos={practicasLista}
+                        camposFiltrado={[
+                          "codigo_nomenclador",
+                          "nombre_nomenclador",
+                          "nombre_referencia",
+                          "especialidad",
+                        ]}
+                        formatoVisual={(p) =>
+                          `${p.nombre_referencia} ($ ${Number(p.precio_referencia).toLocaleString("es-AR")})}`
+                        }
+                        placeholder="Busca una practica..."
+                        alSeleccionar={(p) => actualizarPracticaAtencion(index, "id_practica", p.id_practica)}
+                      />
 
-                      <select
-                        value={practicaItem.id_obra_social}
-                        onChange={(e) => actualizarPracticaAtencion(index, "id_obra_social", e.target.value)}
-                        className="flex-1 w-full border border-gray-300 p-2 rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[#2eb086]/50"
-                      >
-                        <option value="">Particular / Sin Obra Social</option>
-                        {pacientesObrasSociales.map((rel) => (
-                          <option key={rel.id_obra_social || rel.id} value={rel.id_obra_social}>
-                            {rel.ObraSocial?.nombre || `Obra Social #${rel.id_obra_social}`}{" "}
-                            {rel.nro_afiliado ? `(Afiliado: ${rel.nro_afiliado})` : ""}
-                          </option>
-                        ))}
-                      </select>
+                      <InputFiltro
+                        datos={pacientesObrasSociales}
+                        camposFiltrado={["nombre"]}
+                        formatoVisual={(rel) =>
+                          `${rel.ObraSocial?.nombre || `Obra Social #${rel.id_obra_social}`} ${rel.nro_afiliado ? `(Afiliado: ${rel.nro_afiliado})` : ""}`
+                        }
+                        placeholder="Busca una obra social..."
+                        alSeleccionar={(os) =>
+                          actualizarPracticaAtencion(index, "id_obra_social", os.id_obra_social)
+                        }
+                        defaultValue="Particular / Sin Obra Social"
+                      />
 
                       <button
                         type="button"
@@ -543,10 +530,7 @@ export function FormularioAtender({
                 rows={3}
                 value={datosAtencion.notas_consulta}
                 onChange={(e) =>
-                  setDatosAtencion((prev) => ({
-                    ...prev,
-                    notas_consulta: e.target.value,
-                  }))
+                  actualizarDatosAtencion("notas_consulta", e.target.value === "" ? "" : e.target.value)
                 }
                 placeholder="Detalles sobre la atención, indicaciones médicas..."
                 className="w-full border border-gray-300 p-2.5 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#2eb086]/50 focus:border-[#2eb086]"
@@ -607,6 +591,7 @@ export function FormularioReprogramar({
               required
               className="w-full border border-gray-300 p-2.5 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#2eb086]/50 focus:border-[#2eb086]"
             />
+            
           </div>
 
           {/* Duración (Minutos) */}
@@ -670,7 +655,7 @@ export function FormularioCancelar({
   turnoSeleccionado,
   inasistente,
   notasCanceladoInasistente,
-  setNotasCanceladoInasistente,
+  actualizarDatosCancelacion,
   procesarCancelacionTurno,
 }) {
   return (
@@ -695,10 +680,7 @@ export function FormularioCancelar({
                 rows={3}
                 value={notasCanceladoInasistente.notas_consulta}
                 onChange={(e) =>
-                  setNotasCanceladoInasistente((prev) => ({
-                    ...prev,
-                    notas_consulta: e.target.value,
-                  }))
+                  actualizarDatosCancelacion("notas_consulta", e.target.value === "" ? "" : e.target.value)
                 }
                 placeholder={`Detalles sobre la ${inasistente ? "inasistencia" : "cancelación"}...`}
                 className="w-full border border-gray-300 p-2.5 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#2eb086]/50 focus:border-[#2eb086]"

@@ -4,18 +4,24 @@ import { useState, useEffect } from "react";
 import Modal from "../../../components/common/Modal";
 import api from "../../../services/api";
 import { formatFechaTabla, formatSoloHora } from "../../../utils/index";
-import { Plus, X, Trash2 } from "lucide-react";
+import { Plus, X, Trash2, CheckCircle, CreditCard } from "lucide-react";
 
 export default function FormularioCuotas({ modalCuotas, cerrarModal, cobroSeleccionado, recarcarCobros }) {
   const [cuotas, setCuotas] = useState([]);
   const [cargando, setCargando] = useState(false);
-  const [mostrarFormularioEntrega, setMostrarFormularioEntrega] = useState(false);
+  const [mostrarFormularioNueva, setMostrarFormularioNueva] = useState(false);
 
-  // Estado para el sub-formulario de registrar/cobrar cuota
-  const [datosEntrega, setDatosEntrega] = useState({
+  // Métodos de pago seleccionados individualmente por fila/cuota
+  const [metodosPagoFilas, setMetodosPagoFilas] = useState({});
+
+  const cantCuotasTotal = Number(cobroSeleccionado?.cant_cuotas) || 1;
+  const esPlanCuotas = cantCuotasTotal > 1;
+
+  // Estado para el formulario de REGISTRAR NUEVA CUOTA con switch de cobro automático (solo informal)
+  const [nuevaCuota, setNuevaCuota] = useState({
     monto_cobrado: "",
     metodo_pago: "Efectivo",
-    id_cuota: null,
+    cobrar_inmediato: true,
   });
 
   useEffect(() => {
@@ -31,13 +37,19 @@ export default function FormularioCuotas({ modalCuotas, cerrarModal, cobroSelecc
       const cuotasObtenidas = res.data.data || res.data || [];
       setCuotas(cuotasObtenidas);
 
-      if (cuotasObtenidas.length === 0 && cobroSeleccionado?.monto_a_cobrar) {
+      const mapaMetodos = {};
+      cuotasObtenidas.forEach((c) => {
+        mapaMetodos[c.id_cuota] = c.metodo_pago || (esPlanCuotas ? "Tarjeta" : "Efectivo");
+      });
+      setMetodosPagoFilas(mapaMetodos);
+
+      if (cobroSeleccionado?.monto_a_cobrar) {
         const total = Number(cobroSeleccionado.monto_a_cobrar);
-        const cantCuotas = Number(cobroSeleccionado.cant_cuotas) || 1;
-        const montoPorCuota = Number((total / cantCuotas).toFixed(2));
-        setDatosEntrega((prev) => ({
+        const totalPagado = cuotasObtenidas.reduce((acc, c) => acc + (Number(c.monto_cobrado) || 0), 0);
+        const pendiente = Math.max(0, total - totalPagado);
+        setNuevaCuota((prev) => ({
           ...prev,
-          monto_cobrado: montoPorCuota,
+          monto_cobrado: pendiente > 0 ? pendiente : "",
         }));
       }
     } catch (error) {
@@ -47,9 +59,7 @@ export default function FormularioCuotas({ modalCuotas, cerrarModal, cobroSelecc
     }
   };
 
-  // Cálculos dinámicos de la cuenta del paciente
   const costoAcordado = Number(cobroSeleccionado?.monto_a_cobrar) || 0;
-  const cantCuotasTotal = Number(cobroSeleccionado?.cant_cuotas) || 1;
   const montoSugeridoSistema = Number((costoAcordado / cantCuotasTotal).toFixed(2));
 
   const totalPagado = cuotas.reduce((acc, c) => acc + (Number(c.monto_cobrado) || 0), 0);
@@ -57,55 +67,58 @@ export default function FormularioCuotas({ modalCuotas, cerrarModal, cobroSelecc
   const porcentajeCubierto =
     costoAcordado > 0 ? Math.min(100, Math.round((totalPagado / costoAcordado) * 100)) : 0;
 
-  // Cálculo del saldo pendiente si se efectúa el pago actual ingresado
-  const montoIngresadoActual = Number(datosEntrega.monto_cobrado) || 0;
-  const saldoPendienteResultante = Math.max(0, saldoPendiente - montoIngresadoActual);
-
   const paciente = cobroSeleccionado?.Paciente;
 
-  const procesarRegistroEntrega = async (e) => {
+  // 1. REGISTRAR NUEVO PAGO / ENTREGA (Disponible únicamente para acuerdos informales / pago único)
+  const procesarRegistroNuevaCuota = async (e) => {
     e.preventDefault();
     try {
-      const montoANuevo = Number(datosEntrega.monto_cobrado);
+      const montoIngresado = Number(nuevaCuota.monto_cobrado);
+      const nroProximaCuota = cuotas.length + 1;
 
-      if (datosEntrega.id_cuota) {
-        // Cobrar cuota existente y dejarla marcada como pagada
-        await api.patch(`/cuotas/${datosEntrega.id_cuota}/cobrar`, {
-          monto_cobrado: montoANuevo,
-          metodo_pago: datosEntrega.metodo_pago,
-          estado: "Pagada",
-          fecha_cobro: new Date().toISOString(),
-        });
-      } else {
-        // Crear y registrar nueva cuota/entrega directamente cobrada
-        const nroProximaCuota = cuotas.length + 1;
-        await api.post("/cuotas", {
-          id_cobro: cobroSeleccionado.id_cobro,
-          nro_cuota: nroProximaCuota,
-          monto_cuota: montoSugeridoSistema,
-          monto_cobrado: montoANuevo,
-          fecha_vencimiento: new Date().toISOString().split("T")[0],
-          fecha_cobro: new Date().toISOString(),
-          metodo_pago: datosEntrega.metodo_pago,
-          estado: "Pagada",
-        });
-      }
+      const payloadCuota = {
+        id_cobro: cobroSeleccionado.id_cobro,
+        nro_cuota: nroProximaCuota,
+        monto_cuota: montoIngresado,
+        monto_cobrado: montoIngresado,
+        fecha_vencimiento: new Date().toISOString().split("T")[0],
+        fecha_cobro: new Date().toISOString(),
+        metodo_pago: nuevaCuota.metodo_pago || "Efectivo",
+        estado: "Pagada",
+      };
 
-      setDatosEntrega({
-        monto_cobrado: montoSugeridoSistema,
-        metodo_pago: "Efectivo",
-        id_cuota: null,
-      });
-      setMostrarFormularioEntrega(false);
+      await api.post("/cuotas", payloadCuota);
+
+      setMostrarFormularioNueva(false);
       cargarCuotas();
       if (recarcarCobros) recarcarCobros();
     } catch (error) {
-      console.error("Error al registrar la cuota cobrada:", error);
-      alert("No se pudo asentar el pago.");
+      console.error("Error al registrar nueva cuota:", error);
+      alert("No se pudo registrar la nueva entrega.");
     }
   };
 
-  // Función para eliminar/desactivar una cuota o entrega
+  // 2. COBRAR INSTANTÁNEAMENTE UNA CUOTA EXISTENTE DE LA TABLA (Monto no modificable, método tarjeta en cuotas fijas)
+  const cobrarCuotaDirecto = async (cuota) => {
+    try {
+      const metodoSeleccionado = esPlanCuotas ? "Tarjeta" : (metodosPagoFilas[cuota.id_cuota] || "Efectivo");
+      const montoACobrar = Number(cuota.monto_cuota || cuota.monto_cobrado);
+
+      await api.patch(`/cuotas/${cuota.id_cuota}/cobrar`, {
+        monto_cobrado: montoACobrar,
+        metodo_pago: metodoSeleccionado,
+        estado: "Pagada",
+        fecha_cobro: new Date().toISOString(),
+      });
+
+      cargarCuotas();
+      if (recarcarCobros) recarcarCobros();
+    } catch (error) {
+      console.error("Error al cobrar la cuota:", error);
+      alert("No se pudo cobrar la cuota.");
+    }
+  };
+
   const eliminarCuota = async (idCuota) => {
     if (!window.confirm("¿Estás seguro de eliminar este registro de pago?")) return;
     try {
@@ -140,7 +153,7 @@ export default function FormularioCuotas({ modalCuotas, cerrarModal, cobroSelecc
       }
     >
       <div className="flex flex-col gap-4">
-        {/* 4 CARDS DE ESTADÍSTICAS */}
+        {/* CARDS DE ESTADÍSTICAS */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-2.5">
           <div className="bg-gray-50/80 p-3 rounded-2xl border border-gray-100">
             <span className="text-[9px] sm:text-[10px] font-bold tracking-wider text-gray-400 uppercase block">
@@ -188,12 +201,14 @@ export default function FormularioCuotas({ modalCuotas, cerrarModal, cobroSelecc
             </span>
             <span className="text-base sm:text-lg font-black text-gray-800 flex items-baseline gap-1">
               {cuotas.filter((c) => c.estado === "Pagada").length}
-              <span className="text-[10px] sm:text-xs font-normal text-gray-500">pagos</span>
+              <span className="text-[10px] sm:text-xs font-normal text-gray-500">
+                {esPlanCuotas ? `de ${cantCuotasTotal} cuotas` : "pagos"}
+              </span>
             </span>
           </div>
         </div>
 
-        {/* TRATAMIENTO / ACUERDO DE PAGO Y BARRA DE COBERTURA */}
+        {/* DETALLE TRATAMIENTO Y ACCIÓN */}
         <div className="bg-white rounded-2xl border border-gray-200 p-3.5 space-y-3.5">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
             <div className="flex flex-wrap items-center gap-1.5">
@@ -201,7 +216,7 @@ export default function FormularioCuotas({ modalCuotas, cerrarModal, cobroSelecc
                 Tratamiento #{cobroSeleccionado?.id_cobro}
               </h3>
               <span className="px-2 py-0.5 rounded-lg text-[11px] font-semibold bg-blue-50 text-blue-600 border border-blue-200">
-                {cantCuotasTotal > 1 ? `Plan ${cantCuotasTotal} cuotas` : "Pago Único / Informal"}
+                {esPlanCuotas ? `Plan ${cantCuotasTotal} cuotas fijas (Tarjeta)` : "Pago Único / Informal"}
               </span>
               <span
                 className={`px-2 py-0.5 rounded-lg text-[11px] font-semibold ${
@@ -214,17 +229,24 @@ export default function FormularioCuotas({ modalCuotas, cerrarModal, cobroSelecc
               </span>
             </div>
 
-            <button
-              type="button"
-              onClick={() => {
-                setDatosFormularioEntregaDefault();
-                setMostrarFormularioEntrega(!mostrarFormularioEntrega);
-              }}
-              className="flex items-center justify-center gap-1.5 bg-[#2eb086] hover:bg-[#259370] text-white px-3 py-2 rounded-xl text-xs font-bold transition-all shadow-sm active:scale-95 w-full sm:w-auto shrink-0"
-            >
-              <Plus size={15} />
-              <span>Registrar Cuota</span>
-            </button>
+            {/* Solo se permite agregar entregas dinámicas si es modalidad informal/libre */}
+            {!esPlanCuotas && (
+              <button
+                type="button"
+                onClick={() => {
+                  setNuevaCuota({
+                    monto_cobrado: saldoPendiente > 0 ? saldoPendiente : "",
+                    metodo_pago: "Efectivo",
+                    cobrar_inmediato: true,
+                  });
+                  setMostrarFormularioNueva(!mostrarFormularioNueva);
+                }}
+                className="flex items-center justify-center gap-1.5 bg-[#2eb086] hover:bg-[#259370] text-white px-3.5 py-2 rounded-xl text-xs font-bold transition-all shadow-sm active:scale-95 w-full sm:w-auto shrink-0"
+              >
+                <Plus size={15} />
+                <span>Registrar Pago / Entrega</span>
+              </button>
+            )}
           </div>
 
           {/* BARRA DE PROGRESO */}
@@ -250,25 +272,26 @@ export default function FormularioCuotas({ modalCuotas, cerrarModal, cobroSelecc
             </div>
           </div>
 
-          {/* FORMULARIO EXPANDIBLE PARA REGISTRAR/COBRAR CUOTA */}
-          {mostrarFormularioEntrega && (
+          {/* SUB-FORMULARIO: REGISTRAR NUEVA ENTREGA (SOLO ACUERDO INFORMAL) */}
+          {mostrarFormularioNueva && !esPlanCuotas && (
             <form
-              onSubmit={procesarRegistroEntrega}
-              className="bg-gray-50 p-3 rounded-xl border border-emerald-200 gap-3 grid grid-cols-1 sm:grid-cols-3 items-end transition-all"
+              onSubmit={procesarRegistroNuevaCuota}
+              className="bg-emerald-50/40 p-3.5 rounded-xl border border-emerald-200 gap-3 grid grid-cols-1 sm:grid-cols-3 items-end transition-all"
             >
               <div>
-                <label className="block text-xs font-bold text-gray-700 mb-1">Monto a Cobrar ($) *</label>
+                <label className="block text-xs font-bold text-gray-700 mb-1">Monto ($) *</label>
                 <input
                   type="number"
                   step="0.01"
-                  value={datosEntrega.monto_cobrado}
+                  value={nuevaCuota.monto_cobrado}
                   onChange={(e) =>
-                    setDatosEntrega((p) => ({
+                    setNuevaCuota((p) => ({
                       ...p,
                       monto_cobrado: e.target.value,
                     }))
                   }
                   required
+                  placeholder="0.00"
                   className="w-full border border-gray-300 p-2 rounded-lg text-xs sm:text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[#2eb086]/50 font-bold text-[#2eb086]"
                 />
               </div>
@@ -276,61 +299,53 @@ export default function FormularioCuotas({ modalCuotas, cerrarModal, cobroSelecc
               <div>
                 <label className="block text-xs font-bold text-gray-700 mb-1">Método de Pago *</label>
                 <select
-                  value={datosEntrega.metodo_pago}
+                  value={nuevaCuota.metodo_pago || "Efectivo"}
                   onChange={(e) =>
-                    setDatosEntrega((p) => ({
+                    setNuevaCuota((p) => ({
                       ...p,
                       metodo_pago: e.target.value,
                     }))
                   }
-                  className="w-full border border-gray-300 p-2 rounded-lg text-xs sm:text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[#2eb086]/50 text-gray-800"
+                  className="w-full border border-gray-300 p-2 rounded-lg text-xs sm:text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[#2eb086]/50 text-gray-800 font-medium"
                 >
                   <option value="Efectivo">Efectivo</option>
                   <option value="Transferencia">Transferencia</option>
-                  <option value="Tarjeta">Tarjeta</option>
+                  <option value="Tarjeta">Tarjeta Débito/Crédito</option>
                   <option value="Otro">Otro</option>
                 </select>
               </div>
 
-              <div className="flex items-center gap-2">
+              <div className="flex items-center justify-end gap-2 pt-1">
                 <button
                   type="submit"
-                  className="flex-1 bg-[#2eb086] hover:bg-[#259370] text-white py-2 rounded-lg text-xs font-bold transition-all shadow-sm"
+                  className="bg-[#2eb086] hover:bg-[#259370] text-white px-4 py-2 rounded-lg text-xs font-bold transition-all shadow-sm flex items-center gap-1.5 cursor-pointer active:scale-95"
                 >
-                  Confirmar Cobro
+                  <CheckCircle size={15} />
+                  <span>Registrar y Cobrar</span>
                 </button>
                 <button
                   type="button"
-                  onClick={() => setMostrarFormularioEntrega(false)}
-                  className="p-2 text-gray-400 hover:text-gray-600 rounded-lg hover:bg-gray-200"
+                  onClick={() => setMostrarFormularioNueva(false)}
+                  className="p-2 text-gray-400 hover:text-gray-600 rounded-lg hover:bg-gray-200 cursor-pointer"
+                  title="Cancelar"
                 >
                   <X size={16} />
                 </button>
               </div>
-
-              <span className="text-[11px] text-gray-500 font-medium sm:col-span-3 block">
-                Saldo pendiente tras este pago:{" "}
-                <strong className="text-gray-800">
-                  $
-                  {saldoPendienteResultante.toLocaleString("es-AR", {
-                    minimumFractionDigits: 2,
-                  })}
-                </strong>
-              </span>
             </form>
           )}
 
           {/* TABLA DE CUOTAS Y ENTREGAS */}
           <div className="space-y-2 pt-1">
             <span className="text-[10px] font-bold tracking-wider text-gray-400 uppercase block">
-              Entregas y Cuotas Registradas
+              {esPlanCuotas ? "Cronograma de Cuotas Fijas (No modificable)" : "Entregas y Pagos Registrados"}
             </span>
 
             {cargando ? (
               <p className="text-xs text-gray-400 italic py-4 text-center">Cargando cuotas asentadas...</p>
             ) : cuotas.length === 0 ? (
               <p className="text-xs text-gray-400 italic py-3 text-center bg-gray-50 rounded-xl">
-                Aún no existen entregas asentadas para este cobro. Podés registrar una arriba.
+                Aún no existen cuotas o entregas para este cobro.
               </p>
             ) : (
               <div className="overflow-x-auto rounded-xl border border-gray-100">
@@ -339,75 +354,106 @@ export default function FormularioCuotas({ modalCuotas, cerrarModal, cobroSelecc
                     <tr>
                       <th className="px-3 py-2">#</th>
                       <th className="px-3 py-2">Fecha</th>
-                      <th className="px-3 py-2">Método</th>
-                      <th className="px-3 py-2">Monto</th>
+                      <th className="px-3 py-2">Monto Cuota</th>
+                      <th className="px-3 py-2">Método de Pago</th>
                       <th className="px-3 py-2 text-center">Estado</th>
-                      <th className="px-3 py-2 text-right">Acción</th>
+                      <th className="px-3 py-2 text-right">Acciones</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-100 text-gray-700">
-                    {cuotas.map((c) => (
-                      <tr key={c.id_cuota} className="hover:bg-gray-50/50">
-                        <td className="px-3 py-2.5 font-bold text-gray-800">#{c.nro_cuota}</td>
-                        <td className="px-3 py-2.5 font-medium whitespace-nowrap">
-                          {c.fecha_cobro
-                            ? `${formatFechaTabla(c.fecha_cobro)} ${formatSoloHora(c.fecha_cobro)}`
-                            : formatFechaTabla(c.fecha_vencimiento)}
-                        </td>
-                        <td className="px-3 py-2.5">
-                          <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
-                            {c.metodo_pago || "Efectivo"}
-                          </span>
-                        </td>
-                        <td className="px-3 py-2.5 font-bold text-gray-900 whitespace-nowrap">
-                          $
-                          {Number(c.monto_cobrado || c.monto_cuota).toLocaleString("es-AR", {
-                            minimumFractionDigits: 2,
-                          })}
-                        </td>
-                        <td className="px-3 py-2.5 text-center">
-                          <span
-                            className={`inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-bold ${
-                              c.estado === "Pagada"
-                                ? "bg-emerald-100 text-emerald-800"
-                                : c.estado === "Parcialmente pagada"
-                                  ? "bg-amber-100 text-amber-800"
-                                  : "bg-rose-100 text-rose-800"
-                            }`}
-                          >
-                            {c.estado}
-                          </span>
-                        </td>
-                        <td className="px-3 py-2.5 text-right">
-                          <div className="flex items-center justify-end gap-1">
-                            {c.estado !== "Pagada" && (
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  setDatosEntrega({
-                                    monto_cobrado: c.monto_cuota || montoSugeridoSistema,
-                                    metodo_pago: "Efectivo",
-                                    id_cuota: c.id_cuota,
-                                  });
-                                  setMostrarFormularioEntrega(true);
-                                }}
-                                className="text-xs font-bold text-[#2eb086] hover:underline px-1"
+                    {cuotas.map((c) => {
+                      const estaPagada = c.estado === "Pagada";
+
+                      return (
+                        <tr key={c.id_cuota} className="hover:bg-gray-50/50">
+                          <td className="px-3 py-2.5 font-bold text-gray-800">#{c.nro_cuota}</td>
+                          <td className="px-3 py-2.5 font-medium whitespace-nowrap">
+                            {c.fecha_cobro
+                              ? `${formatFechaTabla(c.fecha_cobro)} ${formatSoloHora(c.fecha_cobro)}`
+                              : formatFechaTabla(c.fecha_vencimiento)}
+                          </td>
+                          <td className="px-3 py-2.5 font-bold text-gray-900 whitespace-nowrap">
+                            $
+                            {Number(c.monto_cuota || c.monto_cobrado).toLocaleString("es-AR", {
+                              minimumFractionDigits: 2,
+                            })}
+                          </td>
+
+                          {/* MÉTODO DE PAGO: SIEMPRE TARJETA EN CUOTAS FIJAS */}
+                          <td className="px-3 py-2.5">
+                            {estaPagada ? (
+                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                                {c.metodo_pago || (esPlanCuotas ? "Tarjeta" : "Efectivo")}
+                              </span>
+                            ) : esPlanCuotas ? (
+                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-bold bg-blue-50 text-blue-700 border border-blue-200">
+                                <CreditCard size={12} />
+                                <span>Tarjeta</span>
+                              </span>
+                            ) : (
+                              <select
+                                value={metodosPagoFilas[c.id_cuota] || "Efectivo"}
+                                onChange={(e) =>
+                                  setMetodosPagoFilas((prev) => ({
+                                    ...prev,
+                                    [c.id_cuota]: e.target.value,
+                                  }))
+                                }
+                                className="border border-gray-300 rounded-md p-1 text-xs bg-white focus:ring-1 focus:ring-[#2eb086]"
                               >
-                                Cobrar
-                              </button>
+                                <option value="Efectivo">Efectivo</option>
+                                <option value="Transferencia">Transferencia</option>
+                                <option value="Tarjeta">Tarjeta</option>
+                                <option value="Otro">Otro</option>
+                              </select>
                             )}
-                            <button
-                              type="button"
-                              onClick={() => eliminarCuota(c.id_cuota)}
-                              className="p-1 rounded-lg text-red-500 hover:bg-red-50 transition-colors"
-                              title="Eliminar cuota"
+                          </td>
+
+                          {/* ESTADO */}
+                          <td className="px-3 py-2.5 text-center">
+                            <span
+                              className={`inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-bold ${
+                                estaPagada
+                                  ? "bg-emerald-100 text-emerald-800"
+                                  : c.estado === "Parcialmente pagada"
+                                    ? "bg-amber-100 text-amber-800"
+                                    : "bg-rose-100 text-rose-800"
+                              }`}
                             >
-                              <Trash2 size={15} />
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
+                              {c.estado}
+                            </span>
+                          </td>
+
+                          {/* ACCIONES */}
+                          <td className="px-3 py-2.5 text-right">
+                            <div className="flex items-center justify-end gap-1.5">
+                              {!estaPagada && (
+                                <button
+                                  type="button"
+                                  onClick={() => cobrarCuotaDirecto(c)}
+                                  className="bg-[#2eb086] hover:bg-[#259370] text-white text-[11px] font-bold px-2.5 py-1 rounded-md transition-all shadow-sm active:scale-95"
+                                  title="Cobrar cuota al instante con Tarjeta"
+                                >
+                                  Cobrar
+                                </button>
+                              )}
+
+                              {/* EN CUOTAS FIJAS NO SE PUEDEN ELIMINAR CUOTAS DEL PLAN */}
+                              {!estaPagada && !esPlanCuotas && (
+                                <button
+                                  type="button"
+                                  onClick={() => eliminarCuota(c.id_cuota)}
+                                  className="p-1 rounded-lg text-red-500 hover:bg-red-50 transition-colors"
+                                  title="Eliminar registro"
+                                >
+                                  <Trash2 size={15} />
+                                </button>
+                              )}
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })}
                   </tbody>
                 </table>
               </div>
@@ -427,13 +473,4 @@ export default function FormularioCuotas({ modalCuotas, cerrarModal, cobroSelecc
       </div>
     </Modal>
   );
-
-  function setDatosFormularioEntregaDefault() {
-    setDatosEntrega({
-      monto_cobrado:
-        saldoPendiente > 0 ? Math.min(saldoPendiente, montoSugeridoSistema) : montoSugeridoSistema,
-      metodo_pago: "Efectivo",
-      id_cuota: null,
-    });
-  }
 }

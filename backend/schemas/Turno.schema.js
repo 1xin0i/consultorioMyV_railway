@@ -1,8 +1,6 @@
 /** @format */
 
-import { optional, z } from "zod";
-
-const hoy = new Date();
+import { z } from "zod";
 
 export const createTurnoSchema = z.object({
   id_paciente: z
@@ -13,17 +11,21 @@ export const createTurnoSchema = z.object({
     .int("El ID debe ser un número entero")
     .positive("El ID no es válido"),
 
-  fecha_hora_inicio: z.coerce
-    .date({
-      invalid_type_error: "Formato de fecha inválido",
-    })
-    .min(hoy, { message: "La fecha de inicio no es válida" }),
+  fecha_hora_inicio: z.coerce.date({
+    invalid_type_error: "Formato de fecha inválido",
+  }),
+
+  duracion_minutos: z.coerce
+    .number({ invalid_type_error: "La duración debe ser un número" })
+    .int("La duración debe ser un número entero")
+    .positive("La duración debe ser positiva")
+    .optional(),
 
   fecha_hora_fin: z.coerce
     .date({
       invalid_type_error: "Formato de fecha inválido",
     })
-    .min(hoy, { message: "La fecha de fin no es válida" }),
+    .optional(),
 
   precio_final: z
     .number({
@@ -55,14 +57,12 @@ export const updateTurnoSchema = z.object({
     .date({
       invalid_type_error: "Formato de fecha inválido",
     })
-    .min(hoy, { message: "La fecha de inicio no es válida" })
     .optional(),
 
   fecha_hora_fin: z.coerce
     .date({
       invalid_type_error: "Formato de fecha inválido",
     })
-    .min(hoy, { message: "La fecha de fin no es válida" })
     .optional(),
 
   precio_final: z
@@ -96,14 +96,12 @@ export const atenderTurnoSchema = z.object({
     .date({
       invalid_type_error: "Formato de fecha inválido",
     })
-    .min(hoy, { message: "La fecha de inicio no es válida" })
     .optional(),
 
   fecha_hora_fin: z.coerce
     .date({
       invalid_type_error: "Formato de fecha inválido",
     })
-    .min(hoy, { message: "La fecha de fin no es válida" })
     .optional(),
 
   precio_final: z

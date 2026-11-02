@@ -9,6 +9,7 @@ export const getCuotaByCobroId = async (req, res) => {
 
     const cuotas = await Cuota.findAll({
       where: { id_cobro: id_cobro, activo: true },
+      order: [["nro_cuota", "ASC"]],
     });
 
     res.status(200).json({
@@ -36,23 +37,40 @@ export const getCuotaById = async (req, res) => {
   }
 };
 
-// Crear una nueva cuota
+// En Cuota.controller.js (Función createCuota)
 export const createCuota = async (req, res) => {
   try {
-    const { monto_cuota, fecha_vencimiento } = req.body;
+    const { monto_cuota, monto_cobrado, fecha_vencimiento, fecha_cobro, metodo_pago, estado } = req.body;
     const id_cobro = req.cobro.id_cobro;
 
+    const cobro = req.cobro;
+    if (cobro && cobro.cant_cuotas > 1) {
+      return res.status(400).json({
+        status: "error",
+        message: "No se pueden agregar cuotas manuales a un plan de cuotas fijas ya establecido.",
+      });
+    }
+
     const cantCuotas = await Cuota.count({ where: { id_cobro: id_cobro } });
+    const cobrado = Number(monto_cobrado) || 0;
+    const cuotaMonto = Number(monto_cuota) || cobrado;
+
+    let estadoCalculado = estado;
+    if (!estadoCalculado) {
+      if (cobrado >= cuotaMonto && cuotaMonto > 0) estadoCalculado = "Pagada";
+      else if (cobrado > 0) estadoCalculado = "Parcialmente pagada";
+      else estadoCalculado = "Pendiente";
+    }
 
     const newCuota = await Cuota.create({
       id_cobro: id_cobro,
       nro_cuota: cantCuotas + 1,
-      monto_cuota: monto_cuota,
-      monto_cobrado: 0,
-      fecha_vencimiento: fecha_vencimiento,
-      fecha_cobro: null,
-      metodo_pago: null,
-      estado: "Pendiente",
+      monto_cuota: cuotaMonto,
+      monto_cobrado: cobrado,
+      fecha_vencimiento: fecha_vencimiento || new Date().toISOString().split("T")[0],
+      fecha_cobro: fecha_cobro || (cobrado > 0 ? new Date() : null),
+      metodo_pago: metodo_pago || (cobrado > 0 ? "Efectivo" : null),
+      estado: estadoCalculado,
     });
 
     res.status(201).json({
@@ -68,22 +86,25 @@ export const createCuota = async (req, res) => {
 // Actualizar una cuota existente
 export const updateCuota = async (req, res) => {
   try {
-    const {
-      id_cobro,
-      monto_cuota,
-      monto_cobrado,
-      fecha_vencimiento,
-      fecha_cobro,
-      metodo_pago,
-    } = req.body;
+    const { id_cobro, monto_cuota, monto_cobrado, fecha_vencimiento, fecha_cobro, metodo_pago, estado } = req.body;
 
     const cuota = req.cuota;
 
-    if (id_cobro) {
-      const cobro = await Cobro.findByPk(id_cobro);
+    const cobro = await Cobro.findByPk(cuota.id_cobro);
+    const esPlanCuotas = cobro && cobro.cant_cuotas > 1;
 
-      if (!cobro) {
-        res.status(400).json({
+    if (esPlanCuotas && monto_cuota !== undefined && parseFloat(monto_cuota) !== parseFloat(cuota.monto_cuota)) {
+      return res.status(400).json({
+        status: "error",
+        message: "No se puede modificar el monto de una cuota perteneciente a un plan de cuotas fijas.",
+      });
+    }
+
+    if (id_cobro) {
+      const cobroDestino = await Cobro.findByPk(id_cobro);
+
+      if (!cobroDestino) {
+        return res.status(400).json({
           status: "error",
           message: "El cobro seleccionado no existe.",
         });
@@ -92,11 +113,12 @@ export const updateCuota = async (req, res) => {
 
     await cuota.update({
       id_cobro: id_cobro || cuota.id_cobro,
-      monto_cuota: monto_cuota || cuota.monto_cuota,
-      monto_cobrado: monto_cobrado || cuota.monto_cobrado,
+      monto_cuota: monto_cuota !== undefined ? monto_cuota : cuota.monto_cuota,
+      monto_cobrado: monto_cobrado !== undefined ? monto_cobrado : cuota.monto_cobrado,
       fecha_vencimiento: fecha_vencimiento || cuota.fecha_vencimiento,
-      fecha_cobro: fecha_cobro || cuota.fecha_cobro,
-      metodo_pago: metodo_pago || cuota.metodo_pago,
+      fecha_cobro: fecha_cobro !== undefined ? fecha_cobro : cuota.fecha_cobro,
+      metodo_pago: esPlanCuotas ? "Tarjeta" : (metodo_pago || cuota.metodo_pago),
+      estado: estado || cuota.estado,
     });
 
     res.status(200).json({
@@ -114,13 +136,19 @@ export const deleteCuota = async (req, res) => {
   try {
     const cuota = req.cuota;
 
+    const cobro = await Cobro.findByPk(cuota.id_cobro);
+    if (cobro && cobro.cant_cuotas > 1) {
+      return res.status(400).json({
+        status: "error",
+        message: "No se pueden eliminar cuotas pertenecientes a un plan de cuotas fijas.",
+      });
+    }
+
     await cuota.update({
       activo: false,
     });
 
-    res
-      .status(200)
-      .json({ status: "success", message: "Cuota eliminada correctamente" });
+    res.status(200).json({ status: "success", message: "Cuota eliminada correctamente" });
   } catch (error) {
     console.error("Error al eliminar la cuota:", error);
     res.status(500).json({ error: "Error al eliminar la cuota" });
@@ -131,33 +159,31 @@ export const deleteCuota = async (req, res) => {
 export const cobrarCuota = async (req, res) => {
   try {
     const { monto_cobrado, fecha_cobro, metodo_pago } = req.body;
-
     const cuota = req.cuota;
 
-    let estado;
+    const cobro = await Cobro.findByPk(cuota.id_cobro);
+    const esPlanCuotas = cobro && cobro.cant_cuotas > 1;
 
     const monto_cuota = parseFloat(cuota.monto_cuota);
+    const cobrado = esPlanCuotas ? monto_cuota : parseFloat(monto_cobrado);
+    const metodoFinal = esPlanCuotas ? "Tarjeta" : (metodo_pago || "Efectivo");
 
-    if (monto_cobrado === monto_cuota) {
+    let estado;
+    if (cobrado >= monto_cuota) {
       estado = "Pagada";
-    } else if (monto_cobrado < monto_cuota) {
+    } else if (cobrado > 0) {
       estado = "Parcialmente pagada";
     } else {
-      // 🛑 ¡Faltaba el return acá para que frene si el monto es mayor!
-      return res.status(400).json({
-        status: "error",
-        message: "El monto cobrado es mayor al monto de la cuota.",
-      });
+      estado = "Pendiente";
     }
 
     await cuota.update({
-      monto_cobrado: monto_cobrado,
-      fecha_cobro: fecha_cobro,
-      metodo_pago: metodo_pago,
+      monto_cobrado: cobrado,
+      fecha_cobro: fecha_cobro ? new Date(fecha_cobro) : new Date(),
+      metodo_pago: metodoFinal,
       estado: estado,
     });
 
-    // 🛑 Buena práctica agregar return acá también
     return res.status(200).json({
       status: "success",
       data: cuota,
