@@ -35,7 +35,7 @@ export function Kpis({ kpis }) {
         <div className="bg-white p-4 rounded-2xl border border-gray-100 shadow-2xs flex items-center justify-between">
           <div>
             <span className="text-[10px] font-bold uppercase tracking-wider text-gray-400 block">
-              Balance en Caja
+              Balance del periodo
             </span>
             <span
               className={`text-lg sm:text-xl font-black mt-0.5 block ${

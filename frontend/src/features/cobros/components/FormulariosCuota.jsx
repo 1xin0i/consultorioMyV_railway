@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import Modal from "../../../components/common/Modal";
 import api from "../../../services/api";
 import { formatFechaTabla, formatSoloHora } from "../../../utils/index";
-import { Plus, X, Trash2, CheckCircle, CreditCard } from "lucide-react";
+import { Plus, X, Trash2, CheckCircle } from "lucide-react";
 
 export default function FormularioCuotas({ modalCuotas, cerrarModal, cobroSeleccionado, recarcarCobros }) {
   const [cuotas, setCuotas] = useState([]);
@@ -14,10 +14,7 @@ export default function FormularioCuotas({ modalCuotas, cerrarModal, cobroSelecc
   // Métodos de pago seleccionados individualmente por fila/cuota
   const [metodosPagoFilas, setMetodosPagoFilas] = useState({});
 
-  const cantCuotasTotal = Number(cobroSeleccionado?.cant_cuotas) || 1;
-  const esPlanCuotas = cantCuotasTotal > 1;
-
-  // Estado para el formulario de REGISTRAR NUEVA CUOTA con switch de cobro automático (solo informal)
+  // Estado para el formulario de REGISTRAR NUEVA ENTREGA
   const [nuevaCuota, setNuevaCuota] = useState({
     monto_cobrado: "",
     metodo_pago: "Efectivo",
@@ -39,7 +36,7 @@ export default function FormularioCuotas({ modalCuotas, cerrarModal, cobroSelecc
 
       const mapaMetodos = {};
       cuotasObtenidas.forEach((c) => {
-        mapaMetodos[c.id_cuota] = c.metodo_pago || (esPlanCuotas ? "Tarjeta" : "Efectivo");
+        mapaMetodos[c.id_cuota] = c.metodo_pago || "Efectivo";
       });
       setMetodosPagoFilas(mapaMetodos);
 
@@ -60,7 +57,6 @@ export default function FormularioCuotas({ modalCuotas, cerrarModal, cobroSelecc
   };
 
   const costoAcordado = Number(cobroSeleccionado?.monto_a_cobrar) || 0;
-  const montoSugeridoSistema = Number((costoAcordado / cantCuotasTotal).toFixed(2));
 
   const totalPagado = cuotas.reduce((acc, c) => acc + (Number(c.monto_cobrado) || 0), 0);
   const saldoPendiente = Math.max(0, costoAcordado - totalPagado);
@@ -98,10 +94,10 @@ export default function FormularioCuotas({ modalCuotas, cerrarModal, cobroSelecc
     }
   };
 
-  // 2. COBRAR INSTANTÁNEAMENTE UNA CUOTA EXISTENTE DE LA TABLA (Monto no modificable, método tarjeta en cuotas fijas)
+  // 2. COBRAR INSTANTÁNEAMENTE UNA CUOTA EXISTENTE DE LA TABLA
   const cobrarCuotaDirecto = async (cuota) => {
     try {
-      const metodoSeleccionado = esPlanCuotas ? "Tarjeta" : (metodosPagoFilas[cuota.id_cuota] || "Efectivo");
+      const metodoSeleccionado = metodosPagoFilas[cuota.id_cuota] || "Efectivo";
       const montoACobrar = Number(cuota.monto_cuota || cuota.monto_cobrado);
 
       await api.patch(`/cuotas/${cuota.id_cuota}/cobrar`, {
@@ -202,7 +198,7 @@ export default function FormularioCuotas({ modalCuotas, cerrarModal, cobroSelecc
             <span className="text-base sm:text-lg font-black text-gray-800 flex items-baseline gap-1">
               {cuotas.filter((c) => c.estado === "Pagada").length}
               <span className="text-[10px] sm:text-xs font-normal text-gray-500">
-                {esPlanCuotas ? `de ${cantCuotasTotal} cuotas` : "pagos"}
+                pagos
               </span>
             </span>
           </div>
@@ -216,7 +212,7 @@ export default function FormularioCuotas({ modalCuotas, cerrarModal, cobroSelecc
                 Tratamiento #{cobroSeleccionado?.id_cobro}
               </h3>
               <span className="px-2 py-0.5 rounded-lg text-[11px] font-semibold bg-blue-50 text-blue-600 border border-blue-200">
-                {esPlanCuotas ? `Plan ${cantCuotasTotal} cuotas fijas (Tarjeta)` : "Pago Único / Informal"}
+                Acuerdo Informal / Pagos Parciales
               </span>
               <span
                 className={`px-2 py-0.5 rounded-lg text-[11px] font-semibold ${
@@ -229,24 +225,21 @@ export default function FormularioCuotas({ modalCuotas, cerrarModal, cobroSelecc
               </span>
             </div>
 
-            {/* Solo se permite agregar entregas dinámicas si es modalidad informal/libre */}
-            {!esPlanCuotas && (
-              <button
-                type="button"
-                onClick={() => {
-                  setNuevaCuota({
-                    monto_cobrado: saldoPendiente > 0 ? saldoPendiente : "",
-                    metodo_pago: "Efectivo",
-                    cobrar_inmediato: true,
-                  });
-                  setMostrarFormularioNueva(!mostrarFormularioNueva);
-                }}
-                className="flex items-center justify-center gap-1.5 bg-[#2eb086] hover:bg-[#259370] text-white px-3.5 py-2 rounded-xl text-xs font-bold transition-all shadow-sm active:scale-95 w-full sm:w-auto shrink-0"
-              >
-                <Plus size={15} />
-                <span>Registrar Pago / Entrega</span>
-              </button>
-            )}
+            <button
+              type="button"
+              onClick={() => {
+                setNuevaCuota({
+                  monto_cobrado: saldoPendiente > 0 ? saldoPendiente : "",
+                  metodo_pago: "Efectivo",
+                  cobrar_inmediato: true,
+                });
+                setMostrarFormularioNueva(!mostrarFormularioNueva);
+              }}
+              className="flex items-center justify-center gap-1.5 bg-[#2eb086] hover:bg-[#259370] text-white px-3.5 py-2 rounded-xl text-xs font-bold transition-all shadow-sm active:scale-95 w-full sm:w-auto shrink-0 cursor-pointer"
+            >
+              <Plus size={15} />
+              <span>Registrar Pago / Entrega</span>
+            </button>
           </div>
 
           {/* BARRA DE PROGRESO */}
@@ -272,8 +265,8 @@ export default function FormularioCuotas({ modalCuotas, cerrarModal, cobroSelecc
             </div>
           </div>
 
-          {/* SUB-FORMULARIO: REGISTRAR NUEVA ENTREGA (SOLO ACUERDO INFORMAL) */}
-          {mostrarFormularioNueva && !esPlanCuotas && (
+          {/* SUB-FORMULARIO: REGISTRAR NUEVA ENTREGA */}
+          {mostrarFormularioNueva && (
             <form
               onSubmit={procesarRegistroNuevaCuota}
               className="bg-emerald-50/40 p-3.5 rounded-xl border border-emerald-200 gap-3 grid grid-cols-1 sm:grid-cols-3 items-end transition-all"
@@ -338,7 +331,7 @@ export default function FormularioCuotas({ modalCuotas, cerrarModal, cobroSelecc
           {/* TABLA DE CUOTAS Y ENTREGAS */}
           <div className="space-y-2 pt-1">
             <span className="text-[10px] font-bold tracking-wider text-gray-400 uppercase block">
-              {esPlanCuotas ? "Cronograma de Cuotas Fijas (No modificable)" : "Entregas y Pagos Registrados"}
+              Entregas y Pagos Registrados
             </span>
 
             {cargando ? (
@@ -379,16 +372,11 @@ export default function FormularioCuotas({ modalCuotas, cerrarModal, cobroSelecc
                             })}
                           </td>
 
-                          {/* MÉTODO DE PAGO: SIEMPRE TARJETA EN CUOTAS FIJAS */}
+                          {/* MÉTODO DE PAGO */}
                           <td className="px-3 py-2.5">
                             {estaPagada ? (
                               <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
-                                {c.metodo_pago || (esPlanCuotas ? "Tarjeta" : "Efectivo")}
-                              </span>
-                            ) : esPlanCuotas ? (
-                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-bold bg-blue-50 text-blue-700 border border-blue-200">
-                                <CreditCard size={12} />
-                                <span>Tarjeta</span>
+                                {c.metodo_pago || "Efectivo"}
                               </span>
                             ) : (
                               <select
@@ -414,10 +402,10 @@ export default function FormularioCuotas({ modalCuotas, cerrarModal, cobroSelecc
                             <span
                               className={`inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-bold ${
                                 estaPagada
-                                  ? "bg-emerald-100 text-emerald-800"
-                                  : c.estado === "Parcialmente pagada"
-                                    ? "bg-amber-100 text-amber-800"
-                                    : "bg-rose-100 text-rose-800"
+                                    ? "bg-emerald-100 text-emerald-800"
+                                    : c.estado === "Parcialmente pagada"
+                                      ? "bg-amber-100 text-amber-800"
+                                      : "bg-rose-100 text-rose-800"
                               }`}
                             >
                               {c.estado}
@@ -431,19 +419,18 @@ export default function FormularioCuotas({ modalCuotas, cerrarModal, cobroSelecc
                                 <button
                                   type="button"
                                   onClick={() => cobrarCuotaDirecto(c)}
-                                  className="bg-[#2eb086] hover:bg-[#259370] text-white text-[11px] font-bold px-2.5 py-1 rounded-md transition-all shadow-sm active:scale-95"
-                                  title="Cobrar cuota al instante con Tarjeta"
+                                  className="bg-[#2eb086] hover:bg-[#259370] text-white text-[11px] font-bold px-2.5 py-1 rounded-md transition-all shadow-sm active:scale-95 cursor-pointer"
+                                  title="Cobrar entrega"
                                 >
                                   Cobrar
                                 </button>
                               )}
 
-                              {/* EN CUOTAS FIJAS NO SE PUEDEN ELIMINAR CUOTAS DEL PLAN */}
-                              {!estaPagada && !esPlanCuotas && (
+                              {!estaPagada && (
                                 <button
                                   type="button"
                                   onClick={() => eliminarCuota(c.id_cuota)}
-                                  className="p-1 rounded-lg text-red-500 hover:bg-red-50 transition-colors"
+                                  className="p-1 rounded-lg text-red-500 hover:bg-red-50 transition-colors cursor-pointer"
                                   title="Eliminar registro"
                                 >
                                   <Trash2 size={15} />

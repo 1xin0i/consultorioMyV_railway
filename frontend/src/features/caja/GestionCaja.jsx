@@ -166,7 +166,7 @@ export default function GestionCaja() {
                 className="flex items-center gap-1.5 bg-rose-500 hover:bg-rose-600 text-white px-3.5 py-2 rounded-xl font-bold text-xs transition-all shadow-sm cursor-pointer"
               >
                 <Minus size={16} />
-                <span>+ Nuevo Gasto</span>
+                <span>Nuevo Gasto</span>
               </button>
 
               <button
@@ -175,7 +175,7 @@ export default function GestionCaja() {
                 className="flex items-center gap-1.5 bg-[#2eb086] hover:bg-[#259370] text-white px-3.5 py-2 rounded-xl font-bold text-xs transition-all shadow-sm cursor-pointer"
               >
                 <Plus size={16} />
-                <span>+ Registrar Cobro</span>
+                <span>Registrar Cobro</span>
               </button>
             </div>
           }
@@ -195,7 +195,7 @@ export default function GestionCaja() {
                   vistaActiva === "cronologico" ? "bg-white text-gray-800 shadow-2xs" : "text-gray-500"
                 }`}
               >
-                Movimientos Unificados
+                Detalle de Operaciones
               </button>
               <button
                 type="button"
@@ -204,7 +204,7 @@ export default function GestionCaja() {
                   vistaActiva === "mayor" ? "bg-white text-gray-800 shadow-2xs" : "text-gray-500"
                 }`}
               >
-                Libro Mayor (Gastos)
+                Detalle Egresos
               </button>
               <button
                 type="button"

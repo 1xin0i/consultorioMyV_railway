@@ -1,6 +1,6 @@
 /** @format */
 
-import { Plus, Minus, Tag, ChevronDown, ChevronUp, Banknote, Scale, Layers, CreditCard } from "lucide-react";
+import { Plus, Minus, Tag, ChevronDown, ChevronUp, Banknote, Scale, CreditCard } from "lucide-react";
 import { formatFechaHoraTabla } from "../../../utils";
 
 export function VistaCronologica({ movimientosUnificados, onVerCuotas }) {
@@ -43,10 +43,10 @@ export function VistaCronologica({ movimientosUnificados, onVerCuotas }) {
                       type="button"
                       onClick={() => onVerCuotas(m.cobroOriginal)}
                       className="px-2.5 py-1.5 text-xs font-bold text-[#2eb086] hover:bg-[#e8f7f1] rounded-xl transition-colors cursor-pointer border border-[#2eb086]/30 flex items-center gap-1"
-                      title="Ver detalle del cobro y cuotas"
+                      title="Ver detalle de entregas y pagos"
                     >
-                      <Layers size={14} />
-                      <span>Cuotas</span>
+                      <Banknote size={14} />
+                      <span>Pagos</span>
                     </button>
                   )}
                 </div>
@@ -142,9 +142,7 @@ export function VistaPendientes({
           const totalDeuda = t.total_deuda !== undefined ? t.total_deuda : (t.precio_final || 0);
           const saldoPendiente = t.saldo_pendiente !== undefined ? t.saldo_pendiente : totalDeuda;
           const totalPagado = t.total_pagado !== undefined ? t.total_pagado : 0;
-          const cantCuotas = t.Cobro?.cant_cuotas || 1;
-          const esPlanCuotas = cantCuotas > 1;
-          const tienePlanOActivo = esPlanCuotas || totalPagado > 0;
+          const tieneCobroOActivo = Boolean(t.Cobro) || totalPagado > 0;
 
           return (
             <div
@@ -156,11 +154,7 @@ export function VistaPendientes({
                   <span className="font-bold text-gray-800 text-sm">
                     {t.Paciente ? `${t.Paciente.apellido}, ${t.Paciente.nombre}` : `Paciente #${t.id_paciente}`}
                   </span>
-                  {esPlanCuotas ? (
-                    <span className="px-2 py-0.5 rounded-lg text-[10px] font-bold bg-blue-50 text-blue-700 border border-blue-200">
-                      Plan {cantCuotas} Cuotas
-                    </span>
-                  ) : totalPagado > 0 ? (
+                  {tieneCobroOActivo ? (
                     <span className="px-2 py-0.5 rounded-lg text-[10px] font-bold bg-amber-50 text-amber-800 border border-amber-200">
                       Acuerdo Informal / Pagos Parciales
                     </span>
@@ -208,19 +202,7 @@ export function VistaPendientes({
                   <Scale size={16} />
                 </button>
 
-                {esPlanCuotas ? (
-                  <button
-                    type="button"
-                    onClick={() =>
-                      abrirGestionCuotas && abrirGestionCuotas({ ...t.Cobro, Paciente: t.Paciente })
-                    }
-                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold transition-all shadow-2xs cursor-pointer"
-                    title="Gestionar cuotas fijas"
-                  >
-                    <Layers size={14} />
-                    <span>Gestionar Cuotas</span>
-                  </button>
-                ) : totalPagado > 0 ? (
+                {tieneCobroOActivo ? (
                   <button
                     type="button"
                     onClick={() =>

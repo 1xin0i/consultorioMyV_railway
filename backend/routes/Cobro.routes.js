@@ -44,13 +44,6 @@ router.post(
 );
 
 router.post(
-  "/cuotas",
-  validarExistencia(Turno, "id_turno", "body"),
-  validarExistencia(Paciente, "id_paciente", "body"),
-  CobroController.createCobroCuotas
-);
-
-router.post(
   "/informal",
   validarExistencia(Turno, "id_turno", "body"),
   validarExistencia(Paciente, "id_paciente", "body"),

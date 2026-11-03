@@ -4,7 +4,7 @@ import { useState, useEffect, useMemo } from "react";
 import Modal from "../../../components/common/Modal";
 import InputFiltro from "../../../components/common/InputFiltro";
 import api from "../../../services/api";
-import { User, CheckCircle2, Layers, FileText, ShieldCheck, CreditCard, Banknote } from "lucide-react";
+import { User, CheckCircle2, FileText, ShieldCheck, CreditCard, Banknote } from "lucide-react";
 
 export function FormularioCrearEditarCobro({
   procesarFormulario,
@@ -19,7 +19,7 @@ export function FormularioCrearEditarCobro({
   const [practicasTurno, setPracticasTurno] = useState([]);
   const [cargandoDetalles, setCargandoDetalles] = useState(false);
 
-  // Monto acordado del turno seleccionado (base mínima para planes de cuotas fijas y monto fijo para pago inmediato)
+  // Monto acordado del turno seleccionado (monto fijo para pago inmediato o base para acuerdo informal)
   const montoAcordado = useMemo(() => {
     if (turnoSeleccionado) {
       return Number(
@@ -66,13 +66,8 @@ export function FormularioCrearEditarCobro({
         modalidad: mod,
         monto_a_cobrar:
           mod === "inmediato" && montoAcordado > 0 ? String(montoAcordado) : prev.monto_a_cobrar,
-        cant_cuotas: mod === "cuotas" ? (Number(prev.cant_cuotas) > 1 ? prev.cant_cuotas : 3) : 1,
-        metodo_pago:
-          mod === "cuotas"
-            ? "Tarjeta"
-            : prev.metodo_pago === "Tarjeta"
-            ? "Efectivo"
-            : prev.metodo_pago || "Efectivo",
+        cant_cuotas: 1,
+        metodo_pago: prev.metodo_pago || "Efectivo",
       }));
     }
   };
@@ -80,22 +75,8 @@ export function FormularioCrearEditarCobro({
   const manejarSubmit = (e) => {
     e.preventDefault();
     if (!datosFormulario.modalidad) {
-      alert("Por favor, selecciona una modalidad de cobro (Pago Inmediato, Plan de Cuotas Fijas o Acuerdo Informal).");
+      alert("Por favor, selecciona una modalidad de cobro (Pago Inmediato o Acuerdo Informal).");
       return;
-    }
-
-    if (datosFormulario.modalidad === "cuotas" && montoAcordado > 0) {
-      const montoTotalCuotas = Number(datosFormulario.monto_a_cobrar) || 0;
-      if (montoTotalCuotas < montoAcordado) {
-        alert(
-          `El monto total del plan de cuotas fijas ($${montoTotalCuotas.toLocaleString("es-AR", {
-            minimumFractionDigits: 2,
-          })}) debe ser igual o mayor al monto acordado de la consulta ($${montoAcordado.toLocaleString("es-AR", {
-            minimumFractionDigits: 2,
-          })}).`
-        );
-        return;
-      }
     }
 
     procesarFormulario(e);
@@ -235,20 +216,13 @@ export function FormularioCrearEditarCobro({
               <Banknote size={15} className="text-[#2eb086]" />
               2. Modalidad de Cobro
             </h4>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               <SelectorModalidad
                 titulo="Pago Inmediato"
                 descripcion="Pago único en el acto por el monto pactado del turno para saldar la atención."
                 activa={datosFormulario.modalidad === "inmediato"}
                 onClick={() => seleccionarModalidad("inmediato")}
                 Icono={CheckCircle2}
-              />
-              <SelectorModalidad
-                titulo="Plan de Cuotas Fijas"
-                descripcion="Financiación en cuotas fijas por Tarjeta con opción de cobrar la 1ª ahora."
-                activa={datosFormulario.modalidad === "cuotas"}
-                onClick={() => seleccionarModalidad("cuotas")}
-                Icono={Layers}
               />
               <SelectorModalidad
                 titulo="Acuerdo Informal / Libre"
@@ -269,14 +243,6 @@ export function FormularioCrearEditarCobro({
           {/* 3. VISTAS ESPECÍFICAS SEGÚN MODALIDAD */}
           {datosFormulario.modalidad === "inmediato" && (
             <DetalleInmediato datosFormulario={datosFormulario} actualizarDatos={actualizarDatos} />
-          )}
-
-          {datosFormulario.modalidad === "cuotas" && (
-            <DetalleCuotas
-              datosFormulario={datosFormulario}
-              actualizarDatos={actualizarDatos}
-              montoAcordado={montoAcordado}
-            />
           )}
 
           {datosFormulario.modalidad === "informal" && (
@@ -386,147 +352,7 @@ function DetalleInmediato({ datosFormulario, actualizarDatos }) {
   );
 }
 
-function DetalleCuotas({ datosFormulario, actualizarDatos, montoAcordado = 0 }) {
-  const costoTotal = Number(datosFormulario.monto_a_cobrar) || 0;
-  const cantCuotas = Number(datosFormulario.cant_cuotas) || 3;
-  const valorCuota = costoTotal > 0 ? (costoTotal / cantCuotas).toFixed(2) : "0.00";
-  const cobrarPrimera =
-    datosFormulario.cobrar_primera_cuota !== undefined
-      ? Boolean(datosFormulario.cobrar_primera_cuota)
-      : true;
 
-  // En la modalidad de cuotas fijas el método de pago siempre es Tarjeta
-  useEffect(() => {
-    if (datosFormulario.metodo_pago !== "Tarjeta" && typeof actualizarDatos === "function") {
-      actualizarDatos((prev) => ({ ...prev, metodo_pago: "Tarjeta" }));
-    }
-  }, [datosFormulario.metodo_pago, actualizarDatos]);
-
-  const esMenorAlAcordado = montoAcordado > 0 && costoTotal < montoAcordado;
-
-  return (
-    <div className="bg-gray-50/70 p-3.5 rounded-2xl border border-gray-200/80 space-y-3">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1">
-        <h4 className="text-xs font-bold uppercase tracking-wider text-gray-600 flex items-center gap-1.5">
-          <Layers size={15} className="text-[#2eb086]" />
-          3. Configuración de Cuotas Fijas
-        </h4>
-        <span className="text-xs font-bold bg-[#e8f7f1] text-[#2eb086] px-3 py-1 rounded-full border border-[#2eb086]/30 w-fit">
-          Total a financiar: ${costoTotal.toFixed(2)}
-        </span>
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
-        {/* MONTO TOTAL MODIFICABLE (IGUAL O MAYOR AL ACORDADO) */}
-        <div>
-          <label className="block text-xs font-semibold text-gray-700 mb-1">Monto Total *</label>
-          <input
-            type="number"
-            step="0.01"
-            min={montoAcordado > 0 ? montoAcordado : 0}
-            name="monto_a_cobrar"
-            value={datosFormulario.monto_a_cobrar}
-            onChange={actualizarDatos}
-            required
-            className={`w-full border p-2.5 rounded-xl text-xs sm:text-sm bg-white focus:ring-2 font-bold text-gray-800 ${
-              esMenorAlAcordado
-                ? "border-rose-400 focus:ring-rose-400 bg-rose-50/50"
-                : "border-gray-300 focus:ring-[#2eb086]/50"
-            }`}
-            placeholder="0.00"
-          />
-          {montoAcordado > 0 && (
-            <span
-              className={`text-[10px] block mt-1 font-medium ${
-                esMenorAlAcordado ? "text-rose-600" : "text-gray-400"
-              }`}
-            >
-              Mínimo acordado: ${montoAcordado.toLocaleString("es-AR", { minimumFractionDigits: 2 })}
-            </span>
-          )}
-        </div>
-
-        <div>
-          <label className="block text-xs font-semibold text-gray-700 mb-1">Cantidad de Cuotas *</label>
-          <select
-            name="cant_cuotas"
-            value={datosFormulario.cant_cuotas}
-            onChange={actualizarDatos}
-            className="w-full border border-gray-300 p-2.5 rounded-xl text-xs sm:text-sm bg-white focus:ring-2 focus:ring-[#2eb086]/50 text-gray-800 font-semibold"
-          >
-            {[2, 3, 4, 5, 6, 9, 12].map((num) => (
-              <option key={num} value={num}>
-                {num} cuotas fijas
-              </option>
-            ))}
-          </select>
-        </div>
-
-        {/* MONTO DE CADA CUOTA */}
-        <div>
-          <label className="block text-xs font-semibold text-gray-700 mb-1">Valor por Cuota</label>
-          <div className="w-full border border-blue-200 p-2.5 rounded-xl text-xs sm:text-sm bg-blue-50 text-blue-800 font-bold flex items-center justify-between">
-            <span>${valorCuota}</span>
-            <span className="text-[10px] text-blue-600 font-semibold uppercase">Fijo</span>
-          </div>
-        </div>
-
-        <div>
-          <label className="block text-xs font-semibold text-gray-700 mb-1">1º Vencimiento *</label>
-          <input
-            type="date"
-            name="fecha_primer_vencimiento"
-            value={datosFormulario.fecha_primer_vencimiento}
-            onChange={actualizarDatos}
-            required
-            className="w-full border border-gray-300 p-2.5 rounded-xl text-xs sm:text-sm bg-white focus:ring-2 focus:ring-[#2eb086]/50 text-gray-800 font-semibold"
-          />
-        </div>
-      </div>
-
-      {/* OPCIÓN: COBRAR LA PRIMERA CUOTA AHORA (MÉTODO SIEMPRE TARJETA) */}
-      <div className="bg-white p-3 rounded-xl border border-gray-200 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
-        <label className="flex items-center gap-2.5 cursor-pointer select-none">
-          <input
-            type="checkbox"
-            name="cobrar_primera_cuota"
-            checked={cobrarPrimera}
-            onChange={(e) =>
-              actualizarDatos({
-                target: { name: "cobrar_primera_cuota", value: e.target.checked },
-              })
-            }
-            className="w-4 h-4 text-[#2eb086] rounded border-gray-300 focus:ring-[#2eb086]"
-          />
-          <span className="text-xs font-bold text-gray-800 block">¿Cobrar 1ª cuota ahora en caja?</span>
-        </label>
-
-        <div className="w-full sm:w-56">
-          <label className="block text-[11px] font-semibold text-gray-600 mb-0.5">
-            Método de Pago (Exclusivo)
-          </label>
-          <div className="w-full border border-blue-200 bg-blue-50/70 p-2 rounded-xl text-xs font-bold text-blue-900 flex items-center gap-2">
-            <CreditCard size={15} className="text-blue-600 shrink-0" />
-            <span>Tarjeta Débito / Crédito</span>
-          </div>
-        </div>
-      </div>
-
-      <div className="text-xs text-gray-600 bg-emerald-50/70 border border-emerald-200/80 p-2.5 rounded-xl">
-        {cobrarPrimera ? (
-          <span>
-            ✅ Se cobrará la <strong>Cuota #1 (${valorCuota})</strong> hoy por <strong>Tarjeta</strong>. Las{" "}
-            <strong>{cantCuotas - 1}</strong> cuotas restantes de <strong>${valorCuota}</strong> quedarán programadas con vencimiento mensual por Tarjeta.
-          </span>
-        ) : (
-          <span>
-            ℹ️ Las <strong>{cantCuotas}</strong> cuotas fijas de <strong>${valorCuota}</strong> quedarán programadas a pagar exclusivamente por Tarjeta a partir del 1º vencimiento.
-          </span>
-        )}
-      </div>
-    </div>
-  );
-}
 
 function DetalleInformal({ datosFormulario, actualizarDatos }) {
   const costoTotal = Number(datosFormulario.monto_a_cobrar) || 0;

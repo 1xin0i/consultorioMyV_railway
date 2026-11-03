@@ -37,7 +37,7 @@ export function useCobroActions(recargar, cerrarModal) {
       if (editando && cobroSeleccionado) {
         await api.put(`/cobros/${cobroSeleccionado.id_cobro}`, {
           ...payloadBase,
-          cant_cuotas: modalidad === "cuotas" ? Number(datosFormulario.cant_cuotas) || 1 : 1,
+          cant_cuotas: 1,
         });
         toast.success("Cobro actualizado correctamente");
       } else {
@@ -47,18 +47,6 @@ export function useCobroActions(recargar, cerrarModal) {
             monto_a_cobrar: montoTotal,
             monto_abonado: montoTotal, // Pago único y total de lo pactado del turno
             metodo_pago: datosFormulario.metodo_pago || "Efectivo",
-          });
-        } else if (modalidad === "cuotas") {
-          await api.post("/cobros/cuotas", {
-            ...payloadBase,
-            cant_cuotas: Number(datosFormulario.cant_cuotas) || 3,
-            fecha_primer_vencimiento:
-              datosFormulario.fecha_primer_vencimiento || new Date().toISOString().split("T")[0],
-            cobrar_primera_cuota:
-              datosFormulario.cobrar_primera_cuota !== undefined
-                ? Boolean(datosFormulario.cobrar_primera_cuota)
-                : true,
-            metodo_pago: "Tarjeta",
           });
         } else if (modalidad === "informal") {
           await api.post("/cobros/informal", {
