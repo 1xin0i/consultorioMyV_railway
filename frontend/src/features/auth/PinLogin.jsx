@@ -3,7 +3,6 @@
 import { useState, useRef, useEffect, useId, useContext } from "react";
 import logoImg from "../../assets/logo.png";
 import {
-  User,
   Lock,
   Eye,
   EyeOff,
@@ -76,7 +75,6 @@ export default function PinLogin({
   const usuarioGuardado = localStorage.getItem("usuario_guardado") || "";
   const esDispositivoReconocido = Boolean(usuarioGuardado);
 
-  const [usuario, setUsuario] = useState(usuarioGuardado);
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [cargandoMaestro, setCargandoMaestro] = useState(false);
@@ -359,7 +357,6 @@ export default function PinLogin({
     }
   };
 
-
   // ─── ACCIONES VISTA A: LOGIN MAESTRO (PREVENCIÓN DOBLE CLIC) ──────
   const handleLoginMaestro = async (e) => {
     e.preventDefault();
@@ -368,10 +365,8 @@ export default function PinLogin({
     setErrorMaestro("");
     setMensajeExitoMaestro("");
 
-    if (!usuario.trim()) {
-      setErrorMaestro("Por favor, ingresá tu nombre de usuario.");
-      return;
-    }
+    // Usuario invisible
+    const usuarioOculto = esDispositivoReconocido ? usuarioGuardado : "Odontologo";
 
     if (!password.trim()) {
       setErrorMaestro("Por favor, ingresá tu contraseña de cuenta.");
@@ -381,12 +376,12 @@ export default function PinLogin({
     setCargandoMaestro(true);
 
     try {
-      const data = await authService.loginMaestro(usuario.trim(), password);
+      const data = await authService.loginMaestro(usuarioOculto, password);
 
       const token = data?.token;
       const expira = Date.now() + 5 * 24 * 60 * 60 * 1000; // 5 días de vigencia
 
-      localStorage.setItem("usuario_guardado", usuario.trim());
+      localStorage.setItem("usuario_guardado", usuarioOculto);
       localStorage.setItem("jwt_dispositivo", token);
       localStorage.setItem("token", token);
       localStorage.setItem("jwt_expira", String(expira));
@@ -426,7 +421,7 @@ export default function PinLogin({
         err.response?.data?.mensaje ||
         err.response?.data?.message ||
         err.response?.data?.error ||
-        "Credenciales inválidas. Verificá tu usuario y contraseña de cuenta.";
+        "Credenciales inválidas. Verificá tu contraseña de cuenta.";
       setErrorMaestro(errorMsg);
     } finally {
       setCargandoMaestro(false);
@@ -789,7 +784,7 @@ export default function PinLogin({
                 <p className="text-xs text-slate-500 mt-2 leading-relaxed">
                   {tieneTokenActivo
                     ? "Ingresá tu contraseña de cuenta para iniciar"
-                    : "Ingresá tu usuario y contraseña para vincular este dispositivo"}
+                    : "Ingresá la contraseña para vincular este dispositivo"}
                 </p>
               </header>
 
@@ -814,58 +809,6 @@ export default function PinLogin({
               )}
 
               <form onSubmit={handleLoginMaestro} className="space-y-4">
-                {/* Campo Usuario */}
-                <div className="space-y-1.5">
-                  <div className="flex items-center justify-between">
-                    <label className="block text-xs font-semibold text-slate-700">
-                      Usuario
-                    </label>
-                    {esDispositivoReconocido && (
-                      <span className="text-[10px] text-teal-700 bg-teal-50 px-2 py-0.5 rounded-full font-semibold border border-teal-200/60">
-                        Equipo Registrado
-                      </span>
-                    )}
-                  </div>
-
-                  {esDispositivoReconocido ? (
-                    <div className="flex items-center gap-2.5 px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl cursor-default select-none pointer-events-none">
-                      <span className="text-slate-400 shrink-0">
-                        <User size={16} />
-                      </span>
-                      <span className="text-xs font-semibold text-slate-800">
-                        {usuarioGuardado}
-                      </span>
-                    </div>
-                  ) : (
-                    <div className="relative flex items-center">
-                      <span className="absolute left-3.5 text-slate-400">
-                        <User size={16} />
-                      </span>
-                      <input
-                        type="text"
-                        value={usuario}
-                        disabled={cargandoMaestro}
-                        onChange={(e) => {
-                          setUsuario(e.target.value);
-                          setErrorMaestro("");
-                          setMensajeExitoMaestro("");
-                        }}
-                        placeholder="Ingresá tu usuario (ej. Odontologo)"
-                        autoComplete="off"
-                        autoCorrect="off"
-                        autoCapitalize="off"
-                        spellCheck="false"
-                        className={`w-full pl-10 pr-4 py-2.5 bg-white border border-slate-200 rounded-xl text-base md:text-xs font-medium text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#1e6f85]/30 focus:border-[#1e6f85] transition-all ${
-                          cargandoMaestro
-                            ? "opacity-60 cursor-not-allowed bg-slate-50"
-                            : ""
-                        }`}
-                        autoFocus
-                      />
-                    </div>
-                  )}
-                </div>
-
                 {/* Campo Contraseña */}
                 <div className="space-y-1.5">
                   <label className="block text-xs font-semibold text-slate-700">
@@ -891,7 +834,7 @@ export default function PinLogin({
                           ? "opacity-60 cursor-not-allowed bg-slate-50"
                           : ""
                       }`}
-                      autoFocus={esDispositivoReconocido}
+                      autoFocus
                     />
                     <button
                       type="button"
@@ -916,7 +859,7 @@ export default function PinLogin({
                 {/* Botón Principal Ingresar con Spinner y Bloqueo de Doble Clic */}
                 <button
                   type="submit"
-                  disabled={cargandoMaestro || !password.trim() || !usuario.trim()}
+                  disabled={cargandoMaestro || !password.trim()}
                   className="w-full mt-3 flex items-center justify-center gap-2 py-3 px-4 rounded-xl text-xs font-semibold text-white bg-[#1e6f85] hover:bg-[#18586a] active:scale-98 disabled:opacity-60 disabled:cursor-not-allowed transition-all shadow-sm cursor-pointer"
                 >
                   {cargandoMaestro ? (
@@ -1190,8 +1133,8 @@ export default function PinLogin({
                   autoComplete="off"
                   className="space-y-4 animate-in fade-in"
                 >
-                  <div className="p-3 rounded-xl bg-teal-50 border border-teal-100 text-teal-800 text-xs font-medium leading-relaxed">
-                    Enviamos un código de 6 dígitos a <strong>{email}</strong>. Válido durante 15 minutos.
+                  <div className="p-3 rounded-xl bg-teal-50 border border-teal-100 text-teal-800 text-xs font-medium leading-relaxed text-center">
+                    Enviamos un código de 6 dígitos al <strong>correo electrónico asociado a la cuenta</strong>. Válido durante 15 minutos.
                   </div>
 
                   {/* Código de 6 dígitos */}
@@ -1341,7 +1284,7 @@ export default function PinLogin({
                           setEmail(e.target.value);
                           setErrorEmail("");
                         }}
-                        placeholder="ejemplo@consultoriomyv.com"
+                        placeholder="correo@registrado.com"
                         autoComplete="off"
                         autoCorrect="off"
                         autoCapitalize="off"
