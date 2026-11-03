@@ -18,8 +18,6 @@ import { PinLockContext } from "../../context/PinLockContext";
 
 export default function LoginMaestro({ onLoginSuccess }) {
   const pinLock = useContext(PinLockContext);
-  const usuarioGuardado = localStorage.getItem("usuario_guardado") || "";
-  const esDispositivoReconocido = Boolean(usuarioGuardado);
 
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -45,24 +43,21 @@ export default function LoginMaestro({ onLoginSuccess }) {
     setMensajeExito("");
 
     if (!password.trim()) {
-      setError("Por favor, ingresá la contraseña de tu cuenta.");
+      setError("Por favor, ingresá la contraseña para desbloquear el sistema.");
       return;
     }
-
-    // Definimos el usuario de forma oculta
-    // Si no está en localStorage, asume el nombre de usuario de la DB (ej: 'Odontologo' o 'admin')
-    const usuarioOculto = esDispositivoReconocido ? usuarioGuardado : "Odontologo";
 
     setCargando(true);
 
     try {
-      const data = await authService.loginMaestro(usuarioOculto, password);
+      const data = await authService.loginMaestro(password);
 
       const token = data?.token;
       // 5 días (se mantiene como pediste)
       const expira = Date.now() + 5 * 24 * 60 * 60 * 1000;
+      const nombreUsuario = data?.usuario?.nombre || "Odontologo";
 
-      localStorage.setItem("usuario_guardado", usuarioOculto);
+      localStorage.setItem("usuario_guardado", nombreUsuario);
       localStorage.setItem("jwt_dispositivo", token);
       localStorage.setItem("token", token);
       localStorage.setItem("jwt_expira", String(expira));
@@ -90,7 +85,7 @@ export default function LoginMaestro({ onLoginSuccess }) {
         err.response?.data?.mensaje ||
         err.response?.data?.message ||
         err.response?.data?.error ||
-        "Credenciales inválidas. Verificá tu contraseña de cuenta.";
+        "Contraseña incorrecta. Verificá tu clave de acceso.";
       setError(errorMsg);
     } finally {
       setCargando(false);
@@ -118,18 +113,12 @@ export default function LoginMaestro({ onLoginSuccess }) {
 
           <div className="mt-3 inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-teal-50 border border-teal-200/80 text-teal-800 text-[11px] font-semibold">
             <ShieldCheck size={14} className="text-teal-600" />
-            <span>
-              {esDispositivoReconocido
-                ? "Sesión Vencida (5 Días)"
-                : "Nuevo Dispositivo"}
-            </span>
+            <span>Contraseña de Administrador</span>
           </div>
         </header>
 
         <p className="text-xs text-slate-500 mt-5 mb-5 leading-relaxed">
-          {esDispositivoReconocido
-            ? "Tu sesión de 5 días expiró en este equipo. Ingresá tu contraseña de cuenta para renovar el acceso."
-            : "Ingresá la contraseña de sistema para vincular este equipo por los próximos 5 días."}
+          Ingresá tu contraseña para desbloquear el sistema
         </p>
 
         {/* Notificación de Éxito tras Restablecimiento */}
@@ -195,15 +184,11 @@ export default function LoginMaestro({ onLoginSuccess }) {
             {cargando ? (
               <div className="flex items-center justify-center gap-2">
                 <Loader2 size={16} className="animate-spin text-white" />
-                <span>Validando credenciales...</span>
+                <span>Validando contraseña...</span>
               </div>
             ) : (
               <>
-                <span>
-                  {esDispositivoReconocido
-                    ? "Renovar Acceso y Continuar"
-                    : "Vincular Dispositivo y Continuar"}
-                </span>
+                <span>Desbloquear Sistema</span>
                 <ArrowRight size={15} />
               </>
             )}

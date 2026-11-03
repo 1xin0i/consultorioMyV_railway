@@ -37,19 +37,26 @@ api.interceptors.request.use((config) => {
 
 /**
  * Login Maestro / Vincular Dispositivo con JWT de 5 días
- * @param {string} nombre_usuario
- * @param {string} contraseña
+ * Admite únicamente la contraseña o (usuario, contraseña) por retrocompatibilidad
+ * @param {string} param1 - Contraseña (o nombre_usuario si se envían 2 argumentos)
+ * @param {string} [param2] - Contraseña si param1 fue nombre_usuario
  * @returns {Promise<{ status: string, mensaje: string, token: string, expiraEn: string, usuario: object }>}
  */
-export const loginMaestro = async (nombre_usuario, contraseña) => {
-  const res = await api.post("/auth/login-maestro", {
-    nombre_usuario,
-    contraseña,
-    usuario: nombre_usuario,
-    password: contraseña,
-  });
+export const loginMaestro = async (param1, param2) => {
+  const password = param2 !== undefined ? param2 : param1;
+  const payload = {
+    password,
+    contraseña: password,
+  };
+  if (param2 !== undefined && param1) {
+    payload.nombre_usuario = param1;
+    payload.usuario = param1;
+  }
+  const res = await api.post("/auth/login", payload);
   return res.data;
 };
+
+export const login = loginMaestro;
 
 /**
  * Desbloqueo Diario con PIN de 4 dígitos
@@ -107,11 +114,14 @@ export const cambiarPin = recuperarPin;
  * @returns {Promise<{ status: string, mensaje: string }>}
  */
 export const recuperarPassword = async (email) => {
-  const res = await api.post("/auth/recuperar-password", { email });
+  const payload = email ? { email } : {};
+  const res = await api.post("/auth/recuperar-password", payload);
   return res.data;
 };
 
+export const solicitarRecuperacionPin = recuperarPassword;
 export const solicitarRecuperacion = recuperarPassword;
+export const olvidoPassword = recuperarPassword;
 
 /**
  * Restablecer contraseña consumiendo el código PIN de 6 dígitos
@@ -142,6 +152,7 @@ export const refreshToken = async () => {
  * Objeto agrupador authService
  */
 export const authService = {
+  login,
   loginMaestro,
   validarPin,
   verificarPin,
@@ -149,7 +160,9 @@ export const authService = {
   recuperarPin,
   cambiarPin,
   recuperarPassword,
+  solicitarRecuperacionPin,
   solicitarRecuperacion,
+  olvidoPassword,
   restablecerPassword,
   refreshToken,
 };

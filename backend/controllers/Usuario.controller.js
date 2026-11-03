@@ -36,32 +36,67 @@ const obtenerUsuarioOperativo = async (nombre_usuario) => {
 // 1. Login Maestro / Vincular Dispositivo con JWT de 5 días
 export const loginMaestro = async (req, res) => {
   try {
-    const rawNombreUsuario = req.body.nombre_usuario || req.body.usuario || "";
     const rawContraseña = req.body.contraseña || req.body.contrasenia || req.body.password || "";
-    const nombre_usuario = rawNombreUsuario.trim();
+    const rawNombreUsuario = req.body.nombre_usuario || req.body.usuario || "";
     const contraseña = rawContraseña;
+    const nombre_usuario = rawNombreUsuario.trim();
 
-    // Normalizar req.body para que coincida exactamente con las propiedades estándar
-    req.body.nombre_usuario = nombre_usuario;
-    req.body.contraseña = contraseña;
-
-    console.log("=== DEBUG LOGIN MAESTRO ===");
-    console.log("1. req.body recibido:", req.body);
-    const usuario = await Usuario.findOne({ where: { nombre_usuario: req.body.nombre_usuario } });
-    console.log("2. Usuario encontrado en DB:", usuario ? usuario.toJSON() : "NO ENCONTRADO");
-    if (usuario) {
-      const match = await bcrypt.compare(req.body.contraseña, usuario.contraseña);
-      console.log("3. Resultado bcrypt.compare:", match);
+    if (!contraseña || !contraseña.trim()) {
+      return res.status(400).json({ mensaje: "La contraseña es obligatoria" });
     }
-    console.log("===========================");
+
+    // Normalizar req.body para compatibilidad
+    req.body.contraseña = contraseña;
+    if (nombre_usuario) {
+      req.body.nombre_usuario = nombre_usuario;
+    }
+
+    // Obtener automáticamente al profesional/administrador activo de la base de datos MySQL
+    let usuario = null;
+    try {
+      usuario = await Usuario.findOne({ where: { activo: true } });
+    } catch {
+      // En caso de que la tabla usuario en MySQL no contenga la columna 'activo'
+      usuario = null;
+    }
+
+    // Si se envió nombre_usuario explícito (compatibilidad hacia atrás) y aún no hay usuario
+    if (!usuario && nombre_usuario) {
+      usuario = await Usuario.findOne({ where: { nombre_usuario } });
+    }
+
+    // Si aún no se obtuvo, priorizar al profesional titular (odontólogo) o administrador
+    if (!usuario) {
+      usuario =
+        (await Usuario.findOne({ where: { rol: "odontologo" } })) ||
+        (await Usuario.findOne({ where: { rol: "admin" } })) ||
+        (await Usuario.findOne());
+    }
 
     if (!usuario) {
-      return res.status(401).json({ mensaje: "Credenciales inválidas" });
+      return res.status(401).json({ mensaje: "Contraseña incorrecta" });
     }
 
-    const match = await bcrypt.compare(contraseña, usuario.contraseña);
+    let match = await bcrypt.compare(contraseña, usuario.contraseña);
+
+    // Si no coincidió con el usuario preferente y no se envió un nombre de usuario explícito,
+    // verificar si la contraseña pertenece a otro usuario registrado del consultorio
+    if (!match && !nombre_usuario) {
+      const todosLosUsuarios = await Usuario.findAll();
+      for (const u of todosLosUsuarios) {
+        if (u.id_usuario !== usuario.id_usuario) {
+          const coincide = await bcrypt.compare(contraseña, u.contraseña);
+          if (coincide) {
+            usuario = u;
+            match = true;
+            break;
+          }
+        }
+      }
+    }
+
     if (!match) {
-      return res.status(401).json({ mensaje: "Credenciales inválidas" });
+      return res.status(401).json({ mensaje: "Contraseña incorrecta" });
     }
 
     const token = jwt.sign(
@@ -194,30 +229,37 @@ export const recuperarPin = async (req, res) => {
   }
 };
 
-// 5. Recuperación por Mail con Nodemailer
+// 5. Recuperación por Mail con Nodemailer (Automática al correo registrado del profesional)
 export const solicitarRecuperacionPassword = async (req, res) => {
   try {
-    const emailLimpio = req.body.email?.trim().toLowerCase();
+    let usuario = null;
+    const emailBody = req.body?.email?.trim().toLowerCase();
+    const rawNombreUsuario = req.body?.nombre_usuario || req.body?.usuario;
 
-    if (!emailLimpio) {
-      return res.status(400).json({ status: "error", mensaje: "El correo es obligatorio." });
-    }
-
-    const usuario = await Usuario.findOne({
-      where: sequelize.where(
-        sequelize.fn("LOWER", sequelize.col("email")),
-        emailLimpio
-      ),
-    });
-
-    // Mensaje genérico preventivo de seguridad si no existe el usuario
-    if (!usuario) {
-      console.log(`[SMTP] Correo no registrado en el sistema: ${emailLimpio}`);
-      return res.status(200).json({
-        status: "success",
-        mensaje: "Si el correo coincide con una cuenta registrada, se enviarán las instrucciones.",
+    // Si se envía email explícito, se busca por dicho email
+    if (emailBody) {
+      usuario = await Usuario.findOne({
+        where: sequelize.where(
+          sequelize.fn("LOWER", sequelize.col("email")),
+          emailBody
+        ),
       });
     }
+
+    // Si no se proporcionó o no se encontró por email, se busca al usuario profesional activo/registrado
+    if (!usuario) {
+      usuario = await obtenerUsuarioOperativo(rawNombreUsuario);
+    }
+
+    if (!usuario || !usuario.email) {
+      console.log("[SMTP] No se encontró usuario profesional con correo registrado en la base de datos.");
+      return res.status(404).json({
+        status: "error",
+        mensaje: "No se encontró ningún correo electrónico registrado para el profesional.",
+      });
+    }
+
+    const emailLimpio = usuario.email.trim().toLowerCase();
 
     const pinRecuperacion = crypto.randomInt(100000, 1000000).toString();
     usuario.reset_token = pinRecuperacion;
@@ -316,13 +358,16 @@ export const solicitarRecuperacionPassword = async (req, res) => {
 
     return res.status(200).json({
       status: "success",
-      mensaje: "Si el correo coincide con una cuenta registrada, se enviarán las instrucciones.",
+      mensaje: "Se enviaron las instrucciones y código de recuperación al correo registrado.",
     });
   } catch (error) {
     console.error("Error en solicitarRecuperacionPassword:", error);
     return res.status(500).json({ status: "error", mensaje: "Error al solicitar recuperación" });
   }
 };
+
+export const solicitarRecuperacionPin = solicitarRecuperacionPassword;
+export const olvidoPassword = solicitarRecuperacionPassword;
 
 // 6. Restablecer Contraseña consumiendo el PIN de 6 dígitos
 export const restablecerPassword = async (req, res) => {

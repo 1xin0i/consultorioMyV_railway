@@ -42,17 +42,14 @@ export const loginMaestroSchema = z
     contrasenia: z.string().optional(),
     password: z.string().optional(),
   })
-  .refine((data) => Boolean((data.nombre_usuario && data.nombre_usuario.trim()) || (data.usuario && data.usuario.trim())), {
-    message: "El usuario es obligatorio",
-    path: ["nombre_usuario"],
-  })
   .refine((data) => Boolean(data.contraseña || data.contrasenia || data.password), {
     message: "La contraseña es obligatoria",
     path: ["contraseña"],
   })
   .transform((data) => ({
-    nombre_usuario: (data.nombre_usuario || data.usuario).trim(),
+    nombre_usuario: (data.nombre_usuario || data.usuario || "").trim() || undefined,
     contraseña: data.contraseña || data.contrasenia || data.password,
+    password: data.contraseña || data.contrasenia || data.password,
   }));
 
 export const validarPinSchema = z.object({
@@ -102,8 +99,12 @@ export const recuperarPinSchema = z
   }));
 
 export const recuperarPasswordSchema = z.object({
-  email: z.string({ required_error: "El correo es obligatorio" }).trim().email("Formato de email inválido"),
+  email: z.string().trim().email("Formato de email inválido").optional(),
+  usuario: z.string().optional(),
+  nombre_usuario: z.string().optional(),
 });
+
+export const solicitarRecuperacionPinSchema = recuperarPasswordSchema;
 
 export const restablecerPasswordSchema = z
   .object({

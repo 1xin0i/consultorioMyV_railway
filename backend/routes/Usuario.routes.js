@@ -22,6 +22,7 @@ import {
 } from "../schemas/Usuario.schema.js";
 
 // 1. Capa Maestra: Login y vinculación de dispositivo (JWT de 5 días)
+router.post("/login", authRateLimiter, validateSchema(loginMaestroSchema), UsuarioController.loginMaestro);
 router.post("/login-maestro", authRateLimiter, validateSchema(loginMaestroSchema), UsuarioController.loginMaestro);
 router.post("/vincular-dispositivo", authRateLimiter, validateSchema(loginMaestroSchema), UsuarioController.loginMaestro);
 
@@ -32,8 +33,10 @@ router.post("/validar-pin", pinRateLimiter, validateSchema(validarPinSchema), Us
 router.post("/verificar-password", authRateLimiter, validateSchema(verificarPasswordSchema), UsuarioController.verificarPassword);
 router.post("/recuperar-pin", authRateLimiter, validateSchema(recuperarPinSchema), UsuarioController.recuperarPin);
 
-// 4. Recuperación de Contraseña por Correo
+// 4. Recuperación de Contraseña / PIN por Correo
 router.post("/recuperar-password", mailResetLimiter, validateSchema(recuperarPasswordSchema), UsuarioController.solicitarRecuperacionPassword);
+router.post("/solicitar-recuperacion-pin", mailResetLimiter, validateSchema(recuperarPasswordSchema), UsuarioController.solicitarRecuperacionPassword);
+router.post("/olvido-password", mailResetLimiter, validateSchema(recuperarPasswordSchema), UsuarioController.solicitarRecuperacionPassword);
 router.post("/restablecer-password", verifyCodeLimiter, validateSchema(restablecerPasswordSchema), UsuarioController.restablecerPassword);
 
 // 5. Sesión y Tokens

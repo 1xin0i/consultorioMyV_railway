@@ -10,7 +10,6 @@ import {
   ShieldAlert,
   ScanFace,
   CheckCircle2,
-  Mail,
   AlertCircle,
   ArrowLeft,
   Loader2,
@@ -159,12 +158,19 @@ export default function PinLogin({
   };
 
   // ─── ESTADOS VISTA C: RECUPERACIÓN POR CORREO ─────────────────────
-  const [email, setEmail] = useState("");
   const [emailEnviado, setEmailEnviado] = useState(false);
   const [cargandoEmail, setCargandoEmail] = useState(false);
   const [errorEmail, setErrorEmail] = useState("");
-  const [cooldownEmail, setCooldownEmail] = useState(0);
-  const emailInputId = useId();
+  const [segundosBloqueoRecuperacion, setSegundosBloqueoRecuperacion] = useState(() => {
+    const bloqueoHasta = localStorage.getItem("bloqueo_recuperacion_hasta");
+    if (bloqueoHasta) {
+      const restante = Math.ceil((Number(bloqueoHasta) - Date.now()) / 1000);
+      if (restante > 0) return restante;
+      localStorage.removeItem("bloqueo_recuperacion_hasta");
+      localStorage.removeItem("intentos_recuperacion_email");
+    }
+    return 0;
+  });
 
   // Estados para ingresar el PIN de 6 dígitos y la nueva contraseña
   const [codigoRecuperacion, setCodigoRecuperacion] = useState("");
@@ -181,7 +187,6 @@ export default function PinLogin({
       // Purga completa de memoria de campos confidenciales
       setPassword("");
       setPin("");
-      setEmail("");
       setErrorMaestro("");
       setErrorPin("");
       setErrorEmail("");
@@ -193,22 +198,28 @@ export default function PinLogin({
     };
   }, []);
 
-  // ─── COOLDOWN DE 60 SEGUNDOS PARA REENVÍO DE CORREO ───────────────
+  // ─── TEMPORIZADOR DE BLOQUEO DE 15 MINUTOS TRAS 3 INTENTOS ────────
   useEffect(() => {
-    if (cooldownEmail <= 0) return;
+    const checkBloqueo = () => {
+      const bloqueoHasta = localStorage.getItem("bloqueo_recuperacion_hasta");
+      if (!bloqueoHasta) {
+        setSegundosBloqueoRecuperacion(0);
+        return;
+      }
+      const restante = Math.ceil((Number(bloqueoHasta) - Date.now()) / 1000);
+      if (restante <= 0) {
+        localStorage.removeItem("bloqueo_recuperacion_hasta");
+        localStorage.removeItem("intentos_recuperacion_email");
+        setSegundosBloqueoRecuperacion(0);
+      } else {
+        setSegundosBloqueoRecuperacion(restante);
+      }
+    };
 
-    const timer = setInterval(() => {
-      setCooldownEmail((prev) => {
-        if (prev <= 1) {
-          clearInterval(timer);
-          return 0;
-        }
-        return prev - 1;
-      });
-    }, 1000);
-
+    checkBloqueo();
+    const timer = setInterval(checkBloqueo, 1000);
     return () => clearInterval(timer);
-  }, [cooldownEmail]);
+  }, []);
 
   // ─── AUTO-FOCO AL ENTRAR O VOLVER A VISTA PIN ─────────────────────
   useEffect(() => {
@@ -244,7 +255,6 @@ export default function PinLogin({
     setPassword(""); // Purga inmediata de contraseña
     setErrorMaestro("");
     setMensajeExitoMaestro("");
-    setEmail("");
     setErrorEmail("");
     setEmailEnviado(false);
     setCodigoRecuperacion("");
@@ -256,7 +266,6 @@ export default function PinLogin({
   };
 
   const handleVolverAIniciarSesion = () => {
-    setEmail(""); // Purga inmediata de correo
     setErrorEmail("");
     setEmailEnviado(false);
     setCodigoRecuperacion("");
@@ -365,23 +374,21 @@ export default function PinLogin({
     setErrorMaestro("");
     setMensajeExitoMaestro("");
 
-    // Usuario invisible
-    const usuarioOculto = esDispositivoReconocido ? usuarioGuardado : "Odontologo";
-
     if (!password.trim()) {
-      setErrorMaestro("Por favor, ingresá tu contraseña de cuenta.");
+      setErrorMaestro("Por favor, ingresá tu contraseña para desbloquear el sistema.");
       return;
     }
 
     setCargandoMaestro(true);
 
     try {
-      const data = await authService.loginMaestro(usuarioOculto, password);
+      const data = await authService.loginMaestro(password);
 
       const token = data?.token;
       const expira = Date.now() + 5 * 24 * 60 * 60 * 1000; // 5 días de vigencia
+      const nombreUsuario = data?.usuario?.nombre || "Odontologo";
 
-      localStorage.setItem("usuario_guardado", usuarioOculto);
+      localStorage.setItem("usuario_guardado", nombreUsuario);
       localStorage.setItem("jwt_dispositivo", token);
       localStorage.setItem("token", token);
       localStorage.setItem("jwt_expira", String(expira));
@@ -421,7 +428,7 @@ export default function PinLogin({
         err.response?.data?.mensaje ||
         err.response?.data?.message ||
         err.response?.data?.error ||
-        "Credenciales inválidas. Verificá tu contraseña de cuenta.";
+        "Contraseña incorrecta. Verificá tu clave de acceso.";
       setErrorMaestro(errorMsg);
     } finally {
       setCargandoMaestro(false);
@@ -669,22 +676,41 @@ export default function PinLogin({
   // ─── ACCIONES VISTA C: RECUPERAR CONTRASEÑA POR EMAIL ─────────────
   const handleRecuperarPassword = async (e) => {
     if (e) e.preventDefault();
-    if (cargandoEmail || cooldownEmail > 0) return; // Bloqueo doble clic y rate limiting
+    if (cargandoEmail || segundosBloqueoRecuperacion > 0) return; // Bloqueo doble clic y bloqueo por intentos
 
-    setErrorEmail("");
-
-    if (!email.trim() || !email.includes("@")) {
-      setErrorEmail("Por favor, ingresá un correo electrónico válido.");
+    // Verificar si ya está bloqueado en localStorage
+    const bloqueoHasta = localStorage.getItem("bloqueo_recuperacion_hasta");
+    if (bloqueoHasta && Number(bloqueoHasta) > Date.now()) {
+      const restante = Math.ceil((Number(bloqueoHasta) - Date.now()) / 1000);
+      setSegundosBloqueoRecuperacion(restante);
       return;
     }
 
+    setErrorEmail("");
     setCargandoEmail(true);
 
     try {
-      await authService.recuperarPassword(email.trim());
+      await authService.recuperarPassword();
+
+      // Incrementar contador de intentos exitosos
+      const intentosPrevios = Number(localStorage.getItem("intentos_recuperacion_email")) || 0;
+      const nuevosIntentos = intentosPrevios + 1;
+      localStorage.setItem("intentos_recuperacion_email", String(nuevosIntentos));
+
+      if (nuevosIntentos >= 3) {
+        // Al completar el 3.er intento, activar bloqueo de 15 minutos (900 segundos)
+        const expiraBloqueo = Date.now() + 15 * 60 * 1000;
+        localStorage.setItem("bloqueo_recuperacion_hasta", String(expiraBloqueo));
+        setSegundosBloqueoRecuperacion(15 * 60);
+      }
+
       setEmailEnviado(true);
-      setCooldownEmail(60);
     } catch (err) {
+      if (err.response?.status === 429) {
+        const expiraBloqueo = Date.now() + 15 * 60 * 1000;
+        localStorage.setItem("bloqueo_recuperacion_hasta", String(expiraBloqueo));
+        setSegundosBloqueoRecuperacion(15 * 60);
+      }
       const errorMsg =
         err.response?.data?.mensaje ||
         err.response?.data?.message ||
@@ -782,9 +808,7 @@ export default function PinLogin({
                   Iniciar Sesión
                 </h2>
                 <p className="text-xs text-slate-500 mt-2 leading-relaxed">
-                  {tieneTokenActivo
-                    ? "Ingresá tu contraseña de cuenta para iniciar"
-                    : "Ingresá la contraseña para vincular este dispositivo"}
+                  Ingresá tu contraseña para desbloquear el sistema
                 </p>
               </header>
 
@@ -812,7 +836,7 @@ export default function PinLogin({
                 {/* Campo Contraseña */}
                 <div className="space-y-1.5">
                   <label className="block text-xs font-semibold text-slate-700">
-                    Contraseña de Cuenta
+                    Contraseña
                   </label>
                   <div className="relative flex items-center">
                     <span className="absolute left-3.5 text-slate-400">
@@ -827,7 +851,7 @@ export default function PinLogin({
                         setErrorMaestro("");
                         setMensajeExitoMaestro("");
                       }}
-                      placeholder="Ingresá tu contraseña de cuenta"
+                      placeholder="Ingresá tu contraseña"
                       autoComplete="current-password"
                       className={`w-full pl-10 pr-11 py-2.5 bg-white border border-slate-200 rounded-xl text-base md:text-xs font-medium text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#1e6f85]/30 focus:border-[#1e6f85] transition-all ${
                         cargandoMaestro
@@ -865,7 +889,7 @@ export default function PinLogin({
                   {cargandoMaestro ? (
                     <div className="flex items-center justify-center gap-2">
                       <Loader2 size={16} className="animate-spin text-white" />
-                      <span>Validando credenciales...</span>
+                      <span>Validando contraseña...</span>
                     </div>
                   ) : (
                     <span>Ingresar</span>
@@ -1096,8 +1120,7 @@ export default function PinLogin({
                   Recuperar Contraseña
                 </h2>
                 <p className="text-xs text-slate-500 mt-2 leading-relaxed">
-                  Ingresá tu correo electrónico para recibir el enlace de
-                  restablecimiento
+                  Presiona el botón a continuación para enviar las instrucciones y el enlace de recuperación directamente al correo registrado del profesional.
                 </p>
               </header>
 
@@ -1134,7 +1157,7 @@ export default function PinLogin({
                   className="space-y-4 animate-in fade-in"
                 >
                   <div className="p-3 rounded-xl bg-teal-50 border border-teal-100 text-teal-800 text-xs font-medium leading-relaxed text-center">
-                    Enviamos un código de 6 dígitos al <strong>correo electrónico asociado a la cuenta</strong>. Válido durante 15 minutos.
+                    Enviamos un código de 6 dígitos al correo registrado del profesional. Válido durante 15 minutos.
                   </div>
 
                   {/* Código de 6 dígitos */}
@@ -1254,7 +1277,7 @@ export default function PinLogin({
                     disabled={cargandoRestablecer}
                     className="w-full text-center text-xs text-slate-500 hover:text-slate-800 font-semibold mt-2 cursor-pointer transition-colors"
                   >
-                    ← Volver o ingresar otro correo
+                    ← Volver o reenviar correo
                   </button>
                 </form>
               ) : (
@@ -1263,42 +1286,6 @@ export default function PinLogin({
                   autoComplete="off"
                   className="space-y-4"
                 >
-                  <div className="space-y-1.5">
-                    <label
-                      htmlFor={emailInputId}
-                      className="block text-xs font-semibold text-slate-700"
-                    >
-                      Correo Electrónico Registrado
-                    </label>
-                    <div className="relative flex items-center">
-                      <span className="absolute left-3.5 text-slate-400">
-                        <Mail size={16} />
-                      </span>
-                      <input
-                        id={emailInputId}
-                        name="email_prevent_autofill"
-                        type="email"
-                        value={email}
-                        disabled={cargandoEmail}
-                        onChange={(e) => {
-                          setEmail(e.target.value);
-                          setErrorEmail("");
-                        }}
-                        placeholder="correo@registrado.com"
-                        autoComplete="off"
-                        autoCorrect="off"
-                        autoCapitalize="off"
-                        spellCheck="false"
-                        className={`w-full pl-10 pr-4 py-2.5 bg-white border border-slate-200 rounded-xl text-base md:text-xs font-medium text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#1e6f85]/30 focus:border-[#1e6f85] transition-all ${
-                          cargandoEmail
-                            ? "opacity-60 cursor-not-allowed bg-slate-50"
-                            : ""
-                        }`}
-                        autoFocus
-                      />
-                    </div>
-                  </div>
-
                   {errorEmail && (
                     <div className="flex items-start gap-2 p-2.5 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs font-medium animate-in fade-in">
                       <AlertCircle size={15} className="shrink-0 mt-0.5" />
@@ -1308,7 +1295,7 @@ export default function PinLogin({
 
                   <button
                     type="submit"
-                    disabled={cargandoEmail || !email.trim() || cooldownEmail > 0}
+                    disabled={cargandoEmail || segundosBloqueoRecuperacion > 0}
                     className="w-full mt-3 flex items-center justify-center gap-2 py-3 px-4 rounded-xl text-xs font-semibold text-white bg-[#1e6f85] hover:bg-[#18586a] active:scale-98 disabled:opacity-60 disabled:cursor-not-allowed transition-all shadow-sm cursor-pointer"
                   >
                     {cargandoEmail ? (
@@ -1316,6 +1303,8 @@ export default function PinLogin({
                         <Loader2 size={16} className="animate-spin text-white" />
                         <span>Enviando...</span>
                       </div>
+                    ) : segundosBloqueoRecuperacion > 0 ? (
+                      <span>Reintentar en {formatearTiempo(segundosBloqueoRecuperacion)}</span>
                     ) : (
                       <span>Enviar instrucciones</span>
                     )}
