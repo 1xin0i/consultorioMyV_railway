@@ -105,13 +105,14 @@ export default function GestionObrasSociales() {
             {/* //* TABLA: TABLA */}
             <div className="overflow-x-auto flex-1">
               <Tabla
+                layoutFijo
                 cargando={cargando}
                 sinDatosText="No se encontraron obras sociales registradas."
                 columnas={[
                   { label: "ID", className: "hidden md:table-cell" },
-                  { label: "Obra Social" },
-                  { label: "Estado" },
-                  { label: "Acciones", align: "center" },
+                  { label: "Obra Social", className: "w-[34%] md:w-auto" },
+                  { label: "Estado", align: "center", className: "w-[18%] md:w-auto" },
+                  { label: "Acciones", align: "center", className: "w-[48%] md:w-auto" },
                 ]}
               >
                 {obrasSociales.map((os) => (
@@ -122,31 +123,37 @@ export default function GestionObrasSociales() {
                     </td>
 
                     {/* //* COLUMNAS: NOMBRE */}
-                    <td className="px-6 py-4">
-                      <div className="flex items-center gap-3">
+                    <td className="px-3 md:px-6 py-4">
+                      <div className="flex items-center gap-3 min-w-0">
                         <div className="hidden md:flex w-9 h-9 rounded-full bg-[#e8f7f1] text-[#2eb086] items-center justify-center font-bold text-sm shrink-0">
                           {os.nombre?.charAt(0)}
                         </div>
-                        <span className="font-semibold text-gray-800 text-sm">{os.nombre}</span>
+                        <span className="font-semibold text-gray-800 text-sm break-words min-w-0">{os.nombre}</span>
                       </div>
                     </td>
 
                     {/* //* COLUMNAS: ESTADO */}
-                    <td className="px-6 py-4">
+                    <td className="px-3 md:px-6 py-4 text-center">
                       {os.activo ? (
-                        <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-emerald-50 text-emerald-700 border border-emerald-200/60">
-                          <CheckCircle2 size={14} /> Activa
+                        <span
+                          title="Activa"
+                          className="inline-flex items-center gap-1.5 px-2 md:px-3 py-1 rounded-full text-xs font-medium bg-emerald-50 text-emerald-700 border border-emerald-200/60"
+                        >
+                          <CheckCircle2 size={14} /> <span className="hidden md:inline">Activa</span>
                         </span>
                       ) : (
-                        <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-500 border border-gray-200">
-                          <XCircle size={14} /> Inactiva
+                        <span
+                          title="Inactiva"
+                          className="inline-flex items-center gap-1.5 px-2 md:px-3 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-500 border border-gray-200"
+                        >
+                          <XCircle size={14} /> <span className="hidden md:inline">Inactiva</span>
                         </span>
                       )}
                     </td>
 
                     {/* //* COLUMNAS: ACCIONES */}
-                    <td className="px-6 py-4">
-                      <div className="flex items-center justify-center gap-2">
+                    <td className="px-3 md:px-6 py-4">
+                      <div className="flex flex-wrap items-center justify-center gap-1 md:gap-2">
                         <button
                           type="button"
                           onClick={() => abrirParaEditar(os, formatearObraSocialParaEditar)}

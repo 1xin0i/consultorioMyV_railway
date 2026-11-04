@@ -1,12 +1,13 @@
 /** @format */
 
 //* useSearchParams E ICONOS
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useSearchParams } from "react-router-dom"; // * PARA PERMITIR COMPLETAR PACIENTE DESDE AGENDA
 import { Users, Plus, Edit, Phone, Ban, RotateCcw, Eye, Shield } from "lucide-react";
 
 //* COMPONENTES COMUNES
 import Header from "../../components/common/Header";
+import Modal from "../../components/common/Modal";
 import Tabla from "../../components/common/Tabla/Tabla";
 import TablaHeader from "../../components/common/Tabla/TablaHeader";
 import TablaPaginacion from "../../components/common/Tabla/TablaPaginacion";
@@ -67,6 +68,9 @@ export default function GestionPacientes() {
   // * HOOK DE MODAL VER
   const { modalCuenta, pacienteVerCuenta, abrirParaVer, cerrarVer } = usePacienteVer();
 
+  // * MENÚ DE ACCIONES (MOBILE)
+  const [pacienteMenu, setPacienteMenu] = useState(null);
+
   // * HOOK PARA OBRAS SOCIALES
   const { obrasSocialesLista, agregarObraSocialForm, actualizarObraSocialForm, eliminarObraSocialForm } =
     useObrasSocialesCatalogo(actualizarDatos);
@@ -120,42 +124,49 @@ export default function GestionPacientes() {
             {/* //* TABLA: TABLA */}
             <div className="overflow-x-auto flex-1">
               <Tabla
+                layoutFijo
                 cargando={cargando}
                 search={search}
                 sinDatosText="No se encontraron pacientes registrados."
                 columnas={[
-                  { label: "Paciente" },
-                  { label: "DNI" },
-                  { label: "Teléfono" },
-                  { label: "Obras Sociales" },
-                  { label: "Acciones", align: "center" },
+                  { label: "Paciente", className: "w-[42%] md:w-auto" },
+                  { label: "DNI", className: "w-[26%] md:w-auto" },
+                  { label: "Teléfono", className: "w-[32%] md:w-auto" },
+                  { label: "Obras Sociales", className: "hidden md:table-cell" },
+                  { label: "Acciones", align: "center", className: "hidden md:table-cell" },
                 ]}
               >
                 {pacientes.map((paciente) => (
-                  <tr key={paciente.id_paciente} className="hover:bg-gray-50/60 transition-colors">
+                  <tr
+                    key={paciente.id_paciente}
+                    onClick={() => {
+                      if (window.innerWidth < 768) setPacienteMenu(paciente);
+                    }}
+                    className="hover:bg-gray-50/60 transition-colors cursor-pointer md:cursor-default"
+                  >
                     {/* //* COLUMNAS: NOMBRE Y APELLIDO */}
-                    <td className="px-6 py-4">
-                      <div className="flex items-center gap-3">
+                    <td className="px-3 md:px-6 py-4">
+                      <div className="flex items-center gap-3 min-w-0">
                         <div className="hidden md:flex w-9 h-9 rounded-full bg-[#e8f7f1] text-[#2eb086] items-center justify-center font-bold text-sm shrink-0">
                           {paciente.nombre?.charAt(0)}
                           {paciente.apellido?.charAt(0)}
                         </div>
-                        <span className="font-semibold text-gray-800">
+                        <span className="font-semibold text-gray-800 break-words min-w-0">
                           {paciente.nombre} {paciente.apellido}
                         </span>
                       </div>
                     </td>
 
                     {/* //* COLUMNAS: DNI */}
-                    <td className="px-6 py-4 text-gray-600 font-medium">
+                    <td className="px-3 md:px-6 py-4 text-gray-600 font-medium break-all">
                       {paciente.dni || <span className="text-gray-400 italic">S/D</span>}
                     </td>
 
                     {/* //* COLUMNAS: TELEFONO */}
-                    <td className="px-6 py-4 text-gray-600">
+                    <td className="px-3 md:px-6 py-4 text-gray-600">
                       <div className="flex items-center gap-1.5">
-                        <Phone size={14} className="text-gray-400" />
-                        <span>{paciente.telefono}</span>
+                        <Phone size={14} className="hidden md:block text-gray-400 shrink-0" />
+                        <span className="break-all">{paciente.telefono}</span>
                       </div>
                     </td>
 
@@ -189,7 +200,7 @@ export default function GestionPacientes() {
                     </td>
 
                     {/* //* COLUMNAS: ACCIONES */}
-                    <td className="px-6 py-4">
+                    <td className="hidden md:table-cell px-6 py-4">
                       <div className="flex items-center justify-center gap-2">
                         <button
                           type="button"
@@ -257,6 +268,52 @@ export default function GestionPacientes() {
             pacienteSeleccionado={pacienteSeleccionado}
             togglePaciente={() => togglePaciente(pacienteSeleccionado)}
           />
+        )}
+
+        {/* //* MENÚ DE ACCIONES (MOBILE) */}
+        {pacienteMenu && (
+          <Modal
+            isOpen={!!pacienteMenu}
+            onClose={() => setPacienteMenu(null)}
+            title={`${pacienteMenu.nombre} ${pacienteMenu.apellido}`}
+            width="max-w-sm"
+          >
+            <div className="flex flex-col gap-2">
+              <button
+                type="button"
+                onClick={() => {
+                  abrirParaVer(pacienteMenu);
+                  setPacienteMenu(null);
+                }}
+                className="flex items-center gap-3 p-3 rounded-xl text-emerald-700 bg-emerald-50 font-semibold"
+              >
+                <Eye size={18} /> Ver ficha y cuenta corriente
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  abrirParaEditar(pacienteMenu, formatearPacienteParaEditar);
+                  setPacienteMenu(null);
+                }}
+                className="flex items-center gap-3 p-3 rounded-xl text-blue-700 bg-blue-50 font-semibold"
+              >
+                <Edit size={18} /> Editar paciente
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  abrirParaToggle(pacienteMenu);
+                  setPacienteMenu(null);
+                }}
+                className={`flex items-center gap-3 p-3 rounded-xl font-semibold ${
+                  pacienteMenu.activo ? "text-red-600 bg-red-50" : "text-emerald-700 bg-emerald-50"
+                }`}
+              >
+                {pacienteMenu.activo ? <Ban size={18} /> : <RotateCcw size={18} />}
+                {pacienteMenu.activo ? "Dar de baja" : "Reactivar"}
+              </button>
+            </div>
+          </Modal>
         )}
 
         {/* //* MODALES: VER */}
