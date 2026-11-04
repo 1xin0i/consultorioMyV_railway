@@ -1,3 +1,5 @@
+/** @format */
+
 export const ESTADO_INICIAL_TURNO = {
   id_paciente: "",
   id_estado: 1,

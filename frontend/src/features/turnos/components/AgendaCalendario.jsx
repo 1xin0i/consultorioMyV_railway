@@ -14,11 +14,14 @@ import "@fullcalendar/react/themes/forma/palettes/green.css";
 
 import {
   HORARIO_ATENCION_DEFAULT,
-  MODALIDADES_OCUPACION,
   COLORES_OCUPACION,
 } from "../constants/turnosConstants";
 
 const VISTAS = ["timeGridDay", "timeGridWeek", "dayGridMonth"];
+
+// Umbrales fijos predeterminados
+const UMBRAL_VERDE_MAX = 60;
+const UMBRAL_AMARILLO_MAX = 85;
 
 // Mapeo de colores según el estado del turno (vistas diaria y semanal)
 const OBTENER_ESTILOS_ESTADO = (estado) => {
@@ -81,11 +84,12 @@ export const AgendaCalendar = ({
   const contenedorRef = useRef(null);
   const [vistaActual, setVistaActual] = useState(0);
   const [vistaTipo, setVistaTipo] = useState("timeGridDay");
-  const [modalidadId, setModalidadId] = useState("predeterminado");
-  const [esMobile, setEsMobile] = useState(window.innerWidth < 768);
+  const [esMobile, setEsMobile] = useState(() =>
+    typeof window !== "undefined" ? window.innerWidth < 768 : false
+  );
   const [ahora, setAhora] = useState(new Date());
 
-  // Configuración dinámica del rango horario de atención (soporta variaciones de horario)
+  // Configuración dinámica del rango horario de atención
   const minutosInicioJornada = useMemo(() => convertirHoraAMinutos(horaInicio), [horaInicio]);
   const minutosFinJornada = useMemo(() => convertirHoraAMinutos(horaFin), [horaFin]);
   const minutosTotalesJornada = useMemo(
@@ -97,18 +101,11 @@ export const AgendaCalendar = ({
   const horaInicioHHMM = useMemo(() => formatearHoraHHMM(horaInicio), [horaInicio]);
   const horaFinHHMM = useMemo(() => formatearHoraHHMM(horaFin), [horaFin]);
 
-  // Modalidad activa seleccionada en el desplegable
-  const modalidadActual = useMemo(
-    () => MODALIDADES_OCUPACION.find((m) => m.id === modalidadId) || MODALIDADES_OCUPACION[0],
-    [modalidadId],
-  );
-
-  // Actualizar el "ahora" para refrescar la zona gris del tiempo pasado
   useEffect(() => {
     const handleResize = () => setEsMobile(window.innerWidth < 768);
     window.addEventListener("resize", handleResize);
 
-    const interval = setInterval(() => setAhora(new Date()), 60000); // Actualiza cada minuto
+    const interval = setInterval(() => setAhora(new Date()), 60000);
 
     return () => {
       window.removeEventListener("resize", handleResize);
@@ -124,7 +121,6 @@ export const AgendaCalendar = ({
       if (!turno?.fecha_hora_inicio) return;
 
       const estadoTexto = (turno.EstadoTurno?.estado || "Programado").toLowerCase();
-      // Los turnos cancelados o inasistentes no ocupan disponibilidad efectiva del día
       if (estadoTexto.includes("cancelado") || estadoTexto.includes("inasistente")) return;
 
       const dInicio = new Date(turno.fecha_hora_inicio);
@@ -149,7 +145,6 @@ export const AgendaCalendar = ({
         finMin = iniMin + duracionFallback;
       }
 
-      // Acotar al rango de atención configurado (ej. 09:00 a 19:00 hs)
       const iniEfectivo = Math.max(iniMin, minutosInicioJornada);
       const finEfectivo = Math.min(finMin, minutosFinJornada);
 
@@ -168,7 +163,6 @@ export const AgendaCalendar = ({
       const { intervalos, cantidadTurnos } = datos;
       if (!intervalos.length || cantidadTurnos === 0) return;
 
-      // Ordenar y fusionar posibles solapamientos para obtener los minutos reales ocupados
       intervalos.sort((a, b) => a[0] - b[0]);
       const fusionados = [];
       for (const actual of intervalos) {
@@ -188,9 +182,9 @@ export const AgendaCalendar = ({
       const porcentaje = Math.min(100, (minutosOcupados / minutosTotalesJornada) * 100);
 
       let nivel = "verde";
-      if (porcentaje < modalidadActual.verdeMax) {
+      if (porcentaje < UMBRAL_VERDE_MAX) {
         nivel = "verde";
-      } else if (porcentaje <= modalidadActual.amarilloMax) {
+      } else if (porcentaje <= UMBRAL_AMARILLO_MAX) {
         nivel = "amarillo";
       } else {
         nivel = "rojo";
@@ -206,9 +200,9 @@ export const AgendaCalendar = ({
     });
 
     return resultado;
-  }, [turnos, minutosInicioJornada, minutosFinJornada, minutosTotalesJornada, modalidadActual]);
+  }, [turnos, minutosInicioJornada, minutosFinJornada, minutosTotalesJornada]);
 
-  // Reglas CSS dinámicas por fecha para colorear vista mensual (celda del día) y semanal (solo cabecera del día)
+  // Reglas CSS dinámicas por fecha para colorear vista mensual y cabecera semanal
   const estilosOcupacionPorFecha = useMemo(() => {
     const reglas = [];
 
@@ -230,7 +224,7 @@ export const AgendaCalendar = ({
     return reglas.join("\n");
   }, [ocupacionPorDia]);
 
-  // Actualizar tooltips informativos en celdas de mes y cabeceras de semana
+  // Actualizar tooltips informativos
   useEffect(() => {
     if (!contenedorRef.current) return;
     if (vistaTipo !== "dayGridMonth" && vistaTipo !== "timeGridWeek") return;
@@ -260,7 +254,7 @@ export const AgendaCalendar = ({
     });
   }, [ocupacionPorDia, vistaTipo, minutosTotalesJornada]);
 
-  /* ─── FORMATEAR TURNOS CON ID DINÁMICA ─────────────────── */
+  /* ─── FORMATEAR TURNOS ─────────────────────────────────── */
   const turnosFormateados = useMemo(
     () =>
       turnos.map((turno) => {
@@ -273,7 +267,7 @@ export const AgendaCalendar = ({
 
         return {
           id: `${turno.id_turno}-${estadoTexto}`,
-          title: `${nombrePaciente} ${turno.notas_consulta ? `- ${turno.notas_consulta}` : ""} - ${estadoTexto}`,
+          title: `${nombrePaciente} ${turno.notas_consulta ? `- ${turno.notas_consulta}` : ""} (${estadoTexto})`,
           start: turno.fecha_hora_inicio,
           end: turno.fecha_hora_fin,
           extendedProps: {
@@ -287,7 +281,6 @@ export const AgendaCalendar = ({
     [turnos],
   );
 
-  // Evento especial de fondo que pinta de gris todo lo transcurrido hasta "ahora"
   const eventoPasadoSombra = useMemo(
     () => ({
       id: "pasado-sombra-bg",
@@ -299,7 +292,6 @@ export const AgendaCalendar = ({
     [ahora],
   );
 
-  // En la vista mensual no se muestran las tarjetas individuales de turnos (solo el nivel de ocupación por color)
   const listaEventos = useMemo(
     () => (vistaTipo === "dayGridMonth" ? [] : [...turnosFormateados, eventoPasadoSombra]),
     [vistaTipo, turnosFormateados, eventoPasadoSombra],
@@ -330,11 +322,9 @@ export const AgendaCalendar = ({
     trackMouse: false,
   });
 
-  // Bloquear selección/creación antes de la hora actual exacta y fuera del rango de atención configurado
   const selectAllow = (selectInfo) => {
     if (selectInfo.start < new Date()) return false;
 
-    // Si es una selección con horario específico (vistas de día y semana)
     if (!selectInfo.allDay && selectInfo.start) {
       const minInicio = selectInfo.start.getHours() * 60 + selectInfo.start.getMinutes();
       const minFin = selectInfo.end.getHours() * 60 + selectInfo.end.getMinutes();
@@ -346,7 +336,6 @@ export const AgendaCalendar = ({
     return true;
   };
 
-  // Forzar estilos de colores en las tarjetas de turnos y ocultar en vista mensual
   const handleEventDidMount = (info) => {
     if (info.event.display === "background") return;
 
@@ -369,75 +358,6 @@ export const AgendaCalendar = ({
       ref={contenedorRef}
       className={`w-full h-full bg-white relative flex flex-col agenda-vista-${vistaTipo}`}
     >
-      {/* Barra de selección de modalidad de ocupación y leyenda de disponibilidad */}
-      <div className="flex flex-wrap items-center justify-between gap-2 pb-2.5 mb-2 border-b border-gray-100 text-xs">
-        <div className="flex flex-wrap items-center gap-2">
-          <label
-            htmlFor="selector-modalidad-ocupacion"
-            className="font-semibold text-gray-700 whitespace-nowrap"
-          >
-            Nivel de ocupación:
-          </label>
-          <select
-            id="selector-modalidad-ocupacion"
-            value={modalidadId}
-            onChange={(e) => setModalidadId(e.target.value)}
-            className="border border-gray-300 bg-gray-50 hover:bg-white text-gray-800 font-medium rounded-lg px-2.5 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-[#2eb086]/40 focus:border-[#2eb086] transition-colors cursor-pointer"
-          >
-            {MODALIDADES_OCUPACION.map((mod) => (
-              <option key={mod.id} value={mod.id}>
-                {mod.label}
-              </option>
-            ))}
-          </select>
-
-        </div>
-
-        {/* Leyenda dinámica de porcentajes según la modalidad activa */}
-        <div className="flex flex-wrap items-center gap-2 sm:gap-3 text-[11px] text-gray-600">
-          <span className="inline-flex items-center gap-1.5">
-            <span
-              className="w-3 h-3 rounded border border-gray-300 inline-block"
-              style={{ backgroundColor: COLORES_OCUPACION.blanco.bg }}
-            />
-            <span>Sin turnos (0%)</span>
-          </span>
-          <span className="inline-flex items-center gap-1.5">
-            <span
-              className="w-3 h-3 rounded border inline-block"
-              style={{
-                backgroundColor: COLORES_OCUPACION.verde.bg,
-                borderColor: COLORES_OCUPACION.verde.border,
-              }}
-            />
-            <span>&lt; {modalidadActual.verdeMax}%</span>
-          </span>
-          <span className="inline-flex items-center gap-1.5">
-            <span
-              className="w-3 h-3 rounded border inline-block"
-              style={{
-                backgroundColor: COLORES_OCUPACION.amarillo.bg,
-                borderColor: COLORES_OCUPACION.amarillo.border,
-              }}
-            />
-            <span>
-              {modalidadActual.verdeMax}% - {modalidadActual.amarilloMax}%
-            </span>
-          </span>
-          <span className="inline-flex items-center gap-1.5">
-            <span
-              className="w-3 h-3 rounded border inline-block"
-              style={{
-                backgroundColor: COLORES_OCUPACION.rojo.bg,
-                borderColor: COLORES_OCUPACION.rojo.border,
-              }}
-            />
-            <span>&gt; {modalidadActual.amarilloMax}%</span>
-          </span>
-        </div>
-      </div>
-
-      {/* Contenedor del calendario */}
       <div className="flex-1 min-h-0 w-full relative">
         <FullCalendar
           ref={calendarRef}
@@ -489,13 +409,11 @@ export const AgendaCalendar = ({
         />
       </div>
 
-      {/* Estilos base y colores dinámicos de ocupación por día */}
       <style>{`
         .fc-bg-event {
           opacity: 0.6 !important;
         }
 
-        /* Días sin turnos (0%): fondo blanco por defecto en vista mensual y en cabecera de vista semanal */
         .agenda-vista-dayGridMonth [role="cell"][data-date] {
           background-color: #ffffff !important;
           transition: background-color 0.2s ease;
