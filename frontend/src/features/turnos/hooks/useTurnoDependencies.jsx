@@ -41,6 +41,7 @@ export function useTurnoDependencies() {
 
   return {
     pacientes: pacientes,
+    setPacientes: setPacientes,
     practicasLista: practicasLista,
     obrasSocialesPaciente: obrasSocialesPaciente,
     buscarOSPaciente: fetchObrasSocialesPaciente,
