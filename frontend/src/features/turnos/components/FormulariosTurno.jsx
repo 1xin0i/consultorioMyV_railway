@@ -44,13 +44,12 @@ export function FormularioCrearEditar({
     telefono: "",
   });
 
-  // Estado local para el menú desplegable de acciones rápidas dentro del modal
   const [menuAccionesAbierto, setMenuAccionesAbierto] = useState(false);
 
   useEffect(() => {
     const handleClickOutside = (event) => {
-      if (menuAccionesAbierto !== null && !event.target.closest(".menu-acciones-container")) {
-        setMenuAccionesAbierto(null);
+      if (menuAccionesAbierto && !event.target.closest(".menu-acciones-container")) {
+        setMenuAccionesAbierto(false);
       }
     };
     document.addEventListener("mousedown", handleClickOutside);
@@ -95,11 +94,9 @@ export function FormularioCrearEditar({
     }
   };
 
-  // Identificar el estado del turno
   const idEstadoActual = Number(datosFormulario?.id_estado);
   const esProgramado = idEstadoActual === 1 || !editando;
 
-  // Normalizar callbacks de acciones
   const onAtender = abrirParaAtender || abrirModalAtenderDesdeEdicion;
   const onCancelar = abrirParaCancelar || abrirModalCancelarDesdeEdicion;
   const onInasistente = abrirParaInasistente || abrirModalInasistenteDesdeEdicion;
@@ -145,7 +142,7 @@ export function FormularioCrearEditar({
                 datos={pacientes}
                 camposFiltrado={["nombre", "apellido", "dni", "telefono", "domicilio"]}
                 formatoVisual={(p) =>
-                  `${p.nombre} ${p.apellido} - DNI: ${p.dni || "S/D"} - Telefono: ${p.telefono || "S/D"}`
+                  `${p.nombre} ${p.apellido} (DNI: ${p.dni || "S/D"} - Tel: ${p.telefono || "S/D"})`
                 }
                 placeholder="Busca un paciente..."
                 alSeleccionar={(p) =>
@@ -169,7 +166,6 @@ export function FormularioCrearEditar({
                   required
                   className="w-full border border-gray-300 p-2.5 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#2eb086]/50 focus:border-[#2eb086]"
                 />
-                
               </div>
             )}
 
@@ -223,89 +219,80 @@ export function FormularioCrearEditar({
             </div>
           </div>
 
-          {/* Separador */}
           <div className="border-t border-gray-200 my-5" />
 
           {/* Acciones del Modal */}
           <div className={`flex items-center ${editando ? "justify-between" : "justify-end"}`}>
-            {/* LÓGICA CONDICIONAL DE ACCIONES SEGÚN EL ESTADO */}
             {editando && esProgramado && (
-              <div className="relative">
-                {/* 1. SI ESTÁ PROGRAMADO / PENDIENTE */}
-                {esProgramado && (
-                  <div className="relative menu-acciones-container">
+              <div className="relative menu-acciones-container">
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setMenuAccionesAbierto((prev) => !prev);
+                  }}
+                  className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-xs sm:text-sm transition-all"
+                >
+                  <span>Estado</span>
+                  <ChevronDown
+                    size={14}
+                    className={`transition-transform duration-200 ${
+                      menuAccionesAbierto ? "rotate-180" : ""
+                    }`}
+                  />
+                </button>
+
+                {menuAccionesAbierto && (
+                  <div className="absolute left-0 bottom-full mb-2 w-48 bg-white rounded-xl shadow-lg border border-gray-100 py-1.5 z-50 flex flex-col">
                     <button
                       type="button"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setMenuAccionesAbierto((prev) => !prev);
+                      onClick={() => {
+                        setMenuAccionesAbierto(false);
+                        if (onAtender) onAtender();
                       }}
-                      className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-xs sm:text-sm transition-all"
+                      className="flex items-center gap-2 px-4 py-2.5 text-xs font-semibold text-emerald-700 hover:bg-emerald-50 transition-colors text-left"
                     >
-                      <span>Estado</span>
-                      <ChevronDown
-                        size={14}
-                        className={`transition-transform duration-200 ${
-                          menuAccionesAbierto ? "rotate-180" : ""
-                        }`}
-                      />
+                      <CheckSquare size={16} />
+                      <span>Atender Turno</span>
                     </button>
-
-                    {/* Menú Desplegable Flotante hacia arriba */}
-                    {menuAccionesAbierto && (
-                      <div className="absolute left-0 bottom-full mb-2 w-48 bg-white rounded-xl shadow-lg border border-gray-100 py-1.5 z-50 flex flex-col">
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setMenuAccionesAbierto(false);
-                            if (onAtender) onAtender();
-                          }}
-                          className="flex items-center gap-2 px-4 py-2.5 text-xs font-semibold text-emerald-700 hover:bg-emerald-50 transition-colors text-left"
-                        >
-                          <CheckSquare size={16} />
-                          <span>Atender Turno</span>
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setMenuAccionesAbierto(false);
-                            if (onReprogramar) onReprogramar();
-                          }}
-                          className="flex items-center gap-2 px-4 py-2.5 text-xs font-semibold text-[#3B7A94] hover:bg-[#f0f6f9] transition-colors text-left"
-                        >
-                          <CalendarDays size={16} />
-                          <span>Reprogramar</span>
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setMenuAccionesAbierto(false);
-                            if (onInasistente) onInasistente();
-                          }}
-                          className="flex items-center gap-2 px-4 py-2.5 text-xs font-semibold text-[#2b5d73] hover:bg-[#f0f6f9] transition-colors text-left"
-                        >
-                          <UserRoundX size={16} />
-                          <span>Marcar Inasistente</span>
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setMenuAccionesAbierto(false);
-                            if (onCancelar) onCancelar();
-                          }}
-                          className="flex items-center gap-2 px-4 py-2.5 text-xs font-semibold text-red-600 hover:bg-red-50 transition-colors text-left"
-                        >
-                          <XCircle size={16} />
-                          <span>Cancelar Turno</span>
-                        </button>
-                      </div>
-                    )}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setMenuAccionesAbierto(false);
+                        if (onReprogramar) onReprogramar();
+                      }}
+                      className="flex items-center gap-2 px-4 py-2.5 text-xs font-semibold text-[#3B7A94] hover:bg-[#f0f6f9] transition-colors text-left"
+                    >
+                      <CalendarDays size={16} />
+                      <span>Reprogramar</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setMenuAccionesAbierto(false);
+                        if (onInasistente) onInasistente();
+                      }}
+                      className="flex items-center gap-2 px-4 py-2.5 text-xs font-semibold text-[#2b5d73] hover:bg-[#f0f6f9] transition-colors text-left"
+                    >
+                      <UserRoundX size={16} />
+                      <span>Marcar Inasistente</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setMenuAccionesAbierto(false);
+                        if (onCancelar) onCancelar();
+                      }}
+                      className="flex items-center gap-2 px-4 py-2.5 text-xs font-semibold text-red-600 hover:bg-red-50 transition-colors text-left"
+                    >
+                      <XCircle size={16} />
+                      <span>Cancelar Turno</span>
+                    </button>
                   </div>
                 )}
               </div>
             )}
 
-            {/* Botones Estándar de Guardado / Cancelar */}
             <div className="flex items-center gap-3">
               <button
                 type="button"
@@ -404,82 +391,82 @@ export function FormularioAtender({
   cerrarModal,
   turnoSeleccionado,
   datosAtencion,
-  practicasLista,
-  pacientesObrasSociales,
+  practicasLista = [],
+  pacientesObrasSociales = [],
   agregarPracticaAtencion,
   actualizarPracticaAtencion,
   actualizarDatosAtencion,
   eliminarPracticaAtencion,
   procesarAtencionTurno,
 }) {
+  const nombrePaciente = turnoSeleccionado?.Paciente
+    ? ` - ${turnoSeleccionado.Paciente.nombre} ${turnoSeleccionado.Paciente.apellido}`
+    : "";
+
   return (
-    <>
-      <form onSubmit={procesarAtencionTurno}>
-        <Modal
-          isOpen={modalAtenderAbierto}
-          onClose={cerrarModal}
-          width="max-w-2xl"
-          title={`Atender Turno #${turnoSeleccionado?.id_turno} - ${
-            turnoSeleccionado?.Paciente
-              ? `${turnoSeleccionado.Paciente.nombre}${turnoSeleccionado.Paciente.apellido}`
-              : ""
-          }`}
-        >
-          <div className="flex flex-col gap-4">
-            <div className="bg-emerald-50/70 border border-emerald-200/80 p-4 rounded-2xl flex items-center justify-between shadow-xs">
-              <div className="w-full flex flex-col gap-1.5">
-                <label className="block text-xs font-bold text-emerald-800 uppercase tracking-wider">
-                  Monto a Cobrar / Precio Final
-                </label>
-                <div className="relative flex items-center max-w-xs">
-                  <span className="absolute left-3.5 text-emerald-700 font-bold text-sm">$</span>
-                  <input
-                    type="text"
-                    inputMode="decimal"
-                    value={datosAtencion?.precio_final ?? ""}
-                    onChange={(e) => {
-                      const val = e.target.value;
-                      if (val === "" || /^[0-9]*[.,]?[0-9]*$/.test(val)) {
-                        actualizarDatosAtencion("precio_final", val);
-                      }
-                    }}
-                    placeholder="0.00"
-                    required
-                    className="w-full pl-8 pr-4 py-2.5 bg-white border border-emerald-300/80 rounded-xl text-emerald-950 font-bold text-lg shadow-2xs focus:outline-none focus:ring-2 focus:ring-[#2eb086]/50 focus:border-[#2eb086]"
-                  />
-                </div>
+    <form onSubmit={procesarAtencionTurno}>
+      <Modal
+        isOpen={modalAtenderAbierto}
+        onClose={cerrarModal}
+        width="max-w-2xl"
+        title={`Atender Turno #${turnoSeleccionado?.id_turno || ""}${nombrePaciente}`}
+      >
+        <div className="flex flex-col gap-4">
+          <div className="bg-emerald-50/70 border border-emerald-200/80 p-4 rounded-2xl flex items-center justify-between shadow-xs">
+            <div className="w-full flex flex-col gap-1.5">
+              <label className="block text-xs font-bold text-emerald-800 uppercase tracking-wider">
+                Monto a Cobrar / Precio Final
+              </label>
+              <div className="relative flex items-center max-w-xs">
+                <span className="absolute left-3.5 text-emerald-700 font-bold text-sm">$</span>
+                <input
+                  type="text"
+                  inputMode="decimal"
+                  value={datosAtencion?.precio_final ?? ""}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    if (val === "" || /^[0-9]*[.,]?[0-9]*$/.test(val)) {
+                      actualizarDatosAtencion("precio_final", val);
+                    }
+                  }}
+                  placeholder="0.00"
+                  required
+                  className="w-full pl-8 pr-4 py-2.5 bg-white border border-emerald-300/80 rounded-xl text-emerald-950 font-bold text-lg shadow-2xs focus:outline-none focus:ring-2 focus:ring-[#2eb086]/50 focus:border-[#2eb086]"
+                />
               </div>
             </div>
+          </div>
 
-            {/* Sección de Prácticas Realizadas */}
-            <div className="border-t border-gray-200 pt-4">
-              <div className="flex items-center justify-between mb-3">
-                <div className="flex items-center gap-2">
-                  <CheckSquare size={18} className="text-[#2eb086]" />
-                  <h3 className="text-sm font-bold text-gray-800">Prácticas Realizadas y Cobertura</h3>
-                </div>
-                <button
-                  type="button"
-                  onClick={agregarPracticaAtencion}
-                  className="flex items-center gap-1 text-xs font-semibold text-[#2eb086] hover:text-[#259370] bg-[#e8f7f1] px-3 py-1.5 rounded-lg transition-colors"
-                >
-                  <Plus size={14} />
-                  <span>Agregar Práctica</span>
-                </button>
+          {/* Sección de Prácticas Realizadas */}
+          <div className="border-t border-gray-200 pt-4">
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-2">
+                <CheckSquare size={18} className="text-[#2eb086]" />
+                <h3 className="text-sm font-bold text-gray-800">Prácticas Realizadas y Cobertura</h3>
               </div>
+              <button
+                type="button"
+                onClick={agregarPracticaAtencion}
+                className="flex items-center gap-1 text-xs font-semibold text-[#2eb086] hover:text-[#259370] bg-[#e8f7f1] px-3 py-1.5 rounded-lg transition-colors"
+              >
+                <Plus size={14} />
+                <span>Agregar Práctica</span>
+              </button>
+            </div>
 
-              {datosAtencion.practicas.length === 0 ? (
-                <p className="text-xs text-gray-400 italic">
-                  No se han agregado prácticas todavía. Haga clic en &quot;Agregar Práctica&quot; para
-                  registrar los procedimientos.
-                </p>
-              ) : (
-                <div className="flex flex-col gap-3 max-h-60 overflow-y-auto pr-1">
-                  {datosAtencion.practicas.map((practicaItem, index) => (
-                    <div
-                      key={index}
-                      className="flex flex-col sm:flex-row items-center gap-2 bg-gray-50 p-3 rounded-xl border border-gray-200"
-                    >
+            {(!datosAtencion?.practicas || datosAtencion.practicas.length === 0) ? (
+              <p className="text-xs text-gray-400 italic">
+                No se han agregado prácticas todavía. Haga clic en &quot;Agregar Práctica&quot; para
+                registrar los procedimientos.
+              </p>
+            ) : (
+              <div className="flex flex-col gap-3 max-h-60 overflow-y-auto pr-1">
+                {datosAtencion.practicas.map((practicaItem, index) => (
+                  <div
+                    key={index}
+                    className="flex flex-col sm:flex-row items-center gap-2 bg-gray-50 p-3 rounded-xl border border-gray-200"
+                  >
+                    <div className="flex-1 w-full">
                       <InputFiltro
                         datos={practicasLista}
                         camposFiltrado={[
@@ -489,75 +476,84 @@ export function FormularioAtender({
                           "especialidad",
                         ]}
                         formatoVisual={(p) =>
-                          `${p.nombre_referencia} ($ ${Number(p.precio_referencia).toLocaleString("es-AR")})}`
+                          `${p.nombre_referencia || p.nombre_nomenclador} ($ ${Number(p.precio_referencia || 0).toLocaleString("es-AR")})`
                         }
-                        placeholder="Busca una practica..."
-                        alSeleccionar={(p) => actualizarPracticaAtencion(index, "id_practica", p.id_practica)}
+                        placeholder="Busca una práctica..."
+                        alSeleccionar={(p) =>
+                          actualizarPracticaAtencion(index, "id_practica", p.id_practica)
+                        }
+                        valorInicial={practicaItem.id_practica || ""}
                       />
+                    </div>
 
+                    <div className="flex-1 w-full">
                       <InputFiltro
                         datos={pacientesObrasSociales}
                         camposFiltrado={["nombre"]}
                         formatoVisual={(rel) =>
-                          `${rel.ObraSocial?.nombre || `Obra Social #${rel.id_obra_social}`} ${rel.nro_afiliado ? `(Afiliado: ${rel.nro_afiliado})` : ""}`
+                          `${rel.ObraSocial?.nombre || `Obra Social #${rel.id_obra_social}`} ${
+                            rel.nro_afiliado ? `(Afiliado: ${rel.nro_afiliado})` : ""
+                          }`
                         }
                         placeholder="Busca una obra social..."
                         alSeleccionar={(os) =>
                           actualizarPracticaAtencion(index, "id_obra_social", os.id_obra_social)
                         }
+                        valorInicial={practicaItem.id_obra_social || ""}
                         defaultValue="Particular / Sin Obra Social"
                       />
-
-                      <button
-                        type="button"
-                        onClick={() => eliminarPracticaAtencion(index)}
-                        className="p-2 text-gray-400 hover:text-red-500 rounded-lg hover:bg-gray-200 transition-colors self-end sm:self-center"
-                      >
-                        <X size={16} />
-                      </button>
                     </div>
-                  ))}
-                </div>
-              )}
-            </div>
 
-            {/* Notas de la Consulta */}
-            <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-1">
-                Notas de la Consulta / Diagnóstico
-              </label>
-              <textarea
-                rows={3}
-                value={datosAtencion.notas_consulta}
-                onChange={(e) =>
-                  actualizarDatosAtencion("notas_consulta", e.target.value === "" ? "" : e.target.value)
-                }
-                placeholder="Detalles sobre la atención, indicaciones médicas..."
-                className="w-full border border-gray-300 p-2.5 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#2eb086]/50 focus:border-[#2eb086]"
-              />
-            </div>
+                    <button
+                      type="button"
+                      onClick={() => eliminarPracticaAtencion(index)}
+                      className="p-2 text-gray-400 hover:text-red-500 rounded-lg hover:bg-gray-200 transition-colors self-end sm:self-center"
+                      title="Eliminar práctica"
+                    >
+                      <X size={16} />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
 
-          <div className="border-t border-gray-200 my-5" />
-
-          <div className="flex justify-end gap-3">
-            <button
-              type="button"
-              onClick={cerrarModal}
-              className="px-4 py-2.5 rounded-xl text-gray-600 bg-gray-100 hover:bg-gray-200 transition-colors font-medium text-sm"
-            >
-              Cancelar
-            </button>
-            <button
-              type="submit"
-              className="px-5 py-2.5 rounded-xl text-white bg-[#2eb086] hover:bg-[#259370] transition-all shadow-sm font-semibold text-sm"
-            >
-              Finalizar y Marcar Atendido
-            </button>
+          {/* Notas de la Consulta */}
+          <div>
+            <label className="block text-sm font-semibold text-gray-700 mb-1">
+              Notas de la Consulta / Diagnóstico
+            </label>
+            <textarea
+              rows={3}
+              value={datosAtencion?.notas_consulta || ""}
+              onChange={(e) =>
+                actualizarDatosAtencion("notas_consulta", e.target.value)
+              }
+              placeholder="Detalles sobre la atención, indicaciones médicas..."
+              className="w-full border border-gray-300 p-2.5 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#2eb086]/50 focus:border-[#2eb086]"
+            />
           </div>
-        </Modal>
-      </form>
-    </>
+        </div>
+
+        <div className="border-t border-gray-200 my-5" />
+
+        <div className="flex justify-end gap-3">
+          <button
+            type="button"
+            onClick={cerrarModal}
+            className="px-4 py-2.5 rounded-xl text-gray-600 bg-gray-100 hover:bg-gray-200 transition-colors font-medium text-sm"
+          >
+            Cancelar
+          </button>
+          <button
+            type="submit"
+            className="px-5 py-2.5 rounded-xl text-white bg-[#2eb086] hover:bg-[#259370] transition-all shadow-sm font-semibold text-sm"
+          >
+            Finalizar y Marcar Atendido
+          </button>
+        </div>
+      </Modal>
+    </form>
   );
 }
 
@@ -578,7 +574,6 @@ export function FormularioReprogramar({
         title={`Reprogramar Turno #${turnoSeleccionado?.id_turno || ""}`}
       >
         <div className="flex flex-col gap-4">
-          {/* Fecha y Hora de Inicio */}
           <div>
             <label className="block text-sm font-semibold text-gray-700 mb-1">
               Nueva Fecha y Hora de Inicio *
@@ -591,10 +586,8 @@ export function FormularioReprogramar({
               required
               className="w-full border border-gray-300 p-2.5 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#2eb086]/50 focus:border-[#2eb086]"
             />
-            
           </div>
 
-          {/* Duración (Minutos) */}
           <div>
             <label className="block text-sm font-semibold text-gray-700 mb-1">Duración (Minutos)</label>
             <select
@@ -612,7 +605,6 @@ export function FormularioReprogramar({
             </select>
           </div>
 
-          {/* Fecha y Hora de Fin (Calculado) */}
           <div className="bg-gray-50 p-3 rounded-xl border border-gray-200">
             <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">
               Nueva Fecha y Hora de Fin (Calculado automáticamente)
@@ -658,60 +650,65 @@ export function FormularioCancelar({
   actualizarDatosCancelacion,
   procesarCancelacionTurno,
 }) {
+  const nombrePaciente = turnoSeleccionado?.Paciente
+    ? ` - ${turnoSeleccionado.Paciente.nombre} ${turnoSeleccionado.Paciente.apellido}`
+    : "";
+
   return (
-    <>
-      <form onSubmit={procesarCancelacionTurno}>
-        <Modal
-          isOpen={modalCancelarAbierto}
-          onClose={cerrarModal}
-          width="max-w-2xl"
-          title={`${inasistente ? "Inasistencia" : "Cancelación"} del Turno #${turnoSeleccionado?.id_turno} - ${
-            turnoSeleccionado?.Paciente
-              ? `${turnoSeleccionado.Paciente.nombre}${turnoSeleccionado.Paciente.apellido}`
-              : ""
-          }`}
-        >
-          <div className="flex flex-col gap-4">
-            <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-1">
-                Notas de la {inasistente ? "Inasistencia" : "Cancelacion"}
-              </label>
-              <textarea
-                rows={3}
-                value={notasCanceladoInasistente.notas_consulta}
-                onChange={(e) =>
-                  actualizarDatosCancelacion("notas_consulta", e.target.value === "" ? "" : e.target.value)
-                }
-                placeholder={`Detalles sobre la ${inasistente ? "inasistencia" : "cancelación"}...`}
-                className="w-full border border-gray-300 p-2.5 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#2eb086]/50 focus:border-[#2eb086]"
-              />
-            </div>
+    <form onSubmit={procesarCancelacionTurno}>
+      <Modal
+        isOpen={modalCancelarAbierto}
+        onClose={cerrarModal}
+        width="max-w-2xl"
+        title={`${inasistente ? "Inasistencia" : "Cancelación"} del Turno #${turnoSeleccionado?.id_turno || ""}${nombrePaciente}`}
+      >
+        <div className="flex flex-col gap-4">
+          <div>
+            <label className="block text-sm font-semibold text-gray-700 mb-1">
+              Notas de la {inasistente ? "Inasistencia" : "Cancelación"}
+            </label>
+            <textarea
+              rows={3}
+              value={notasCanceladoInasistente.notas_consulta || ""}
+              onChange={(e) =>
+                actualizarDatosCancelacion("notas_consulta", e.target.value)
+              }
+              placeholder={`Detalles sobre la ${inasistente ? "inasistencia" : "cancelación"}...`}
+              className="w-full border border-gray-300 p-2.5 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#2eb086]/50 focus:border-[#2eb086]"
+            />
           </div>
+        </div>
 
-          <div className="border-t border-gray-200 my-5" />
+        <div className="border-t border-gray-200 my-5" />
 
-          <div className="flex justify-end gap-3">
-            <button
-              type="button"
-              onClick={cerrarModal}
-              className="px-4 py-2.5 rounded-xl text-gray-600 bg-gray-100 hover:bg-gray-200 transition-colors font-medium text-sm"
-            >
-              Cancelar
-            </button>
-            <button
-              type="submit"
-              className={`px-5 py-2.5 rounded-xl text-white ${inasistente ? "bg-yellow-600 hover:bg-yellow-700" : "bg-red-600 hover:bg-red-700"} transition-all shadow-sm font-semibold text-sm`}
-            >
-              Finalizar y Marcar {inasistente ? "inasistencia" : "cancelación"}
-            </button>
-          </div>
-        </Modal>
-      </form>
-    </>
+        <div className="flex justify-end gap-3">
+          <button
+            type="button"
+            onClick={cerrarModal}
+            className="px-4 py-2.5 rounded-xl text-gray-600 bg-gray-100 hover:bg-gray-200 transition-colors font-medium text-sm"
+          >
+            Cancelar
+          </button>
+          <button
+            type="submit"
+            className={`px-5 py-2.5 rounded-xl text-white ${
+              inasistente ? "bg-yellow-600 hover:bg-yellow-700" : "bg-red-600 hover:bg-red-700"
+            } transition-all shadow-sm font-semibold text-sm`}
+          >
+            Finalizar y Marcar {inasistente ? "Inasistencia" : "Cancelación"}
+          </button>
+        </div>
+      </Modal>
+    </form>
   );
 }
 
-export function FormularioEliminar({ modalEliminar, cerrarModal, turnoSeleccionado, ejecutarEliminacion }) {
+export function FormularioEliminar({
+  modalEliminar,
+  cerrarModal,
+  turnoSeleccionado,
+  ejecutarEliminacion,
+}) {
   return (
     <Modal isOpen={modalEliminar} onClose={cerrarModal} width="max-w-md" title="Eliminar Turno">
       <div className="flex flex-col gap-3">
