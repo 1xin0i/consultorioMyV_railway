@@ -2,7 +2,6 @@
 import { useMemo } from "react";
 
 export function useMovimientosCaja(cobros = [], gastos = [], turnosPendientes = [], busqueda = "", resumenPeriodo = null) {
-  // Suma de turnos pendientes
   const totalPendienteCobro = useMemo(() => {
     if (turnosPendientes && turnosPendientes.length > 0) {
       return turnosPendientes.reduce((acc, t) => {
@@ -16,8 +15,6 @@ export function useMovimientosCaja(cobros = [], gastos = [], turnosPendientes = 
     return 0;
   }, [turnosPendientes]);
 
-  // Si el backend envía el resumen calculado para el mes, lo usamos;
-  // si no, sumamos las filas locales del mes
   const kpis = useMemo(() => {
     if (resumenPeriodo && (resumenPeriodo.ingresosTotales !== undefined || resumenPeriodo.egresosTotales !== undefined)) {
       return {
@@ -28,11 +25,9 @@ export function useMovimientosCaja(cobros = [], gastos = [], turnosPendientes = 
       };
     }
 
-    // Fallback de cálculo local
     const totalIngresos = cobros.reduce((acc, c) => {
       const cuotas = c.Cuotas || c.Cuota || [];
-      const sum = cuotas.reduce((qAcc, q) => qAcc + (Number(q.monto_cobrado) || 0), 0);
-      return acc + (sum > 0 ? sum : (Number(c.monto_total) || 0));
+      return acc + cuotas.reduce((qAcc, q) => qAcc + (Number(q.monto_cobrado) || 0), 0);
     }, 0);
 
     const totalEgresos = gastos.reduce((acc, g) => acc + (Number(g.monto) || 0), 0);
@@ -46,24 +41,25 @@ export function useMovimientosCaja(cobros = [], gastos = [], turnosPendientes = 
   }, [resumenPeriodo, cobros, gastos, totalPendienteCobro]);
 
   const movimientosUnificados = useMemo(() => {
-    const listaIngresos = cobros.map((c) => {
-      const cuotas = c.Cuotas || c.Cuota || [];
-      const totalPagado = cuotas.reduce((acc, q) => acc + (Number(q.monto_cobrado) || 0), 0);
-      const metodos = [...new Set(cuotas.filter((q) => Number(q.monto_cobrado) > 0).map((q) => q.metodo_pago).filter(Boolean))];
-      const metodoStr = metodos.length > 0 ? metodos.join(", ") : "Efectivo";
+    const listaIngresos = cobros
+      .map((c) => {
+        const cuotas = c.Cuotas || c.Cuota || [];
+        const totalPagado = cuotas.reduce((acc, q) => acc + (Number(q.monto_cobrado) || 0), 0);
+        const metodos = [...new Set(cuotas.filter((q) => Number(q.monto_cobrado) > 0).map((q) => q.metodo_pago).filter(Boolean))];
 
-      return {
-        id: `ingreso-${c.id_cobro}`,
-        tipo: "ingreso",
-        concepto: `Cobro a ${c.Paciente ? `${c.Paciente.apellido}, ${c.Paciente.nombre}` : "Paciente"}`,
-        categoria: c.cant_cuotas > 1 ? `Plan ${c.cant_cuotas} Cuotas` : "Cobro de Atención",
-        monto: totalPagado > 0 ? totalPagado : (Number(c.monto_total) || 0),
-        fecha: c.fecha_emision || c.fecha_cobro || c.createdAt,
-        metodo_pago: metodoStr,
-        comprobante: `Cobro #${c.id_cobro}`,
-        cobroOriginal: c,
-      };
-    });
+        return {
+          id: `ingreso-${c.id_cobro}`,
+          tipo: "ingreso",
+          concepto: `Cobro a ${c.Paciente ? `${c.Paciente.apellido}, ${c.Paciente.nombre}` : "Paciente"}`,
+          categoria: "Cobro de Atención",
+          monto: totalPagado,
+          fecha: c.fecha_emision || c.fecha_cobro || c.createdAt,
+          metodo_pago: metodos.length > 0 ? metodos.join(", ") : "Efectivo",
+          comprobante: `Cobro #${c.id_cobro}`,
+          cobroOriginal: c,
+        };
+      })
+      .filter((ingreso) => ingreso.monto > 0); // 👈 Filtra cualquier registro de $0
 
     const listaEgresos = gastos.map((g) => ({
       id: `egreso-${g.id_gasto}`,

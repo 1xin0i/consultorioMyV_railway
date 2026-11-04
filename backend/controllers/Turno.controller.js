@@ -364,7 +364,8 @@ export const turnoAtendido = async (req, res) => {
       }
 
       // REGISTRO INICIAL DEL COBRO EN $0 (Deuda generada automáticamente)
-      if (precioFinal > 0) {
+      
+      /*if (precioFinal > 0) {
         const cobroExistente = await Cobro.findOne({ 
           where: { id_turno: turno.id_turno, activo: true }, 
           transaction: t 
@@ -380,7 +381,7 @@ export const turnoAtendido = async (req, res) => {
             activo: true,
           }, { transaction: t });
         }
-      }
+      }*/
 
       return await Turno.findByPk(turno.id_turno, { include: defaultTurnoIncludes, transaction: t });
     });

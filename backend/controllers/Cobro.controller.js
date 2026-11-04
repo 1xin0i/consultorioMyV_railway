@@ -4,17 +4,18 @@ import { Cobro, Paciente, Turno, Cuota, Practica, EstadoTurno } from "../models/
 import { Op } from "sequelize";
 import sequelize from "../config/database.js";
 
+console.log("VALORES PERMITIDOS EN CUOTA:", Cuota.rawAttributes.metodo_pago.values);
 // ==========================================
-// 1. OBTENER TODOS LOS COBROS 
+// 1. OBTENER TODOS LOS COBROS (Solo con ingresos reales)
 // ==========================================
 export const getAllCobros = async (req, res) => {
   try {
-    const page = parseInt(req.query.page) || 1;
-    const limit = parseInt(req.query.limit) || 9;
+    const page = parseInt(req.query.page, 10) || 1;
+    const limit = parseInt(req.query.limit, 10) || 9;
     const offset = (page - 1) * limit;
     const search = req.query.search || "";
     const sortField = req.query.sortField || "fecha_emision";
-    const sortOrder = req.query.sortOrder || "ASC";
+    const sortOrder = req.query.sortOrder || "DESC";
     const where = { activo: true };
 
     if (search.trim() !== "") {
@@ -31,6 +32,7 @@ export const getAllCobros = async (req, res) => {
       limit,
       offset,
       order: [[sortField, sortOrder]],
+      distinct: true,
       include: [
         {
           model: Turno,
@@ -52,10 +54,10 @@ export const getAllCobros = async (req, res) => {
         {
           model: Cuota,
           attributes: ["id_cuota", "nro_cuota", "monto_cuota", "monto_cobrado", "metodo_pago", "estado", "fecha_cobro", "fecha_vencimiento"],
-          required: false,
+          where: { monto_cobrado: { [Op.gt]: 0 } },
+          required: true,
         },
       ],
-      distinct: true,
     });
 
     const totalPages = Math.ceil(count / limit);
@@ -131,7 +133,7 @@ export const createCobro = async (req, res) => {
     const id_turno = req.turno.id_turno;
     const id_paciente = req.paciente.id_paciente;
 
-    const turnoExiste = await Cobro.findOne({ where: { id_turno: id_turno, activo: true } });
+    const turnoExiste = await Cobro.findOne({ where: { id_turno, activo: true } });
     if (turnoExiste) {
       return res.status(409).json({
         status: "error",
@@ -140,10 +142,10 @@ export const createCobro = async (req, res) => {
     }
 
     const newCobro = await Cobro.create({
-      id_turno: id_turno,
-      id_paciente: id_paciente,
-      monto_a_cobrar: monto_a_cobrar,
-      cant_cuotas: cant_cuotas,
+      id_turno,
+      id_paciente,
+      monto_a_cobrar,
+      cant_cuotas: cant_cuotas || 1,
     });
 
     res.status(201).json({
@@ -157,120 +159,93 @@ export const createCobro = async (req, res) => {
 };
 
 // ==========================================
-// 4. MÉTODOS DE PAGO ESPECÍFICOS (Inmediato, Cuotas, Informal)
+// 4. REGISTRAR PAGO / ENTREGA PARCIAL O TOTAL (PAGOS LIBRES)
 // ==========================================
-
-export const createCobroInmediato = async (req, res) => {
+// ==========================================
+// 4. REGISTRAR PAGO / ENTREGA PARCIAL O TOTAL (PAGOS LIBRES)
+// ==========================================
+export const registrarPagoTurno = async (req, res) => {
   try {
-    const { monto_a_cobrar, monto_abonado, metodo_pago } = req.body;
-    const id_turno = req.turno ? req.turno.id_turno : req.body.id_turno;
-    const id_paciente = req.paciente ? req.paciente.id_paciente : req.body.id_paciente;
+    const { id_turno, metodo_pago, monto_a_cobrar } = req.body;
+    const monto_abonado = req.body.monto_abonado ?? req.body.entrega_inicial ?? 0;
 
     const turno = await Turno.findByPk(id_turno);
-    const precioTurno = turno ? Number(turno.precio_final) : 0;
-
-    let cobro = await Cobro.findOne({ where: { id_turno, activo: true } });
-
-    // La deuda total acordada no debe perderse ante un pago parcial
-    const deudaTotal = Number(monto_a_cobrar) || (cobro ? Number(cobro.monto_a_cobrar) : precioTurno) || precioTurno || 0;
-    const montoPagado = monto_abonado !== undefined && monto_abonado !== null && monto_abonado !== ""
-      ? Number(monto_abonado)
-      : (Number(monto_a_cobrar) || deudaTotal);
-
-    if (!cobro) {
-      cobro = await Cobro.create({
-        id_turno,
-        id_paciente,
-        monto_a_cobrar: deudaTotal,
-        cant_cuotas: 1,
-      });
-    } else {
-      await cobro.update({
-        monto_a_cobrar: deudaTotal || cobro.monto_a_cobrar,
-      });
+    if (!turno) {
+      return res.status(404).json({ status: "error", message: "Turno no encontrado" });
     }
 
-    const cuotasPrevias = await Cuota.findAll({ where: { id_cobro: cobro.id_cobro, activo: true } });
-    const pagadoPrevio = cuotasPrevias.reduce((acc, q) => acc + (Number(q.monto_cobrado) || 0), 0);
-    const saldoRestante = Math.max(0, deudaTotal - pagadoPrevio);
-    const montoCuotaActual = cuotasPrevias.length === 0 ? deudaTotal : saldoRestante;
+    const totalDeuda = Number(monto_a_cobrar) || Number(turno.precio_final) || 0;
+    const pagoActual = Number(monto_abonado) || 0;
 
-    const estaTotalmentePagado = (pagadoPrevio + montoPagado) >= deudaTotal;
-    const estadoCuota = montoPagado >= montoCuotaActual ? "Pagada" : "Parcialmente pagada";
-
-    // Creamos la cuota correspondiente a este pago
-    await Cuota.create({
-      id_cobro: cobro.id_cobro,
-      nro_cuota: cuotasPrevias.length + 1,
-      monto_cuota: montoCuotaActual,
-      monto_cobrado: montoPagado,
-      fecha_vencimiento: new Date().toISOString().split("T")[0],
-      fecha_cobro: new Date(),
-      metodo_pago: metodo_pago || "Efectivo",
-      estado: estadoCuota,
-    });
-
-    return res.status(201).json({
-      status: "success",
-      data: cobro,
-      message: "Cobro inmediato registrado correctamente.",
-    });
-  } catch (error) {
-    console.error("Error al crear cobro inmediato:", error);
-    return res.status(500).json({ error: "Error al procesar el cobro inmediato." });
-  }
-};
-
-
-export const createCobroInformal = async (req, res) => {
-  try {
-    const { monto_a_cobrar, entrega_inicial, metodo_pago } = req.body;
-    const id_turno = req.turno ? req.turno.id_turno : req.body.id_turno;
-    const id_paciente = req.paciente ? req.paciente.id_paciente : req.body.id_paciente;
-
-    let cobro = await Cobro.findOne({ where: { id_turno, activo: true } });
-
-    const total = Number(monto_a_cobrar) || (cobro ? Number(cobro.monto_a_cobrar) : 0);
-    const entrega = Number(entrega_inicial) || 0;
-
-    if (!cobro) {
-      cobro = await Cobro.create({
+    let [cobro] = await Cobro.findOrCreate({
+      where: { id_turno, activo: true },
+      defaults: {
         id_turno,
-        id_paciente,
-        monto_a_cobrar: total,
+        id_paciente: turno.id_paciente,
+        monto_a_cobrar: totalDeuda,
         cant_cuotas: 1,
-      });
-    } else {
-      await cobro.update({
-        monto_a_cobrar: total || cobro.monto_a_cobrar,
-      });
+        fecha_emision: new Date(),
+        activo: true,
+      },
+    });
+
+    if (totalDeuda > 0 && Number(cobro.monto_a_cobrar) !== totalDeuda) {
+      await cobro.update({ monto_a_cobrar: totalDeuda });
     }
 
-    if (entrega > 0) {
-      const cuotasCount = await Cuota.count({ where: { id_cobro: cobro.id_cobro } });
-      const estadoCuota = entrega >= total ? "Pagada" : "Parcialmente pagada";
+    // Registra la entrega si es mayor a 0
+    if (pagoActual > 0) {
+      const cantidadPrevias = await Cuota.count({ where: { id_cobro: cobro.id_cobro } });
+
+      // Normalización para remover tildes y mapear con el ENUM de la base de datos
+      // Normalizar método de pago con el ENUM exacto: ['Efectivo', 'Transferencia', 'Tarjeta', 'Otro']
+      let metodoNormalizado = metodo_pago || "Efectivo";
+      metodoNormalizado = metodoNormalizado.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+
+      if (/debit|tarjeta/i.test(metodoNormalizado)) {
+        metodoNormalizado = "Tarjeta";
+      } else if (/transf/i.test(metodoNormalizado)) {
+        metodoNormalizado = "Transferencia";
+      } else if (/efect/i.test(metodoNormalizado)) {
+        metodoNormalizado = "Efectivo";
+      } else {
+        metodoNormalizado = "Otro";
+      }
+
       await Cuota.create({
         id_cobro: cobro.id_cobro,
-        nro_cuota: cuotasCount + 1,
-        monto_cuota: total,
-        monto_cobrado: entrega,
-        fecha_vencimiento: new Date().toISOString().split("T")[0],
+        nro_cuota: cantidadPrevias + 1,
+        monto_cuota: totalDeuda,
+        monto_cobrado: pagoActual,
         fecha_cobro: new Date(),
-        metodo_pago: metodo_pago || "Efectivo",
-        estado: estadoCuota,
+        fecha_vencimiento: new Date().toISOString().split("T")[0],
+        metodo_pago: metodoNormalizado, 
+        estado: "Pagada",
       });
     }
 
-    return res.status(201).json({
+    const cuotas = await Cuota.findAll({ where: { id_cobro: cobro.id_cobro, activo: true } });
+    const totalPagado = cuotas.reduce((acc, q) => acc + (Number(q.monto_cobrado) || 0), 0);
+    const saldoPendiente = Math.max(0, totalDeuda - totalPagado);
+
+    return res.status(200).json({
       status: "success",
-      data: cobro,
-      message: "Acuerdo informal registrado correctamente.",
+      data: {
+        id_cobro: cobro.id_cobro,
+        total_acordado: totalDeuda,
+        total_pagado: totalPagado,
+        saldo_pendiente: saldoPendiente,
+        estado: saldoPendiente === 0 ? "Saldado" : totalPagado > 0 ? "Parcial" : "Pendiente",
+      },
+      message: pagoActual > 0 ? "Pago registrado con éxito" : "Deuda guardada sin pago inicial",
     });
   } catch (error) {
-    console.error("Error al registrar acuerdo informal:", error);
-    return res.status(500).json({ error: "Error al registrar el acuerdo informal." });
+    console.error("Error al registrar pago del turno:", error);
+    return res.status(500).json({ status: "error", message: "Error al procesar el pago" });
   }
 };
+
+// Aliases de compatibilidad al final del archivo
 
 // ==========================================
 // 5. ACTUALIZAR Y ELIMINAR COBRO
@@ -320,7 +295,6 @@ export const getBalancePaciente = async (req, res) => {
       return res.status(404).json({ status: "error", message: "Paciente no encontrado" });
     }
 
-    // 1. Obtener todos los cobros del paciente con sus cuotas
     const cobros = await Cobro.findAll({
       where: { id_paciente, activo: true },
       include: [
@@ -338,7 +312,6 @@ export const getBalancePaciente = async (req, res) => {
       order: [["fecha_emision", "ASC"]],
     });
 
-    // 2. Calcular acumulados
     let montoPactadoTotal = 0;
     let totalPagado = 0;
     const turnosAtendidos = [];
@@ -407,17 +380,13 @@ export const getBalancePaciente = async (req, res) => {
 // ==========================================
 export const getKpisCaja = async (req, res) => {
   try {
-    // 1. Ingresos totales reales: suma de lo efectivamente cobrado en cuotas
     const totalIngresos = (await Cuota.sum("monto_cobrado")) || 0;
 
-    // 2. Egresos totales reales: suma de gastos operativos activos
     const GastoModel = sequelize.models.Gasto;
     const totalEgresos = GastoModel ? ((await GastoModel.sum("monto", { where: { activo: true } })) || 0) : 0;
 
-    // 3. Balance neto en caja (Cash Flow real)
     const balanceNeto = totalIngresos - totalEgresos;
 
-    // 4. Cartera pendiente: deuda de turnos atendidos no saldados
     const turnosAtendidos = await Turno.findAll({
       where: { activo: true },
       attributes: ["id_turno", "precio_final"],
@@ -450,9 +419,7 @@ export const getKpisCaja = async (req, res) => {
         const cuotas = t.Cobro?.Cuotas || t.Cobro?.Cuota || [];
         const pagado = cuotas.reduce((acc, q) => {
           const m = Number(q.monto_cobrado) || 0;
-          if (m > 0) return acc + m;
-          if (q.estado === "Pagada") return acc + (Number(q.monto_cuota) || 0);
-          return acc;
+          return acc + m;
         }, 0);
         if (pagado < deudaTurno) {
           totalPendienteCobro += (deudaTurno - pagado);
@@ -474,3 +441,8 @@ export const getKpisCaja = async (req, res) => {
     return res.status(500).json({ error: "Error al calcular métricas de caja" });
   }
 };
+// ==========================================
+// ALIASES DE COMPATIBILIDAD CON RUTAS EXISTENTES
+// ==========================================
+export const createCobroInmediato = registrarPagoTurno;
+export const createCobroInformal = registrarPagoTurno;

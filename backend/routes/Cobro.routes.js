@@ -14,20 +14,13 @@ const router = express.Router();
 // ==========================================
 // 1. RUTAS ESPECÍFICAS 
 // ==========================================
-
-// Obtener métricas consolidadas de caja (KPIs)
 router.get("/kpis", CobroController.getKpisCaja);
-
-// Balance de cuenta corriente por paciente (HU IE-3)
 router.get("/pacientes/:id_paciente/balance", CobroController.getBalancePaciente);
-
-// Listado general de cobros
 router.get("/", CobroController.getAllCobros);
 
 // ==========================================
-// 2. CREACIÓN DE COBROS (Endpoints específicos)
+// 2. CREACIÓN DE COBROS
 // ==========================================
-
 router.post(
   "/",
   validateSchema(createCobroSchema),
@@ -37,23 +30,26 @@ router.post(
 );
 
 router.post(
+  "/pago",
+  validarExistencia(Turno, "id_turno", "body"),
+  CobroController.registrarPagoTurno
+);
+
+router.post(
   "/inmediato",
   validarExistencia(Turno, "id_turno", "body"),
-  validarExistencia(Paciente, "id_paciente", "body"),
   CobroController.createCobroInmediato
 );
 
 router.post(
   "/informal",
   validarExistencia(Turno, "id_turno", "body"),
-  validarExistencia(Paciente, "id_paciente", "body"),
   CobroController.createCobroInformal
 );
 
 // ==========================================
 // 3. RUTAS PARAMETRIZADAS POR ID
 // ==========================================
-
 router.get("/:id", validarExistencia(Cobro, "id", "params"), CobroController.getCobroById);
 
 router.put(
@@ -65,7 +61,4 @@ router.put(
 
 router.patch("/:id/delete", validarExistencia(Cobro, "id", "params"), CobroController.deleteCobro);
 
-// ==========================================
-// 4. EXPORTACIÓN
-// ==========================================
 export default router;

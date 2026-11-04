@@ -18,7 +18,6 @@ export const getCajaConsolidada = async (req, res) => {
       [Op.between]: [desde, hasta],
     };
 
-    // Parámetros de paginación
     const pageCobro = parseInt(req.query.pageCobro, 10) || 1;
     const limitCobro = parseInt(req.query.limitCobro, 10) || 10;
     const offsetCobro = (pageCobro - 1) * limitCobro;
@@ -29,8 +28,6 @@ export const getCajaConsolidada = async (req, res) => {
     const offsetGasto = (pageGasto - 1) * limitGasto;
     const searchGasto = (req.query.searchGasto || "").trim();
 
-    // Filtros de fecha: verifica si en tu modelo es fecha_emision o fecha_cobro
-    // Usamos el campo correspondiente de tu modelo Cobro:
     const campoFechaCobro = Cobro.rawAttributes.fecha_emision
       ? "fecha_emision"
       : Cobro.rawAttributes.fecha_cobro
@@ -63,13 +60,14 @@ export const getCajaConsolidada = async (req, res) => {
       ];
     }
 
-    // Consultas
     const [resultadoCobros, resultadoGastos, todosLosCobrosPeriodo, todosLosGastosPeriodo] = await Promise.all([
+      // 1. Cobros paginados que tengan al menos una cuota pagada > 0
       Cobro.findAndCountAll({
         where: whereCobro,
         limit: limitCobro,
         offset: offsetCobro,
         order: [[campoFechaCobro, "DESC"]],
+        distinct: true,
         include: [
           {
             model: Paciente,
@@ -78,10 +76,13 @@ export const getCajaConsolidada = async (req, res) => {
           {
             model: Cuota,
             attributes: ["id_cuota", "monto_cobrado", "monto_cuota", "estado", "metodo_pago"],
+            where: { monto_cobrado: { [Op.gt]: 0 } },
+            required: true, // INNER JOIN: omite cobros en $0
           },
         ],
       }),
 
+      // 2. Gastos paginados
       Gasto.findAndCountAll({
         where: whereGasto,
         limit: limitGasto,
@@ -96,29 +97,29 @@ export const getCajaConsolidada = async (req, res) => {
         ],
       }),
 
-      // Traer todos los cobros del período para calcular la suma exacta de cuotas cobradas
+      // 3. Traer todos los cobros del período con pagos reales para la sumatoria
       Cobro.findAll({
         where: whereCobro,
         include: [
           {
             model: Cuota,
             attributes: ["monto_cobrado"],
+            where: { monto_cobrado: { [Op.gt]: 0 } },
+            required: true,
           },
         ],
       }),
 
-      // Traer gastos del período para sumar monto
+      // 4. Sumar gastos
       Gasto.findAll({
         where: whereGasto,
         attributes: ["monto"],
       }),
     ]);
 
-    // Calcular ingresos sumando monto_cobrado de cada cuota
     const ingresosTotales = todosLosCobrosPeriodo.reduce((acc, c) => {
       const cuotas = c.Cuotas || c.Cuota || [];
-      const sumCuotas = cuotas.reduce((qAcc, q) => qAcc + (Number(q.monto_cobrado) || 0), 0);
-      return acc + (sumCuotas > 0 ? sumCuotas : (Number(c.monto_total) || 0));
+      return acc + cuotas.reduce((qAcc, q) => qAcc + (Number(q.monto_cobrado) || 0), 0);
     }, 0);
 
     const egresosTotales = todosLosGastosPeriodo.reduce((acc, g) => acc + (Number(g.monto) || 0), 0);

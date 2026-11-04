@@ -1,279 +1,217 @@
 /** @format */
-
-import { useState, useEffect, useMemo } from "react";
+import { useEffect } from "react";
 import Modal from "../../../components/common/Modal";
-import InputFiltro from "../../../components/common/InputFiltro";
-import api from "../../../services/api";
-import { User, CheckCircle2, FileText, ShieldCheck, CreditCard, Banknote } from "lucide-react";
+import { CheckCircle2, Coins } from "lucide-react";
 
 export function FormularioCrearEditarCobro({
-  procesarFormulario,
   modalAbierto,
   cerrarModal,
-  editando,
   datosFormulario,
   actualizarDatos,
-  turnosAtendidos,
+  procesarFormulario,
 }) {
-  const [turnoSeleccionado, setTurnoSeleccionado] = useState(null);
-  const [practicasTurno, setPracticasTurno] = useState([]);
-  const [cargandoDetalles, setCargandoDetalles] = useState(false);
+  const montoTotal = Number(datosFormulario?.monto_a_cobrar) || 0;
+  // Soporta tanto monto_abonado como entrega_inicial para evitar fallos de lectura
+  const valorAbonadoRaw = datosFormulario?.monto_abonado ?? datosFormulario?.entrega_inicial ?? "";
+  const montoAbonado = Number(valorAbonadoRaw) || 0;
+  const saldoRestante = Math.max(0, montoTotal - montoAbonado);
+  const modalidadActual = datosFormulario?.modalidad || "inmediato";
+  const metodoPagoActual = datosFormulario?.metodo_pago || "Efectivo";
 
-  // Monto acordado del turno seleccionado (monto fijo para pago inmediato o base para acuerdo informal)
-  const montoAcordado = useMemo(() => {
-    if (turnoSeleccionado) {
-      return Number(
-        turnoSeleccionado.saldo_pendiente !== undefined
-          ? turnoSeleccionado.saldo_pendiente
-          : (turnoSeleccionado.precio_final || 0)
-      );
-    }
-    return 0;
-  }, [turnoSeleccionado]);
-
+  // Asegura la inicialización inmediata de campos requeridos al abrir el modal
   useEffect(() => {
-    const idTurno = datosFormulario.id_turno;
-    if (!idTurno || !turnosAtendidos || turnosAtendidos.length === 0) {
-      setTurnoSeleccionado(null);
-      setPracticasTurno([]);
-      return;
+    if (modalAbierto) {
+      if (!datosFormulario?.modalidad) {
+        actualizarDatos({ target: { name: "modalidad", value: "inmediato" } });
+      }
+      if (!datosFormulario?.metodo_pago) {
+        actualizarDatos({ target: { name: "metodo_pago", value: "Efectivo" } });
+      }
+      if (
+        (datosFormulario?.modalidad === "inmediato" || !datosFormulario?.modalidad) &&
+        montoTotal > 0 &&
+        !datosFormulario?.monto_abonado
+      ) {
+        actualizarDatos({ target: { name: "monto_abonado", value: String(montoTotal) } });
+        actualizarDatos({ target: { name: "entrega_inicial", value: String(montoTotal) } });
+      }
     }
+  }, [modalAbierto, montoTotal]);
 
-    const tEncontrado = turnosAtendidos.find((t) => String(t.id_turno) === String(idTurno));
-    if (tEncontrado) {
-      setTurnoSeleccionado(tEncontrado);
-      cargarDetallesDelTurno(idTurno);
-    }
-  }, [datosFormulario.id_turno, turnosAtendidos]);
-
-  const cargarDetallesDelTurno = async (idTurno) => {
-    setCargandoDetalles(true);
-    try {
-      const resPracticas = await api.get(`/practicas-turnos/${idTurno}/turno`);
-      setPracticasTurno(resPracticas.data.data || resPracticas.data || []);
-    } catch (err) {
-      console.warn("Aviso al obtener prácticas del turno:", err);
-      setPracticasTurno([]);
-    } finally {
-      setCargandoDetalles(false);
-    }
+  // Sincroniza ambos nombres (monto_abonado y entrega_inicial) para compatibilidad
+  const setMontoPago = (valor) => {
+    actualizarDatos({ target: { name: "monto_abonado", value: valor } });
+    actualizarDatos({ target: { name: "entrega_inicial", value: valor } });
   };
 
-  const seleccionarModalidad = (mod) => {
-    if (typeof actualizarDatos === "function") {
-      actualizarDatos((prev) => ({
-        ...prev,
-        modalidad: mod,
-        monto_a_cobrar:
-          mod === "inmediato" && montoAcordado > 0 ? String(montoAcordado) : prev.monto_a_cobrar,
-        cant_cuotas: 1,
-        metodo_pago: prev.metodo_pago || "Efectivo",
-      }));
+  const seleccionarModalidad = (tipo) => {
+    if (tipo === "inmediato") {
+      actualizarDatos({ target: { name: "modalidad", value: "inmediato" } });
+      setMontoPago(String(montoTotal));
+    } else {
+      actualizarDatos({ target: { name: "modalidad", value: "informal" } });
+      setMontoPago("");
     }
-  };
-
-  const manejarSubmit = (e) => {
-    e.preventDefault();
-    if (!datosFormulario.modalidad) {
-      alert("Por favor, selecciona una modalidad de cobro (Pago Inmediato o Acuerdo Informal).");
-      return;
-    }
-
-    procesarFormulario(e);
   };
 
   return (
-    <form onSubmit={manejarSubmit}>
-      <Modal
-        isOpen={modalAbierto}
-        onClose={cerrarModal}
-        width="max-w-2xl"
-        title={editando ? "Editar Registro de Cobro" : "Registrar Cobro"}
-      >
-        <div className="text-xs text-gray-500 mb-4 -mt-2 font-medium">
-          Módulo administrativo y contable de cobros
-        </div>
-
-        <div className="flex flex-col gap-4 text-sm">
-          {/* 1. SELECCIÓN DE TURNO Y PACIENTE */}
-          <div className="bg-gray-50/70 p-3.5 rounded-2xl border border-gray-200/80">
-            <h4 className="text-xs font-bold uppercase tracking-wider text-gray-600 mb-2.5 flex items-center gap-1.5">
-              <User size={15} className="text-[#2eb086]" />
-              1. Selección de Turno y Datos del Paciente
-            </h4>
-
-            <div className="flex flex-col gap-3">
-              <div>
-                <label className="block text-xs font-semibold text-gray-700 mb-1">Seleccionar Turno *</label>
-
-                {!turnosAtendidos || turnosAtendidos.length === 0 ? (
-                  <div className="bg-amber-50 border border-amber-200/80 rounded-xl p-3 text-xs text-amber-800 font-medium flex items-center justify-between">
-                    <span>No hay turnos atendidos pendientes de cobrar.</span>
-                    <span className="text-[10px] bg-amber-100 text-amber-900 px-2 py-0.5 rounded-md font-bold">
-                      Al día
-                    </span>
-                  </div>
-                ) : (
-                  <InputFiltro
-                    datos={turnosAtendidos}
-                    camposFiltrado={["id_turno", "Paciente.nombre", "Paciente.apellido", "Paciente.dni"]}
-                    formatoVisual={(t) => {
-                      const deuda = t.saldo_pendiente !== undefined ? t.saldo_pendiente : (t.precio_final || 0);
-                      return `Turno #${t.id_turno} - ${t.Paciente?.nombre || ""} ${t.Paciente?.apellido || ""} (Pendiente: $${Number(deuda).toLocaleString("es-AR")})`;
-                    }}
-                    placeholder="Buscar por ID de turno o nombre de paciente..."
-                    valorInicial={datosFormulario.id_turno || ""}
-                    alSeleccionar={(t) => {
-                      const monto = t.saldo_pendiente !== undefined ? t.saldo_pendiente : (t.precio_final || "");
-                      if (typeof actualizarDatos === "function") {
-                        actualizarDatos((prev) => ({
-                          ...prev,
-                          id_turno: String(t.id_turno),
-                          id_paciente: String(t.id_paciente || t.Paciente?.id_paciente || ""),
-                          monto_a_cobrar: String(monto),
-                          monto_abonado: String(monto),
-                        }));
-                      }
-                    }}
-                  />
-                )}
-              </div>
-
-              {/* Tarjeta dinámica de información */}
-              {turnoSeleccionado && (
-                <div className="bg-white p-3 rounded-xl border border-gray-200 mt-1 space-y-2.5 text-xs">
-                  <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center border-b border-gray-100 pb-2 gap-1">
-                    <div>
-                      <span className="text-[10px] uppercase font-bold text-gray-400 block tracking-wider">
-                        Paciente Asociado
-                      </span>
-                      <span className="text-xs sm:text-sm font-bold text-gray-800">
-                        {turnoSeleccionado.Paciente?.nombre} {turnoSeleccionado.Paciente?.apellido}
-                      </span>
-                    </div>
-                    <div className="text-left sm:text-right">
-                      <span className="text-[10px] uppercase font-bold text-gray-400 block tracking-wider">
-                        DNI / Teléfono
-                      </span>
-                      <span className="text-xs font-medium text-gray-600">
-                        DNI: {turnoSeleccionado.Paciente?.dni || "S/D"} | Tel:{" "}
-                        {turnoSeleccionado.Paciente?.telefono || "S/D"}
-                      </span>
-                    </div>
-                  </div>
-
-                  <div>
-                    <span className="text-[10px] uppercase font-bold text-gray-400 tracking-wider mb-1 flex items-center gap-1">
-                      <ShieldCheck size={12} className="text-[#2eb086]" />
-                      Prácticas Realizadas (Desde el turno)
-                    </span>
-
-                    {cargandoDetalles ? (
-                      <p className="text-xs text-gray-400 italic">Cargando detalles...</p>
-                    ) : practicasTurno.length > 0 ? (
-                      <div className="flex flex-col gap-1.5">
-                        {practicasTurno.map((pt, idx) => (
-                          <div
-                            key={idx}
-                            className="flex flex-col sm:flex-row sm:items-center justify-between bg-gray-50 p-2 rounded-lg gap-1"
-                          >
-                            <span className="font-semibold text-gray-700 text-xs">
-                              {pt.Practica?.nombre_referencia ||
-                                pt.Practica?.nombre_nomenclador ||
-                                `Práctica #${pt.id_practica}`}
-                            </span>
-                            <span
-                              className={`px-2 py-0.5 rounded-md text-[10px] font-bold w-fit ${
-                                pt.ObraSocial
-                                  ? "bg-blue-50 text-blue-600 border border-blue-200"
-                                  : "bg-emerald-50 text-emerald-600 border border-emerald-200"
-                              }`}
-                            >
-                              {pt.ObraSocial?.nombre || "Particular / Sin Obra Social"}
-                            </span>
-                          </div>
-                        ))}
-                      </div>
-                    ) : (
-                      <div className="flex flex-col sm:flex-row sm:items-center justify-between bg-gray-50 p-2 rounded-lg gap-1">
-                        <span className="text-gray-500 font-medium text-xs">
-                          Consulta Odontológica General
-                        </span>
-                        <span className="px-2 py-0.5 rounded-md text-[10px] font-bold bg-emerald-50 text-emerald-600 border border-emerald-200 w-fit">
-                          Particular / Sin Obra Social
-                        </span>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              )}
-            </div>
-          </div>
-
-          {/* 2. MODALIDADES DE COBRO */}
+    <Modal
+      isOpen={modalAbierto}
+      onClose={cerrarModal}
+      width="max-w-lg"
+      title={`Cobro de Atención - Turno #${datosFormulario?.id_turno || ""}`}
+    >
+      <form onSubmit={procesarFormulario} className="flex flex-col gap-4">
+        {/* Panel Resumen de la Deuda */}
+        <div className="bg-slate-50 border border-slate-200 p-3.5 rounded-2xl flex items-center justify-between">
           <div>
-            <h4 className="text-xs font-bold uppercase tracking-wider text-gray-600 mb-2.5 flex items-center gap-1.5">
-              <Banknote size={15} className="text-[#2eb086]" />
-              2. Modalidad de Cobro
-            </h4>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-              <SelectorModalidad
-                titulo="Pago Inmediato"
-                descripcion="Pago único en el acto por el monto pactado del turno para saldar la atención."
-                activa={datosFormulario.modalidad === "inmediato"}
-                onClick={() => seleccionarModalidad("inmediato")}
-                Icono={CheckCircle2}
-              />
-              <SelectorModalidad
-                titulo="Acuerdo Informal / Libre"
-                descripcion="Costo pactado total y pagos parciales a cuenta sin vencimiento."
-                activa={datosFormulario.modalidad === "informal"}
-                onClick={() => seleccionarModalidad("informal")}
-                Icono={FileText}
-                esAmber
-              />
-            </div>
-            {!datosFormulario.modalidad && (
-              <p className="text-xs text-gray-500 italic mt-2.5 text-center bg-gray-50 p-2.5 rounded-xl border border-gray-100">
-                Selecciona una modalidad arriba para continuar con los detalles del cobro.
-              </p>
-            )}
+            <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">
+              Total Acordado
+            </span>
+            <span className="text-xl font-extrabold text-slate-800">
+              ${montoTotal.toLocaleString("es-AR", { minimumFractionDigits: 2 })}
+            </span>
           </div>
 
-          {/* 3. VISTAS ESPECÍFICAS SEGÚN MODALIDAD */}
-          {datosFormulario.modalidad === "inmediato" && (
-            <DetalleInmediato datosFormulario={datosFormulario} actualizarDatos={actualizarDatos} />
-          )}
-
-          {datosFormulario.modalidad === "informal" && (
-            <DetalleInformal datosFormulario={datosFormulario} actualizarDatos={actualizarDatos} />
-          )}
+          <div className="text-right">
+            <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">
+              Saldo Restante
+            </span>
+            <span
+              className={`text-xl font-extrabold ${
+                saldoRestante > 0 ? "text-amber-600" : "text-emerald-600"
+              }`}
+            >
+              ${saldoRestante.toLocaleString("es-AR", { minimumFractionDigits: 2 })}
+            </span>
+          </div>
         </div>
 
-        <div className="border-t border-gray-200 my-4" />
+        {/* Selector de Modalidad */}
+        <div>
+          <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-2">
+            Tipo de Pago *
+          </label>
+          <div className="grid grid-cols-2 gap-2.5">
+            <button
+              type="button"
+              onClick={() => seleccionarModalidad("inmediato")}
+              className={`flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl border text-xs font-bold transition-all cursor-pointer ${
+                modalidadActual === "inmediato"
+                  ? "border-[#2eb086] bg-[#2eb086]/10 text-[#2eb086] shadow-xs"
+                  : "border-gray-200 bg-white text-gray-600 hover:bg-gray-50"
+              }`}
+            >
+              <CheckCircle2 size={16} />
+              <span>Pago Total</span>
+            </button>
 
-        <div className="flex justify-end gap-3">
+            <button
+              type="button"
+              onClick={() => seleccionarModalidad("informal")}
+              className={`flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl border text-xs font-bold transition-all cursor-pointer ${
+                modalidadActual === "informal"
+                  ? "border-[#2eb086] bg-[#2eb086]/10 text-[#2eb086] shadow-xs"
+                  : "border-gray-200 bg-white text-gray-600 hover:bg-gray-50"
+              }`}
+            >
+              <Coins size={16} />
+              <span>Acuerdo Libre</span>
+            </button>
+          </div>
+        </div>
+
+        {/* Input de Monto */}
+        <div>
+          <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5">
+            {modalidadActual === "inmediato" ? "Monto a Cobrar" : "Monto de la Entrega Hoy"} *
+          </label>
+          <div className="relative flex items-center">
+            <span className="absolute left-3.5 text-gray-400 font-bold">$</span>
+            <input
+              type="text"
+              inputMode="decimal"
+              name="monto_abonado"
+              value={valorAbonadoRaw}
+              disabled={modalidadActual === "inmediato"}
+              onChange={(e) => {
+                const val = e.target.value;
+                if (val === "" || /^[0-9]*[.,]?[0-9]*$/.test(val)) {
+                  setMontoPago(val);
+                }
+              }}
+              placeholder="0.00"
+              required={modalidadActual === "inmediato"}
+              className={`w-full pl-8 pr-4 py-2.5 border rounded-xl font-bold text-base focus:outline-none transition-all ${
+                modalidadActual === "inmediato"
+                  ? "bg-gray-100 border-gray-200 text-gray-700 cursor-not-allowed"
+                  : "bg-white border-gray-300 text-gray-900 focus:ring-2 focus:ring-[#2eb086]/40 focus:border-[#2eb086]"
+              }`}
+            />
+          </div>
+          <span className="text-[11px] text-gray-500 mt-1 block">
+            {modalidadActual === "inmediato"
+              ? "Se registrará el pago completo del tratamiento."
+              : montoAbonado > 0
+              ? `Pago a cuenta: quedarán adeudados $${saldoRestante.toLocaleString("es-AR")}.`
+              : "Si no entrega dinero ahora, quedará pendiente por cobrar sin sumar ingresos en caja."}
+          </span>
+        </div>
+
+        {/* Selector de Método de Pago */}
+        <div>
+          <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5">
+            Método de Pago *
+          </label>
+          <div className="grid grid-cols-3 gap-2">
+            {[
+              { valor: "Efectivo", label: "Efectivo" },
+              { valor: "Transferencia", label: "Transferencia" },
+              { valor: "Tarjeta", label: "Tarjeta / Débito" },
+            ].map(({ valor, label }) => {
+              const seleccionado =
+                (metodoPagoActual || "").toLowerCase() === valor.toLowerCase() ||
+                (valor === "Tarjeta" && /debit|tarjeta/i.test(metodoPagoActual || ""));
+
+              return (
+                <button
+                  key={valor}
+                  type="button"
+                  onClick={() =>
+                    actualizarDatos({ target: { name: "metodo_pago", value: valor } })
+                  }
+                  className={`py-2 px-3 rounded-xl border text-xs font-bold transition-all cursor-pointer ${
+                    seleccionado
+                      ? "border-[#2eb086] bg-[#2eb086]/10 text-[#2eb086]"
+                      : "border-gray-200 bg-white text-gray-600 hover:bg-gray-50"
+                  }`}
+                >
+                  {label}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        <div className="border-t border-gray-100 my-2" />
+
+        <div className="flex justify-end gap-2.5">
           <button
             type="button"
             onClick={cerrarModal}
-            className="px-4 py-2.5 rounded-xl text-gray-600 bg-gray-100 hover:bg-gray-200 font-medium text-xs sm:text-sm transition-colors"
+            className="px-4 py-2 rounded-xl text-gray-600 bg-gray-100 hover:bg-gray-200 text-xs font-bold transition-colors cursor-pointer"
           >
             Cancelar
           </button>
           <button
             type="submit"
-            disabled={!datosFormulario.modalidad}
-            className={`px-5 py-2.5 rounded-xl text-white font-semibold text-xs sm:text-sm transition-all shadow-sm ${
-              !datosFormulario.modalidad
-                ? "bg-gray-300 cursor-not-allowed"
-                : "bg-[#2eb086] hover:bg-[#259370] cursor-pointer"
-            }`}
+            className="px-5 py-2 rounded-xl text-white bg-[#2eb086] hover:bg-[#259370] text-xs font-bold transition-all shadow-sm cursor-pointer"
           >
-            {editando ? "Guardar Cambios" : "Confirmar Registro"}
+            {montoAbonado > 0 ? "Confirmar Ingreso" : "Guardar sin Cobro"}
           </button>
         </div>
-      </Modal>
-    </form>
+      </form>
+    </Modal>
   );
 }
 
