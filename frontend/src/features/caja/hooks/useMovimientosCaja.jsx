@@ -1,36 +1,8 @@
 /** @format */
-import { useState, useEffect, useMemo, useCallback } from "react";
-import api from "../../../services/api";
+import { useMemo } from "react";
 
-export function useMovimientosCaja(cobros, gastos, turnosPendientes, busqueda) {
-  const [kpis, setKpis] = useState({
-    totalIngresos: 0,
-    totalEgresos: 0,
-    balanceNeto: 0,
-    totalPendienteCobro: 0,
-  });
-  const [cargandoKpis, setCargandoKpis] = useState(false);
-
-  const cargarKpis = useCallback(async () => {
-    setCargandoKpis(true);
-    try {
-      const res = await api.get("/cobros/kpis");
-      if (res.data?.data) {
-        setKpis(res.data.data);
-      }
-    } catch (error) {
-      console.error("Error al cargar KPIs de caja:", error);
-    } finally {
-      setCargandoKpis(false);
-    }
-  }, []);
-
-  // Se recarga al montar o cuando cambian las colecciones por una operación
-  useEffect(() => {
-    cargarKpis();
-  }, [cargarKpis, cobros, gastos, turnosPendientes]);
-
-  // Suma en tiempo real de todos los montos pendientes por cobrar de los turnos atendidos
+export function useMovimientosCaja(cobros = [], gastos = [], turnosPendientes = [], busqueda = "", resumenPeriodo = null) {
+  // Suma de turnos pendientes
   const totalPendienteCobro = useMemo(() => {
     if (turnosPendientes && turnosPendientes.length > 0) {
       return turnosPendientes.reduce((acc, t) => {
@@ -41,8 +13,37 @@ export function useMovimientosCaja(cobros, gastos, turnosPendientes, busqueda) {
         return acc + (saldo > 0 ? saldo : 0);
       }, 0);
     }
-    return Number(kpis.totalPendienteCobro) || 0;
-  }, [turnosPendientes, kpis.totalPendienteCobro]);
+    return 0;
+  }, [turnosPendientes]);
+
+  // Si el backend envía el resumen calculado para el mes, lo usamos;
+  // si no, sumamos las filas locales del mes
+  const kpis = useMemo(() => {
+    if (resumenPeriodo && (resumenPeriodo.ingresosTotales !== undefined || resumenPeriodo.egresosTotales !== undefined)) {
+      return {
+        totalIngresos: Number(resumenPeriodo.ingresosTotales) || 0,
+        totalEgresos: Number(resumenPeriodo.egresosTotales) || 0,
+        balanceNeto: Number(resumenPeriodo.balancePeriodo) || 0,
+        totalPendienteCobro,
+      };
+    }
+
+    // Fallback de cálculo local
+    const totalIngresos = cobros.reduce((acc, c) => {
+      const cuotas = c.Cuotas || c.Cuota || [];
+      const sum = cuotas.reduce((qAcc, q) => qAcc + (Number(q.monto_cobrado) || 0), 0);
+      return acc + (sum > 0 ? sum : (Number(c.monto_total) || 0));
+    }, 0);
+
+    const totalEgresos = gastos.reduce((acc, g) => acc + (Number(g.monto) || 0), 0);
+
+    return {
+      totalIngresos,
+      totalEgresos,
+      balanceNeto: totalIngresos - totalEgresos,
+      totalPendienteCobro,
+    };
+  }, [resumenPeriodo, cobros, gastos, totalPendienteCobro]);
 
   const movimientosUnificados = useMemo(() => {
     const listaIngresos = cobros.map((c) => {
@@ -56,8 +57,8 @@ export function useMovimientosCaja(cobros, gastos, turnosPendientes, busqueda) {
         tipo: "ingreso",
         concepto: `Cobro a ${c.Paciente ? `${c.Paciente.apellido}, ${c.Paciente.nombre}` : "Paciente"}`,
         categoria: c.cant_cuotas > 1 ? `Plan ${c.cant_cuotas} Cuotas` : "Cobro de Atención",
-        monto: totalPagado,
-        fecha: c.fecha_emision || c.createdAt,
+        monto: totalPagado > 0 ? totalPagado : (Number(c.monto_total) || 0),
+        fecha: c.fecha_emision || c.fecha_cobro || c.createdAt,
         metodo_pago: metodoStr,
         comprobante: `Cobro #${c.id_cobro}`,
         cobroOriginal: c,
@@ -91,12 +92,7 @@ export function useMovimientosCaja(cobros, gastos, turnosPendientes, busqueda) {
   }, [cobros, gastos, busqueda]);
 
   return {
-    kpis: {
-      ...kpis,
-      totalPendienteCobro,
-    },
+    kpis,
     movimientosUnificados,
-    cargarKpis,
-    cargandoKpis,
   };
 }

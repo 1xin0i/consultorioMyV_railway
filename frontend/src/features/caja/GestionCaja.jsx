@@ -11,11 +11,14 @@ import Header from "../../components/common/Header";
 import PageLayout from "../../components/layout/PageLayout";
 import TablaPaginacion from "../../components/common/Tabla/TablaPaginacion";
 
-//* COMPONENTES DE VISTA
+//* COMPONENTES DE VISTA Y PERIODO
 import { VistaCronologica, VistaLibroMayor, VistaPendientes } from "./components/Vistas";
+import { SelectorPeriodo } from "./components/SelectorPeriodo";
+import { Kpis } from "./components/Kpis";
 
 //* HOOKS
 import { useMovimientosCaja } from "./hooks/useMovimientosCaja";
+import { useCajaSearchPagination } from "./hooks/useCajaSearchPagination";
 
 //* HOOKS Y FORMULARIOS GASTOS
 import { useCRUDModal } from "../../hooks/useCRUDModal";
@@ -27,11 +30,9 @@ import { FormularioCrearEditar as FormularioGasto } from "../gastos/components/F
 import { FormularioCrearEditarCobro as FormularioCobro } from "../cobros/components/FormulariosCobro";
 import FormularioCuotas from "../cobros/components/FormulariosCuota";
 import { useCobroActions } from "../cobros/hooks/useCobroActions";
-import { useCajaSearchPagination } from "./hooks/useCajaSearchPagination";
 
 //* CONSTANTES
 import { ESTADO_INICIAL_COBRO, ESTADO_INICIAL_GASTO } from "./constants/cajaConstants";
-import { Kpis } from "./components/Kpis";
 
 export default function GestionCaja() {
   //* VARIABLES GENERALES
@@ -40,7 +41,7 @@ export default function GestionCaja() {
   const [pacienteBalanceId, setPacienteBalanceId] = useState(null);
   const [cobroParaCuotas, setCobroParaCuotas] = useState(null);
 
-  //* HOOK DE PAGINACIÓN
+  //* HOOK DE PAGINACIÓN Y FILTRO POR MES
   const {
     cobros,
     gastos,
@@ -60,6 +61,10 @@ export default function GestionCaja() {
     setSearch,
     order,
     setOrder,
+
+    fechaMes,
+    setFechaMes,
+    resumenPeriodo,
 
     inicioRegistroCobro,
     finRegistroCobro,
@@ -99,18 +104,18 @@ export default function GestionCaja() {
   //* HOOK DE CATEGORIAS PARA GASTOS
   const { categorias, recargarCategorias } = useCategoriasGastosCatalogo();
 
-  //* HOOK DE CÁLCULOS Y KPIS DESDE EL BACKEND
-  const { kpis, movimientosUnificados, cargarKpis } = useMovimientosCaja(
+  //* HOOK DE CÁLCULOS Y KPIS (Ahora sincronizados con el mes)
+  const { kpis, movimientosUnificados } = useMovimientosCaja(
     cobros,
     gastos,
     turnosPendientes,
-    search
+    search,
+    resumenPeriodo
   );
 
-  //* RECARGA CONJUNTA (LISTAS + MÉTRICAS)
+  //* RECARGA CONJUNTA
   const recargarTodo = () => {
     if (typeof recargar === "function") recargar();
-    if (typeof cargarKpis === "function") cargarKpis();
   };
 
   //* HOOK DE PETICIONES API
@@ -182,7 +187,10 @@ export default function GestionCaja() {
         />
 
         <div className="w-full px-4 flex flex-col gap-4">
-          {/* BODY: KPIS */}
+          {/* SELECTOR DE MES / PERÍODO */}
+          <SelectorPeriodo fechaMes={fechaMes} onCambiarMes={setFechaMes} />
+
+          {/* BODY: KPIS DEL PERÍODO */}
           <Kpis kpis={kpis} />
 
           {/* BARRA DE VISTAS */}
@@ -310,7 +318,7 @@ export default function GestionCaja() {
           />
         )}
 
-        {/* MODAL: BALANCE DE CUENTA CORRIENTE (HU IE-3) */}
+        {/* MODAL: BALANCE DE CUENTA CORRIENTE */}
         {pacienteBalanceId && (
           <ModalBalancePaciente
             isOpen={Boolean(pacienteBalanceId)}

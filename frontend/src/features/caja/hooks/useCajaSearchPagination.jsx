@@ -1,5 +1,5 @@
 /** @format */
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import api from "../../../services/api";
 
 export function useCajaSearchPagination(limitPorDefecto = 9) {
@@ -7,6 +7,9 @@ export function useCajaSearchPagination(limitPorDefecto = 9) {
   const [cargando, setCargando] = useState(false);
   const [search, setSearchState] = useState("");
   const [order, setOrder] = useState({ column: "", direction: "ASC" });
+
+  // * ESTADO DE PERÍODO (MES SELECCIONADO)
+  const [fechaMes, setFechaMes] = useState(new Date());
 
   //* DATOS COBRO
   const [cobros, setCobros] = useState([]);
@@ -20,14 +23,30 @@ export function useCajaSearchPagination(limitPorDefecto = 9) {
   const [totalGasto, setTotalGasto] = useState(0);
   const [totalPagesGasto, setTotalPagesGasto] = useState(1);
 
+  //* RESUMEN FINANCIERO DEL PERÍODO (Calculado por el backend)
+  const [resumenPeriodo, setResumenPeriodo] = useState({
+    ingresosTotales: 0,
+    egresosTotales: 0,
+    balancePeriodo: 0,
+  });
+
   //* DATOS TURNO
   const [turnosPendientes, setTurnosPendientes] = useState([]);
 
-  // * BUSCAR DATOS UTILIZANDO LA RUTA UNIFICADA DE CAJA
+  // * CÁLCULO DE FECHA_INICIO Y FECHA_FIN PARA EL QUERY
+  const { fecha_inicio, fecha_fin } = useMemo(() => {
+    const año = fechaMes.getFullYear();
+    const mes = fechaMes.getMonth();
+    const inicio = `${año}-${String(mes + 1).padStart(2, "0")}-01`;
+    const ultimoDia = new Date(año, mes + 1, 0).getDate();
+    const fin = `${año}-${String(mes + 1).padStart(2, "0")}-${String(ultimoDia).padStart(2, "0")}`;
+    return { fecha_inicio: inicio, fecha_fin: fin };
+  }, [fechaMes]);
+
+  // * BUSCAR DATOS UTILIZANDO LA RUTA UNIFICADA DE CAJA CON FILTRO DE FECHAS
   const fetchData = async () => {
     setCargando(true);
     try {
-      // 1. Llamada unificada a /caja pasando los parámetros de paginación y búsqueda
       const respuesta = await api.get("/caja", {
         params: {
           pageCobro,
@@ -36,22 +55,33 @@ export function useCajaSearchPagination(limitPorDefecto = 9) {
           limitGasto: limitPorDefecto,
           searchCobro: search,
           searchGasto: search,
+          fecha_inicio,
+          fecha_fin,
         },
       });
 
-      const { data, meta } = respuesta.data;
+      const { data, meta, resumen } = respuesta.data;
 
-      // 2. Asignación limpia de cobros y su metadatos
-      setCobros(data.cobros || []);
-      setPageCobro(meta.cobros.page || pageCobro);
-      setTotalPagesCobro(meta.cobros.totalPages || 1);
-      setTotalCobro(meta.cobros.total || 0);
+      // 1. Asignación de cobros
+      setCobros(data?.cobros || []);
+      setPageCobro(meta?.cobros?.page || pageCobro);
+      setTotalPagesCobro(meta?.cobros?.totalPages || 1);
+      setTotalCobro(meta?.cobros?.total || 0);
 
-      // 3. Asignación limpia de gastos y su metadatos
-      setGastos(data.gastos || []);
-      setPageGasto(meta.gastos.page || pageGasto);
-      setTotalPagesGasto(meta.gastos.totalPages || 1);
-      setTotalGasto(meta.gastos.total || 0);
+      // 2. Asignación de gastos
+      setGastos(data?.gastos || []);
+      setPageGasto(meta?.gastos?.page || pageGasto);
+      setTotalPagesGasto(meta?.gastos?.totalPages || 1);
+      setTotalGasto(meta?.gastos?.total || 0);
+
+      // 3. Asignación del resumen del período
+      if (resumen) {
+        setResumenPeriodo({
+          ingresosTotales: Number(resumen.ingresosTotales) || 0,
+          egresosTotales: Number(resumen.egresosTotales) || 0,
+          balancePeriodo: Number(resumen.balancePeriodo) || 0,
+        });
+      }
 
       // 4. Obtener turnos atendidos pendientes de cobro
       const resTurnos = await api.get("/turnos/atendidos");
@@ -63,14 +93,21 @@ export function useCajaSearchPagination(limitPorDefecto = 9) {
     }
   };
 
-  // * RECARGAR DATOS CUANDO CAMBIA DE PÁGINA O BÚSQUEDA
+  // * RECARGAR DATOS CUANDO CAMBIA DE PÁGINA, BÚSQUEDA O MES
   useEffect(() => {
     fetchData();
-  }, [pageCobro, pageGasto, search]);
+  }, [pageCobro, pageGasto, search, fecha_inicio, fecha_fin]);
 
-  // * SETEA LA BÚSQUEDA
+  // * SETEA LA BÚSQUEDA Y RESETEA PÁGINAS
   const setSearch = (nuevoTermino) => {
     setSearchState(nuevoTermino);
+    setPageCobro(1);
+    setPageGasto(1);
+  };
+
+  // * SETEA EL MES Y RESETEA PÁGINAS
+  const cambiarMes = (nuevaFecha) => {
+    setFechaMes(nuevaFecha);
     setPageCobro(1);
     setPageGasto(1);
   };
@@ -103,6 +140,10 @@ export function useCajaSearchPagination(limitPorDefecto = 9) {
     setSearch,
     order,
     setOrder,
+
+    fechaMes,
+    setFechaMes: cambiarMes,
+    resumenPeriodo,
 
     inicioRegistroCobro,
     finRegistroCobro,

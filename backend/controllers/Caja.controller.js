@@ -3,26 +3,46 @@
 import { Op } from "sequelize";
 import { Cobro, Gasto, Cuota, Paciente, CategoriaGasto } from "../models/index.model.js";
 
-/**
- * Obtiene de forma unificada y paginada los cobros y los gastos para la gestión de caja.
- */
 export const getCajaConsolidada = async (req, res) => {
   try {
-    // ─── PARÁMETROS DE PAGINACIÓN Y BÚSQUEDA PARA COBROS ───
-    const pageCobro = parseInt(req.query.pageCobro) || 1;
-    const limitCobro = parseInt(req.query.limitCobro) || 10;
+    const { fecha_inicio, fecha_fin } = req.query;
+
+    const ahora = new Date();
+    const inicioMesDefault = new Date(ahora.getFullYear(), ahora.getMonth(), 1, 0, 0, 0, 0);
+    const finMesDefault = new Date(ahora.getFullYear(), ahora.getMonth() + 1, 0, 23, 59, 59, 999);
+
+    const desde = fecha_inicio ? new Date(`${fecha_inicio}T00:00:00.000`) : inicioMesDefault;
+    const hasta = fecha_fin ? new Date(`${fecha_fin}T23:59:59.999`) : finMesDefault;
+
+    const rangoFechas = {
+      [Op.between]: [desde, hasta],
+    };
+
+    // Parámetros de paginación
+    const pageCobro = parseInt(req.query.pageCobro, 10) || 1;
+    const limitCobro = parseInt(req.query.limitCobro, 10) || 10;
     const offsetCobro = (pageCobro - 1) * limitCobro;
-    const searchCobro = req.query.searchCobro || "";
+    const searchCobro = (req.query.searchCobro || "").trim();
 
-    // ─── PARÁMETROS DE PAGINACIÓN Y BÚSQUEDA PARA GASTOS ───
-    const pageGasto = parseInt(req.query.pageGasto) || 1;
-    const limitGasto = parseInt(req.query.limitGasto) || 10;
+    const pageGasto = parseInt(req.query.pageGasto, 10) || 1;
+    const limitGasto = parseInt(req.query.limitGasto, 10) || 10;
     const offsetGasto = (pageGasto - 1) * limitGasto;
-    const searchGasto = req.query.searchGasto || "";
+    const searchGasto = (req.query.searchGasto || "").trim();
 
-    // ─── FILTROS (WHERE) PARA COBROS ───
-    let whereCobro = { activo: true };
-    if (searchCobro.trim() !== "") {
+    // Filtros de fecha: verifica si en tu modelo es fecha_emision o fecha_cobro
+    // Usamos el campo correspondiente de tu modelo Cobro:
+    const campoFechaCobro = Cobro.rawAttributes.fecha_emision
+      ? "fecha_emision"
+      : Cobro.rawAttributes.fecha_cobro
+      ? "fecha_cobro"
+      : "createdAt";
+
+    const whereCobro = {
+      [campoFechaCobro]: rangoFechas,
+    };
+    if (Cobro.rawAttributes.activo) whereCobro.activo = true;
+
+    if (searchCobro !== "") {
       whereCobro[Op.or] = [
         { "$Paciente.nombre$": { [Op.like]: `%${searchCobro}%` } },
         { "$Paciente.apellido$": { [Op.like]: `%${searchCobro}%` } },
@@ -30,9 +50,12 @@ export const getCajaConsolidada = async (req, res) => {
       ];
     }
 
-    // ─── FILTROS (WHERE) PARA GASTOS ───
-    let whereGasto = { activo: true }; // Ajusta si tu modelo Gasto no usa la propiedad activo
-    if (searchGasto.trim() !== "") {
+    const whereGasto = {
+      fecha_gasto: rangoFechas,
+    };
+    if (Gasto.rawAttributes.activo) whereGasto.activo = true;
+
+    if (searchGasto !== "") {
       whereGasto[Op.or] = [
         { concepto: { [Op.like]: `%${searchGasto}%` } },
         { comprobante: { [Op.like]: `%${searchGasto}%` } },
@@ -40,13 +63,13 @@ export const getCajaConsolidada = async (req, res) => {
       ];
     }
 
-    // ─── EJECUCIÓN EN PARALELO DE AMBAS CONSULTAS ───
-    const [resultadoCobros, resultadoGastos] = await Promise.all([
+    // Consultas
+    const [resultadoCobros, resultadoGastos, todosLosCobrosPeriodo, todosLosGastosPeriodo] = await Promise.all([
       Cobro.findAndCountAll({
         where: whereCobro,
         limit: limitCobro,
         offset: offsetCobro,
-        order: [["fecha_emision", "DESC"]],
+        order: [[campoFechaCobro, "DESC"]],
         include: [
           {
             model: Paciente,
@@ -58,6 +81,7 @@ export const getCajaConsolidada = async (req, res) => {
           },
         ],
       }),
+
       Gasto.findAndCountAll({
         where: whereGasto,
         limit: limitGasto,
@@ -71,14 +95,46 @@ export const getCajaConsolidada = async (req, res) => {
           },
         ],
       }),
+
+      // Traer todos los cobros del período para calcular la suma exacta de cuotas cobradas
+      Cobro.findAll({
+        where: whereCobro,
+        include: [
+          {
+            model: Cuota,
+            attributes: ["monto_cobrado"],
+          },
+        ],
+      }),
+
+      // Traer gastos del período para sumar monto
+      Gasto.findAll({
+        where: whereGasto,
+        attributes: ["monto"],
+      }),
     ]);
+
+    // Calcular ingresos sumando monto_cobrado de cada cuota
+    const ingresosTotales = todosLosCobrosPeriodo.reduce((acc, c) => {
+      const cuotas = c.Cuotas || c.Cuota || [];
+      const sumCuotas = cuotas.reduce((qAcc, q) => qAcc + (Number(q.monto_cobrado) || 0), 0);
+      return acc + (sumCuotas > 0 ? sumCuotas : (Number(c.monto_total) || 0));
+    }, 0);
+
+    const egresosTotales = todosLosGastosPeriodo.reduce((acc, g) => acc + (Number(g.monto) || 0), 0);
+    const balancePeriodo = ingresosTotales - egresosTotales;
 
     const totalPagesCobro = Math.ceil(resultadoCobros.count / limitCobro);
     const totalPagesGasto = Math.ceil(resultadoGastos.count / limitGasto);
 
-    // ─── RESPUESTA CON LA ESTRUCTURA SOLICITADA ───
     res.status(200).json({
       status: "success",
+      periodo: { desde, hasta },
+      resumen: {
+        ingresosTotales,
+        egresosTotales,
+        balancePeriodo,
+      },
       data: {
         cobros: resultadoCobros.rows,
         gastos: resultadoGastos.rows,
