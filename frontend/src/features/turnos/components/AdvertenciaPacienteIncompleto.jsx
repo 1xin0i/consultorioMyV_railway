@@ -27,10 +27,9 @@ export const AdvertenciaPacienteIncompleto = ({
           className="flex items-center gap-2 hover:bg-amber-100/60 px-2 py-1 rounded-lg transition-colors text-left flex-1"
         >
           <AlertTriangle className="w-5 h-5 text-amber-600 shrink-0" />
-          <p className="text-sm font-semibold text-amber-900 flex-1">
-            Hay {pacientesIncompletos.length}{" "}
-            {pacientesIncompletos.length > 1 ? "pacientes creados " : "paciente creado "}
-            con datos faltantes
+          <p className="text-xs sm:text-sm font-semibold text-amber-900 flex-1 min-w-0 truncate">
+            {pacientesIncompletos.length}{" "}
+            {pacientesIncompletos.length === 1 ? "paciente" : "pacientes"} con datos faltantes
           </p>
           <ChevronDown
             size={18}

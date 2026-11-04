@@ -1,9 +1,24 @@
 /** @format */
+import { useState } from "react";
+
 //* ICONOS
-import { Plus, Edit, Trash2, Clock, AlertCircle, CalendarClock, Eye } from "lucide-react";
+import {
+  Plus,
+  Edit,
+  Trash2,
+  Clock,
+  AlertCircle,
+  CalendarClock,
+  Eye,
+  CheckSquare,
+  CalendarDays,
+  X,
+  UserRoundX,
+} from "lucide-react";
 
 //* COMPONENTES COMUNES
 import Header from "../../components/common/Header";
+import Modal from "../../components/common/Modal";
 import Tabla from "../../components/common/Tabla/Tabla";
 import TablaHeader from "../../components/common/Tabla/TablaHeader";
 import TablaPaginacion from "../../components/common/Tabla/TablaPaginacion";
@@ -60,6 +75,9 @@ export default function GestionTurnos() {
 
   //* HOOK DE DEPENDENCIAS
   const { pacientes } = useTurnoDependencies();
+
+  //* Hook de menu de turno para vista mobile
+  const [turnoMenu, setTurnoMenu] = useState(null);
 
   //* HOOK DE CRUD MODAL
   const {
@@ -172,7 +190,7 @@ export default function GestionTurnos() {
                   { label: "Precio ($)", className: "hidden md:table-cell" },
                   { label: "Estado" },
                   { label: "Notas", className: "hidden md:table-cell" },
-                  { label: "Acciones", align: "center" },
+                  { label: "Acciones", align: "center", className: "hidden md:table-cell" },
                 ]}
               >
                 {turnos.map((turno) => {
@@ -183,7 +201,13 @@ export default function GestionTurnos() {
                   const IconoEstado = estadoInfo.icon;
 
                   return (
-                    <tr key={turno.id_turno} className="hover:bg-gray-50/60 transition-colors">
+                    <tr
+                      key={turno.id_turno}
+                      onClick={() => {
+                        if (window.innerWidth < 768) setTurnoMenu(turno);
+                      }}
+                      className="hover:bg-gray-50/60 transition-colors cursor-pointer md:cursor-default"
+                    >
                       {/* //* COLUMNAS: ID TURNO */}
                       <td className="hidden md:table-cell px-5 py-4 font-semibold text-gray-500 w-16 text-xs">
                         #{turno.id_turno}
@@ -230,10 +254,11 @@ export default function GestionTurnos() {
                       {/* //* COLUMNAS: ESTADO */}
                       <td className="px-5 py-4">
                         <span
-                          className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium border ${estadoInfo.color}`}
+                          title={turno.EstadoTurno.estado}
+                          className={`inline-flex items-center gap-1.5 px-2 md:px-3 py-1 rounded-full text-xs font-medium border ${estadoInfo.color}`}
                         >
                           <IconoEstado size={14} />
-                          <span>{turno.EstadoTurno.estado}</span>
+                          <span className="hidden md:inline">{turno.EstadoTurno.estado}</span>
                         </span>
                       </td>
 
@@ -243,7 +268,7 @@ export default function GestionTurnos() {
                       </td>
 
                       {/* //* COLUMNAS: ACCIONES */}
-                      <td className="px-5 py-4 text-right">
+                      <td className="hidden md:table-cell px-5 py-4 text-right">
                         <div className="flex items-center justify-end gap-1.5">
                           <button
                             type="button"
@@ -302,6 +327,97 @@ export default function GestionTurnos() {
             <TablaPaginacion page={page} setPage={setPage} totalPages={totalPages} />
           </div>
         </div>
+
+        {/* //* MENÚ DE ACCIONES (MOBILE) */}
+        {turnoMenu && (
+          <Modal
+            isOpen={!!turnoMenu}
+            onClose={() => setTurnoMenu(null)}
+            title={`${turnoMenu.Paciente?.nombre || "Paciente"} ${turnoMenu.Paciente?.apellido || ""}`}
+            width="max-w-sm"
+          >
+            {(() => {
+              const ejecutar = (accion) => {
+                const t = turnoMenu;
+                setTurnoMenu(null);
+                accion(t);
+              };
+              const btn = "flex items-center gap-3 p-3 rounded-xl font-semibold text-sm cursor-pointer";
+
+              return (
+                <div className="flex flex-col gap-2">
+                  {turnoMenu.EstadoTurno?.estado === "Programado" && (
+                    <>
+                      <p className="text-xs font-bold text-gray-400 uppercase tracking-wider">Cambiar estado</p>
+                      <button
+                        type="button"
+                        onClick={() => ejecutar(abrirParaAtender)}
+                        className={`${btn} text-emerald-700 bg-emerald-50`}
+                      >
+                        <CheckSquare size={18} /> Atender turno
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() =>
+                          ejecutar((t) => abrirParaReprogramar(t, formatearTurnoParaReprogramar))
+                        }
+                        className={`${btn} text-[#3B7A94] bg-[#f0f6f9]`}
+                      >
+                        <CalendarDays size={18} /> Reprogramar
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => ejecutar(abrirParaCancelar)}
+                        className={`${btn} text-red-600 bg-red-50`}
+                      >
+                        <X size={18} /> Cancelar turno
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => ejecutar(abrirParaInasistente)}
+                        className={`${btn} text-[#2b5d73] bg-[#f0f6f9]`}
+                      >
+                        <UserRoundX size={18} /> Inasistente
+                      </button>
+                    </>
+                  )}
+
+                  <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mt-2">Turno</p>
+                  <button
+                    type="button"
+                    onClick={() => ejecutar(abrirParaVer)}
+                    className={`${btn} text-emerald-700 bg-emerald-50`}
+                  >
+                    <Eye size={18} /> Ver detalle
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      ejecutar((t) =>
+                        abrirParaEditar(t, (item) => ({
+                          ...item,
+                          fecha_hora_inicio: formatDateTimeInput(item.fecha_hora_inicio),
+                          fecha_hora_fin: formatDateTimeInput(item.fecha_hora_fin),
+                          duracion_minutos: item.duracion_minutos || 30,
+                        }))
+                      )
+                    }
+                    className={`${btn} text-blue-700 bg-blue-50`}
+                  >
+                    <Edit size={18} /> Editar
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => ejecutar(abrirParaEliminar)}
+                    className={`${btn} text-red-600 bg-red-50`}
+                  >
+                    <Trash2 size={18} /> Eliminar
+                  </button>
+                </div>
+              );
+            })()}
+          </Modal>
+        )}
 
         {/* //* MODALES: VISTA TURNO */}
         <VistaTurno

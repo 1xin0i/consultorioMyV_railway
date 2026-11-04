@@ -60,14 +60,14 @@ const Modal = ({
 
   return (
     <div
-      className="fixed inset-0 flex items-center justify-center z-50 p-4" // p-4 da un margen mínimo
+      className="fixed inset-0 flex items-center justify-center z-[100] p-4" // p-4 da un margen mínimo
       style={{
         backgroundColor: showBackdrop ? backdropColor : "transparent",
       }}
     >
       <div
         className={`bg-[#2eb086] rounded-lg shadow-xl w-full ${width} 
-              flex flex-col max-h-[90vh] overflow-hidden relative ${customClass}`} // max-h-[90vh] es la clave
+          flex flex-col max-h-[90dvh] overflow-hidden relative ${customClass}`} // max-h-[90vh] es la clave
       >
         {showCloseButton && (
           <button

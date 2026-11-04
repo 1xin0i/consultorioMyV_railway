@@ -8,6 +8,7 @@ export default function Tabla({
   search = "", // Término de búsqueda opcional
   cantFilasSkeleton = 5, // Cantidad de filas fantasmas a mostrar durante la carga
   sinDatosText = "No hay registros disponibles.",
+  layoutFijo = false, // <-- nuevo
   children,
 }) {
   // Verificamos si los children contienen filas con datos
@@ -17,14 +18,14 @@ export default function Tabla({
   return (
     <div className="bg-white border border-gray-100 shadow-sm overflow-hidden flex-1">
       <div className="overflow-x-auto">
-        <table className="w-full text-left border-collapse">
+        <table className={`w-full text-left border-collapse ${layoutFijo ? "table-fixed md:table-auto" : ""}`}>
           {/* ENCABEZADO DE LA TABLA */}
           <thead className="bg-[#e8f7f1]">
             <tr className="border-b border-gray-100 text-xs font-bold text-gray-500 uppercase tracking-wider">
               {columnas.map((col, index) => (
                 <th
                   key={index}
-                  className={`px-6 py-4 ${col.align === "center" ? "text-center" : "text-left"} ${col.className || ""}`}
+                  className={`px-3 md:px-6 py-4 ${col.align === "center" ? "text-center" : "text-left"} ${col.className || ""}`}
                 >
                   {col.label}
                 </th>
@@ -39,7 +40,7 @@ export default function Tabla({
               Array.from({ length: cantFilasSkeleton }).map((_, filaIdx) => (
                 <tr key={filaIdx} className="animate-pulse">
                   {columnas.map((col, colIdx) => (
-                    <td key={colIdx} className="px-6 py-4">
+                    <td key={colIdx} className={`px-3 md:px-6 py-4 ${col.className || ""}`}>
                       {/* Simulación de bloques de texto/elementos */}
                       <div className="flex items-center gap-3">
                         {/* Simula un avatar si es la primera columna */}

@@ -72,7 +72,7 @@ export function FormularioCrearEditar({
                   title="Crear nueva categoría"
                 >
                   <Plus size={14} />
-                  <span>Nueva Categoría</span>
+                  <span>+ Nueva Categoría</span>
                 </button>
               </div>
 

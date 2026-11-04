@@ -30,6 +30,10 @@ import {
   FormularioToggle,
 } from "./components/FormulariosPractica";
 
+//Fix para mobile
+import { useState } from "react";
+import Modal from "../../components/common/Modal";
+
 export default function GestionPracticas() {
   //* HOOK DE PAGINACIÓN
   const {
@@ -64,6 +68,9 @@ export default function GestionPracticas() {
 
   //* HOOK DE PETICIONES API
   const { guardarPractica, togglePractica, eliminarPractica } = usePracticaActions(recargar, cerrarModal);
+
+  //Fix para mobile
+  const [practicaMenu, setPracticaMenu] = useState(null);
 
   return (
     <PageLayout onAdd={abrirParaCrear}>
@@ -113,14 +120,20 @@ export default function GestionPracticas() {
                   { label: "Tratamiento" },
                   { label: "Especialidad", className: "hidden md:table-cell" },
                   { label: "Precio Ref." },
-                  { label: "Estado" },
-                  { label: "Acciones", align: "center" },
+                  { label: "Estado", className: "hidden md:table-cell" },
+                  { label: "Acciones", align: "center", className: "hidden md:table-cell" },
                 ]}
               >
                 {practicas.map((practica) => (
-                  <tr key={practica.id_practica} className="hover:bg-gray-50/60 transition-colors">
+                  <tr
+                    key={practica.id_practica}
+                    onClick={() => {
+                      if (window.innerWidth < 768) setPracticaMenu(practica);
+                    }}
+                    className="hover:bg-gray-50/60 transition-colors cursor-pointer md:cursor-default"
+                  >
                     {/* //* COLUMNAS: CODIGO NOMENCLADOR */}
-                    <td className="px-6 py-4">
+                    <td className="px-3 md:px-6 py-4">
                       <span className="inline-flex items-center gap-1 font-mono font-bold text-xs bg-gray-100 text-gray-700 px-2.5 py-1 rounded-lg border border-gray-200">
                         <Tag size={12} className="text-[#2eb086]" />
                         {practica.codigo_nomenclador}
@@ -128,7 +141,7 @@ export default function GestionPracticas() {
                     </td>
 
                     {/* //* COLUMNAS: NOMBRE REFERENCIA */}
-                    <td className="px-6 py-4">
+                    <td className="px-3 md:px-6 py-4">
                       <span className="font-semibold text-gray-800 text-sm">
                         {practica.nombre_nomenclador}
                       </span>
@@ -136,6 +149,9 @@ export default function GestionPracticas() {
                       <span className="hidden md:block texs-xs text-gray-400 text-sm">
                         {practica.nombre_referencia}
                       </span>
+                      {!practica.activo && (
+                        <span className="md:hidden block text-xs text-gray-400 italic">Inactiva</span>
+                      )}
                     </td>
 
                     {/* //* COLUMNAS: ESPECIALIDAD */}
@@ -144,7 +160,7 @@ export default function GestionPracticas() {
                     </td>
 
                     {/* //* COLUMNAS: PRECIO DE REFERENCIA */}
-                    <td className="px-6 py-4 font-semibold text-gray-800 text-sm">
+                    <td className="px-3 md:px-6 py-4 font-semibold text-gray-800 text-sm">
                       $
                       {Number(practica.precio_referencia).toLocaleString("es-AR", {
                         minimumFractionDigits: 2,
@@ -152,7 +168,7 @@ export default function GestionPracticas() {
                     </td>
 
                     {/* //* COLUMNAS: ESTADO */}
-                    <td className="px-6 py-4">
+                    <td className="hidden md:table-cell px-6 py-4">
                       {practica.activo ? (
                         <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-emerald-50 text-emerald-700 border border-emerald-200/60">
                           <CheckCircle2 size={14} />
@@ -167,7 +183,7 @@ export default function GestionPracticas() {
                     </td>
 
                     {/* //* COLUMNAS: ACCIONES */}
-                    <td className="px-6 py-4">
+                    <td className="hidden md:table-cell px-6 py-4">
                       <div className="flex items-center justify-center gap-2">
                         <button
                           type="button"
@@ -208,6 +224,46 @@ export default function GestionPracticas() {
             <TablaPaginacion page={page} setPage={setPage} totalPages={totalPages} />
           </div>
         </div>
+
+        {/* //* MENÚ DE ACCIONES (MOBILE) */}
+        {practicaMenu && (
+          <Modal
+            isOpen={!!practicaMenu}
+            onClose={() => setPracticaMenu(null)}
+            title={practicaMenu.nombre_nomenclador}
+            width="max-w-sm"
+          >
+            {(() => {
+              const ejecutar = (accion) => {
+                const p = practicaMenu;
+                setPracticaMenu(null);
+                accion(p);
+              };
+              const btn = "flex items-center gap-3 p-3 rounded-xl font-semibold text-sm";
+
+              return (
+                <div className="flex flex-col gap-2">
+                  <button type="button"
+                    onClick={() => ejecutar((p) => abrirParaEditar(p, formatearPracticaParaEditar))}
+                    className={`${btn} text-blue-700 bg-blue-50`}>
+                    <Edit size={18} /> Editar práctica
+                  </button>
+                  <button type="button" onClick={() => ejecutar(abrirParaToggle)}
+                    className={`${btn} ${practicaMenu.activo ? "text-red-600 bg-red-50" : "text-emerald-700 bg-emerald-50"}`}>
+                    {practicaMenu.activo ? <Ban size={18} /> : <RotateCcw size={18} />}
+                    {practicaMenu.activo ? "Dar de baja" : "Reactivar"}
+                  </button>
+                  {!practicaMenu.activo && (
+                    <button type="button" onClick={() => ejecutar(abrirParaEliminar)}
+                      className={`${btn} text-red-600 bg-red-50`}>
+                      <Trash2 size={18} /> Eliminar
+                    </button>
+                  )}
+                </div>
+              );
+            })()}
+          </Modal>
+        )}
 
         {/* //* MODALES: CREAR Y EDITAR */}
         {modalAbierto && (
