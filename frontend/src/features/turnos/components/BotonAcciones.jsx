@@ -2,7 +2,6 @@
 import { useState, useEffect, useRef } from "react";
 import { MoreVertical, CheckSquare, CalendarDays, X, UserRoundX } from "lucide-react";
 import MenuFlotantePortal from "../../../components/common/MenuFlotantePortal";
-import { formatearTurnoParaReprogramar } from "../utils/formatTurnoParaReprogramar";
 
 export function BotonAccionesTurno({
   turno,
@@ -46,7 +45,7 @@ export function BotonAccionesTurno({
           e.stopPropagation();
           setMenuAbiertoId(estaAbierto ? null : turno.id_turno);
         }}
-        className="p-2 rounded-lg text-gray-600 hover:bg-gray-100 transition-colors"
+        className="p-2 rounded-xl text-teal-800/70 hover:bg-teal-50 hover:text-teal-900 transition-colors cursor-pointer"
       >
         <MoreVertical size={18} />
       </button>
@@ -55,36 +54,36 @@ export function BotonAccionesTurno({
         <button
           type="button"
           onClick={(e) => ejecutarAccion(e, abrirParaAtender)}
-          className="flex items-center gap-2 px-4 py-2 text-xs font-medium text-emerald-700 hover:bg-emerald-50 text-left transition-colors"
+          className="flex items-center gap-2.5 px-4 py-2.5 text-xs font-bold text-emerald-800 hover:bg-emerald-100/70 text-left transition-colors cursor-pointer"
         >
-          <CheckSquare size={16} />
+          <CheckSquare size={16} className="text-emerald-600" />
           <span>Atender Turno</span>
         </button>
 
         <button
           type="button"
-          onClick={(e) => ejecutarAccion(e, (t) => abrirParaReprogramar(t, formatearTurnoParaReprogramar))}
-          className="flex items-center gap-2 px-4 py-2.5 text-xs font-semibold text-[#3B7A94] hover:bg-[#f0f6f9] text-left transition-colors"
+          onClick={(e) => ejecutarAccion(e, abrirParaReprogramar)}
+          className="flex items-center gap-2.5 px-4 py-2.5 text-xs font-semibold text-sky-800 hover:bg-sky-50 text-left transition-colors cursor-pointer"
         >
-          <CalendarDays size={16} />
+          <CalendarDays size={16} className="text-sky-600" />
           <span>Reprogramar</span>
         </button>
 
         <button
           type="button"
           onClick={(e) => ejecutarAccion(e, abrirParaCancelar)}
-          className="flex items-center gap-2 px-4 py-2 text-xs font-medium text-red-600 hover:bg-red-50 text-left transition-colors"
+          className="flex items-center gap-2.5 px-4 py-2.5 text-xs font-semibold text-rose-700 hover:bg-rose-50 text-left transition-colors cursor-pointer"
         >
-          <X size={16} />
+          <X size={16} className="text-rose-500" />
           <span>Cancelar Turno</span>
         </button>
 
         <button
           type="button"
           onClick={(e) => ejecutarAccion(e, abrirParaInasistente)}
-          className="flex items-center gap-2 px-4 py-2 text-xs font-medium text-[#2b5d73] hover:bg-[#f0f6f9] text-left transition-colors"
+          className="flex items-center gap-2.5 px-4 py-2.5 text-xs font-semibold text-amber-800 hover:bg-amber-50 text-left transition-colors cursor-pointer"
         >
-          <UserRoundX size={16} />
+          <UserRoundX size={16} className="text-amber-600" />
           <span>Inasistente</span>
         </button>
       </MenuFlotantePortal>

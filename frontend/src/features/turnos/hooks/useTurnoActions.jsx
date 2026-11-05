@@ -4,11 +4,22 @@ import toast from "react-hot-toast";
 import { manejarErrorApi } from "../../../utils/errorHandler";
 import { formatDateTimeInput } from "../../../utils";
 import { formatearTurnoParaReprogramar } from "../utils/formatTurnoParaReprogramar";
+import { useConfiguracion } from "../../../context/ConfiguracionContext";
 
 export function useTurnoActions(recargar, cerrarModal) {
   const [cargandoAccion, setCargandoAccion] = useState(false);
+  const { validarTurnoHorario, esDiaLaboral } = useConfiguracion();
 
   const guardarTurno = async (datosFormulario, editando, turnoSeleccionadoCRUD) => {
+    // Validar jornada y día laboral al registrar nuevo turno
+    if (!editando && validarTurnoHorario) {
+      const validacion = validarTurnoHorario(datosFormulario.fecha_hora_inicio);
+      if (!validacion.valido) {
+        toast.error(validacion.mensaje, { id: "error-horario-invalido" });
+        return;
+      }
+    }
+
     setCargandoAccion(true);
     try {
       let payload;
@@ -24,7 +35,8 @@ export function useTurnoActions(recargar, cerrarModal) {
         await api.put(`/turnos/${turnoSeleccionadoCRUD.id_turno}`, payload);
       } else {
         // Al crear, sí requerimos las fechas y la duración completa
-        const { duracion_minutos, ...restoDatos } = datosFormulario;
+        const restoDatos = { ...datosFormulario };
+        delete restoDatos.duracion_minutos;
         payload = {
           ...restoDatos,
           id_paciente: Number(restoDatos.id_paciente),
@@ -110,6 +122,14 @@ export function useTurnoActions(recargar, cerrarModal) {
   ) => {
     if (!turnoSeleccionado) return;
 
+    if (validarTurnoHorario) {
+      const validacion = validarTurnoHorario(datosReprogramacion.fecha_hora_inicio);
+      if (!validacion.valido) {
+        toast.error(validacion.mensaje, { id: "error-horario-invalido" });
+        return;
+      }
+    }
+
     try {
       await api.patch(`/turnos/${turnoSeleccionado.id_turno}/reprogramado`, {
         fecha_hora_inicio: new Date(datosReprogramacion.fecha_hora_inicio).toISOString(),
@@ -148,16 +168,50 @@ export function useTurnoActions(recargar, cerrarModal) {
     setTurnoReprogramando,
   ) => {
     if (selectInfo && selectInfo.startStr) {
+      if (esDiaLaboral && !esDiaLaboral(selectInfo.startStr)) {
+        toast.error("No se pueden agendar turnos en días no laborales.", {
+          id: "error-dia-no-laboral",
+        });
+        return;
+      }
+
+      if (validarTurnoHorario) {
+        const validacion = validarTurnoHorario(selectInfo.startStr);
+        if (!validacion.valido) {
+          toast.error(validacion.mensaje, { id: "error-horario-invalido" });
+          return;
+        }
+      }
+
       const nuevaFechaInicio = formatDateTimeInput(selectInfo.startStr);
+
+      // Calculamos la duración y la fecha fin según los bloques/celdas seleccionadas
+      let duracionMinutos = 30;
+      let nuevaFechaFin;
+
+      if (selectInfo.endStr) {
+        const fechaInicioObj = new Date(selectInfo.startStr);
+        const fechaFinObj = new Date(selectInfo.endStr);
+        const diferenciaMs = fechaFinObj - fechaInicioObj;
+        duracionMinutos = Math.max(15, Math.round(diferenciaMs / (1000 * 60)));
+        nuevaFechaFin = formatDateTimeInput(selectInfo.endStr);
+      } else {
+        const fechaFinObj = new Date(
+          new Date(selectInfo.startStr).getTime() + duracionMinutos * 60000,
+        );
+        nuevaFechaFin = formatDateTimeInput(fechaFinObj);
+      }
 
       // Si había un turno esperando ser reprogramado:
       if (turnoReprogramando) {
         const turnoConNuevaFecha = {
           ...turnoReprogramando,
           fecha_hora_inicio: nuevaFechaInicio,
+          duracion_minutos: duracionMinutos,
+          fecha_hora_fin: nuevaFechaFin,
         };
 
-        // Abrimos el modal de reprogramar con la nueva fecha seleccionada
+        // Abrimos el modal de reprogramar con la nueva fecha y duración calculada
         abrirParaReprogramar(turnoConNuevaFecha, formatearTurnoParaReprogramar);
 
         // Limpiamos el estado y el toast
@@ -166,10 +220,22 @@ export function useTurnoActions(recargar, cerrarModal) {
         return;
       }
 
-      // Si no había ningún turno para reprogramar, funciona como siempre (Crear Turno)
+      // Si no había ningún turno para reprogramar, abrimos el modal de creación
       abrirParaCrear();
+
+      // Actualizamos la fecha de inicio
       actualizarDatos({
         target: { name: "fecha_hora_inicio", value: nuevaFechaInicio },
+      });
+
+      // Actualizamos la duración en el formulario
+      actualizarDatos({
+        target: { name: "duracion_minutos", value: duracionMinutos },
+      });
+
+      // Actualizamos la fecha de fin
+      actualizarDatos({
+        target: { name: "fecha_hora_fin", value: nuevaFechaFin },
       });
     }
   };

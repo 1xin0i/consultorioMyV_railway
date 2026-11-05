@@ -7,42 +7,39 @@ export function useTurnoDependencies() {
   const [practicasLista, setPracticasLista] = useState([]);
   const [obrasSocialesPaciente, setObrasSocialesPaciente] = useState([]);
 
-  const fetchPacientes = async () => {
+  const fetchCatalogos = async () => {
     try {
-      const respuesta = await api.get("/pacientes");
-      setPacientes(respuesta.data.data || []);
+      const [resPacientes, resPracticas] = await Promise.all([
+        api.get("/pacientes", { params: { limit: 1000 } }),
+        api.get("/practicas", { params: { limit: 1000 } }),
+      ]);
+      setPacientes(resPacientes.data.data || []);
+      setPracticasLista(resPracticas.data.data || []);
     } catch (error) {
-      console.error("Error al cargar pacientes:", error);
+      console.error("Error al cargar dependencias de turnos:", error);
     }
   };
 
   const fetchObrasSocialesPaciente = async (id_paciente) => {
+    if (!id_paciente) return;
     try {
       const respuesta = await api.get(`/pacientes-por-obras-sociales/${id_paciente}`);
-      setObrasSocialesPaciente(respuesta.data.data);
+      setObrasSocialesPaciente(respuesta.data.data || []);
     } catch (error) {
-      console.error("Error al cargar las obras sociales de los pacientes:", error);
-    }
-  };
-
-  const fetchPracticas = async () => {
-    try {
-      const respuesta = await api.get("/practicas");
-      setPracticasLista(respuesta.data.data || []);
-    } catch (error) {
-      console.error("Error al cargar catálogo de prácticas:", error);
+      console.error("Error al cargar las obras sociales del paciente:", error);
     }
   };
 
   useEffect(() => {
-    fetchPacientes();
-    fetchPracticas();
+    fetchCatalogos();
   }, []);
 
   return {
-    pacientes: pacientes,
-    practicasLista: practicasLista,
-    obrasSocialesPaciente: obrasSocialesPaciente,
+    pacientes,
+    setPacientes,
+    practicasLista,
+    obrasSocialesPaciente,
     buscarOSPaciente: fetchObrasSocialesPaciente,
+    recargarCatalogos: fetchCatalogos,
   };
 }

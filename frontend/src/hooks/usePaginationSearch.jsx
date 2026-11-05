@@ -1,5 +1,5 @@
 /** @format */
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import api from "../services/api";
 import { manejarErrorApi } from "../utils/errorHandler";
 
@@ -13,38 +13,46 @@ export function usePaginationSearch(endpoint, limitPorDefecto = 9) {
   const [search, setSearchState] = useState("");
   const [order, setOrder] = useState({ column: "", direction: "ASC" });
 
-  // * BUSCAR DATOS PARA LA TABLA Y PAGINACION
-  const fetchData = async (parametrosExtra = {}) => {
-    setCargando(true);
-    try {
-      const respuesta = await api.get(endpoint, {
-        params: {
-          page,
-          search,
-          limit: limitPorDefecto,
-          sortField: order.column || undefined,
-          sortOrder: order.direction,
-          ...parametrosExtra,
-        },
-      });
-      setDatos(respuesta.data.data || []);
-      setPage(respuesta.data.meta?.page || page);
-      setTotalPages(respuesta.data.meta?.totalPages || 1);
-      setTotal(respuesta.data.meta?.total || 0);
-    } catch (error) {
-      console.error(`Error al cargar datos de ${endpoint}:`, error);
-      if (typeof manejarErrorApi === "function") {
-        manejarErrorApi(error, `Error al cargar los datos de ${endpoint}`);
-      }
-    } finally {
-      setCargando(false);
-    }
-  };
+  // Identifica la última petición lanzada: las respuestas anteriores se descartan
+  const ultimaPeticion = useRef(0);
 
-  // * RECARGAR DATOS CUANDO CAMBIA PAGINA
+  // * BUSCAR DATOS PARA LA TABLA Y PAGINACION
+  const fetchData = useCallback(
+    async (parametrosExtra = {}) => {
+      const idPeticion = ++ultimaPeticion.current;
+      setCargando(true);
+      try {
+        const respuesta = await api.get(endpoint, {
+          params: {
+            page,
+            search,
+            limit: limitPorDefecto,
+            sortField: order.column || undefined,
+            sortOrder: order.direction,
+            ...parametrosExtra,
+          },
+        });
+        if (idPeticion !== ultimaPeticion.current) return;
+
+        setDatos(respuesta.data.data || []);
+        setPage(respuesta.data.meta?.page || page);
+        setTotalPages(respuesta.data.meta?.totalPages || 1);
+        setTotal(respuesta.data.meta?.total || 0);
+      } catch (error) {
+        if (idPeticion !== ultimaPeticion.current) return;
+        console.error(`Error al cargar datos de ${endpoint}:`, error);
+        manejarErrorApi(error, `Error al cargar los datos de ${endpoint}`);
+      } finally {
+        if (idPeticion === ultimaPeticion.current) setCargando(false);
+      }
+    },
+    [endpoint, page, search, limitPorDefecto, order],
+  );
+
+  // * RECARGAR DATOS CUANDO CAMBIA PAGINA, BUSQUEDA U ORDEN
   useEffect(() => {
     fetchData();
-  }, [page, search, order]);
+  }, [fetchData]);
 
   // * SETEA LA BUSQUEDA
   const setSearch = (nuevoTermino) => {

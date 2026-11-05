@@ -18,6 +18,7 @@ import {
   validarSolapaminetoHorarios,
 } from "../validations/Turno.validation.js";
 import { ESTADOS } from "../constants/EstadosTurno.js";
+import { parsePagination, buildPaginationMeta } from "../utils/pagination.js";
 
 export const getAllTurnosAgenda = async (req, res) => {
   try {
@@ -49,24 +50,20 @@ export const getAllTurnosAgenda = async (req, res) => {
 export const getAllTurnos = async (req, res) => {
   try {
     // paginacion
-    const page = parseInt(req.query.page) || 1;
-    const limit = parseInt(req.query.limit) || 9;
-    const offset = (page - 1) * limit;
-    const search = req.query.search || "";
-    const sortField = req.query.sortField || "fecha_hora_inicio";
-    const sortOrder = req.query.sortOrder || "ASC";
+    const { page, limit, offset, search, sortField, sortOrder } = parsePagination(req.query, {
+      defaultLimit: 9,
+      defaultSortField: "fecha_hora_inicio",
+      defaultSortOrder: "ASC",
+      allowedSortFields: Object.keys(Turno.rawAttributes),
+    });
     const estadoFiltrado = req.query.estadoFiltrado;
-    let where = {
-      activo: true,
-    };
+    const where = { activo: true };
     if (estadoFiltrado) {
-      where = {
-        id_estado: estadoFiltrado,
-      };
+      where.id_estado = estadoFiltrado;
     }
 
     // Busqueda por nombre apellido dni telefono
-    if (search.trim() !== "") {
+    if (search !== "") {
       where[Op.or] = [
         { fecha_hora_inicio: { [Op.like]: `%${search}%` } },
         { fecha_hora_fin: { [Op.like]: `%${search}%` } },
@@ -93,19 +90,11 @@ export const getAllTurnos = async (req, res) => {
       ],
     });
 
-    const totalPages = Math.ceil(count / limit);
 
     res.status(200).json({
       status: "success",
       data: turnos,
-      meta: {
-        total: count,
-        page,
-        limit,
-        totalPages,
-        hasNextPage: page < totalPages,
-        hasPrevPage: page > 1,
-      },
+      meta: buildPaginationMeta(count, page, limit),
     });
   } catch (error) {
     console.error("Error al obtener los turnos:", error);
@@ -269,7 +258,7 @@ export const updateTurno = async (req, res) => {
     const { id_paciente, precio_final, notas_consulta } = req.body;
 
     if (id_paciente) {
-      const paciente = Paciente.findByPk(id_paciente);
+      const paciente = await Paciente.findByPk(id_paciente);
       if (!paciente) {
         return res.status(400).json({
           status: "error",
@@ -280,7 +269,7 @@ export const updateTurno = async (req, res) => {
 
     await turno.update({
       id_paciente: id_paciente || turno.id_paciente,
-      precio_final: precio_final || turno.precio_final,
+      precio_final: precio_final ?? turno.precio_final,
       notas_consulta: notas_consulta || null,
     });
 
@@ -344,14 +333,15 @@ export const turnoAtendido = async (req, res) => {
 
         // 3. Comparar la cantidad hallada con la cantidad solicitada
         if (practicasEncontradas.length !== idsUnicos.length) {
-          console.error("Una o más prácticas especificadas no existen.", error);
-          res.status(400).json({ error: "Una o más prácticas especificadas no existen" });
+          const err = new Error("Una o más prácticas especificadas no existen");
+          err.statusCode = 400;
+          throw err; // Revierte la transacción y se responde en el catch
         }
-        // 4. Mapear e insertar en lote (bulkCreate)
-        const registrosPracticas = idsUnicos.map((id_practica, index) => ({
+        // 4. Mapear e insertar en lote (bulkCreate); la obra social se toma de la posición original
+        const registrosPracticas = idsUnicos.map((id_practica) => ({
           id_turno: turno.id_turno,
           id_practica,
-          id_obra_social: obras_sociales ? obras_sociales[index] : null,
+          id_obra_social: obras_sociales?.[practicas_realizadas.indexOf(id_practica)] ?? null,
         }));
 
         await PracticaTurno.bulkCreate(registrosPracticas, { transaction: t });
@@ -365,6 +355,9 @@ export const turnoAtendido = async (req, res) => {
       data: result,
     });
   } catch (error) {
+    if (error.statusCode) {
+      return res.status(error.statusCode).json({ error: error.message });
+    }
     console.error("Error al finalizar la atención:", error);
     res.status(500).json({ error: "Error interno al registrar la atención" });
   }

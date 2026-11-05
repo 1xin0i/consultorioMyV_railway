@@ -2,22 +2,23 @@
 
 import { CategoriaGasto } from "../models/index.model.js";
 import { Op } from "sequelize";
+import { parsePagination, buildPaginationMeta } from "../utils/pagination.js";
 
 // Obtener todas las categorías de gastos (con paginación y búsqueda)
 export const getAllCategoriasGastos = async (req, res) => {
   try {
-    const page = parseInt(req.query.page) || 1;
-    const limit = parseInt(req.query.limit) || 10;
-    const offset = (page - 1) * limit;
-    const search = req.query.search || "";
-    const sortField = req.query.sortField || "nombre";
-    const sortOrder = req.query.sortOrder || "ASC";
+    const { page, limit, offset, search, sortField, sortOrder } = parsePagination(req.query, {
+      defaultLimit: 10,
+      defaultSortField: "nombre",
+      defaultSortOrder: "ASC",
+      allowedSortFields: Object.keys(CategoriaGasto.rawAttributes),
+    });
 
     const where = {
       activo: true,
     };
 
-    if (search.trim() !== "") {
+    if (search !== "") {
       where[Op.or] = [
         { nombre: { [Op.like]: `%${search}%` } },
         { descripcion: { [Op.like]: `%${search}%` } },
@@ -31,19 +32,11 @@ export const getAllCategoriasGastos = async (req, res) => {
       order: [[sortField, sortOrder]],
     });
 
-    const totalPages = Math.ceil(count / limit);
 
     res.status(200).json({
       status: "success",
       data: categorias,
-      meta: {
-        total: count,
-        page,
-        limit,
-        totalPages,
-        hasNextPage: page < totalPages,
-        hasPrevPage: page > 1,
-      },
+      meta: buildPaginationMeta(count, page, limit),
     });
   } catch (error) {
     console.error("Error al obtener las categorías de gastos:", error);

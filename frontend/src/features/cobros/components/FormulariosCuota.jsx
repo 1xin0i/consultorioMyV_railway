@@ -1,6 +1,6 @@
 /** @format */
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import Modal from "../../../components/common/Modal";
 import api from "../../../services/api";
 import { formatFechaTabla, formatSoloHora } from "../../../utils/index";
@@ -21,13 +21,8 @@ export default function FormularioCuotas({ modalCuotas, cerrarModal, cobroSelecc
     cobrar_inmediato: true, // 👈 SWITCH POR DEFECTO ACTIVADO
   });
 
-  useEffect(() => {
-    if (cobroSeleccionado?.id_cobro) {
-      cargarCuotas();
-    }
-  }, [cobroSeleccionado]);
-
-  const cargarCuotas = async () => {
+  const cargarCuotas = useCallback(async () => {
+    if (!cobroSeleccionado?.id_cobro) return;
     setCargando(true);
     try {
       const res = await api.get(`/cuotas/${cobroSeleccionado.id_cobro}/cuotas`);
@@ -54,7 +49,11 @@ export default function FormularioCuotas({ modalCuotas, cerrarModal, cobroSelecc
     } finally {
       setCargando(false);
     }
-  };
+  }, [cobroSeleccionado]);
+
+  useEffect(() => {
+    cargarCuotas();
+  }, [cargarCuotas]);
 
   const costoAcordado = Number(cobroSeleccionado?.monto_a_cobrar) || 0;
   const cantCuotasTotal = Number(cobroSeleccionado?.cant_cuotas) || 1;

@@ -76,7 +76,7 @@ export const updateCuota = async (req, res) => {
       const cobro = await Cobro.findByPk(id_cobro);
 
       if (!cobro) {
-        res.status(400).json({
+        return res.status(400).json({
           status: "error",
           message: "El cobro seleccionado no existe.",
         });
@@ -85,8 +85,8 @@ export const updateCuota = async (req, res) => {
 
     await cuota.update({
       id_cobro: id_cobro || cuota.id_cobro,
-      monto_cuota: monto_cuota || cuota.monto_cuota,
-      monto_cobrado: monto_cobrado || cuota.monto_cobrado,
+      monto_cuota: monto_cuota ?? cuota.monto_cuota,
+      monto_cobrado: monto_cobrado ?? cuota.monto_cobrado,
       fecha_vencimiento: fecha_vencimiento || cuota.fecha_vencimiento,
       fecha_cobro: fecha_cobro || cuota.fecha_cobro,
       metodo_pago: metodo_pago || cuota.metodo_pago,
@@ -128,13 +128,13 @@ export const cobrarCuota = async (req, res) => {
     let estado;
 
     const monto_cuota = parseFloat(cuota.monto_cuota);
+    const montoCobrado = Number(monto_cobrado);
 
-    if (monto_cobrado === monto_cuota) {
+    if (montoCobrado === monto_cuota) {
       estado = "Pagada";
-    } else if (monto_cobrado < monto_cuota) {
+    } else if (montoCobrado < monto_cuota) {
       estado = "Parcialmente pagada";
     } else {
-      // 🛑 ¡Faltaba el return acá para que frene si el monto es mayor!
       return res.status(400).json({
         status: "error",
         message: "El monto cobrado es mayor al monto de la cuota.",
@@ -148,7 +148,6 @@ export const cobrarCuota = async (req, res) => {
       estado: estado,
     });
 
-    // 🛑 Buena práctica agregar return acá también
     return res.status(200).json({
       status: "success",
       data: cuota,

@@ -7,37 +7,46 @@ export function useCobroActions(recargar, cerrarModal) {
   const [cargandoAccion, setCargandoAccion] = useState(false);
 
   const guardarCobro = async (datosFormulario, editando, cobroSeleccionado) => {
+    if (!datosFormulario?.id_turno) {
+      toast.error("Por favor seleccioná un turno para cobrar.");
+      return;
+    }
+
+    const monto = Number(datosFormulario?.monto_a_cobrar);
+    if (!monto || monto <= 0) {
+      toast.error("El monto a cobrar debe ser mayor a 0.");
+      return;
+    }
+
     setCargandoAccion(true);
     try {
       const payloadBase = {
         id_turno: Number(datosFormulario.id_turno),
         id_paciente: Number(datosFormulario.id_paciente),
-        monto_a_cobrar: Number(datosFormulario.monto_a_cobrar),
+        monto_a_cobrar: monto,
       };
 
       if (editando) {
         await api.put(`/cobros/${cobroSeleccionado.id_cobro}`, {
           ...payloadBase,
-          cant_cuotas: datosFormulario.modalidad === "cuotas" ? Number(datosFormulario.cant_cuotas) : 1,
+          cant_cuotas: 1,
         });
         toast.success("Cobro actualizado correctamente");
       } else {
-        if (datosFormulario.modalidad === "inmediato") {
-          await api.post("/cobros/inmediato", {
-            ...payloadBase,
-            metodo_pago: datosFormulario.metodo_pago,
-          });
-        } else if (datosFormulario.modalidad === "cuotas") {
-          await api.post("/cobros/cuotas", {
-            ...payloadBase,
-            cant_cuotas: Number(datosFormulario.cant_cuotas),
-            fecha_primer_vencimiento: datosFormulario.fecha_primer_vencimiento,
-          });
-        } else if (datosFormulario.modalidad === "informal") {
+        const modalidad =
+          datosFormulario.modalidad === "informal" ? "informal" : "inmediato";
+
+        if (modalidad === "informal") {
           await api.post("/cobros/informal", {
             ...payloadBase,
             entrega_inicial: Number(datosFormulario.entrega_inicial) || 0,
-            metodo_pago: datosFormulario.metodo_pago,
+            metodo_pago: datosFormulario.metodo_pago || "Efectivo",
+          });
+        } else {
+          // Por defecto y para "inmediato": 1 Pago Total
+          await api.post("/cobros/inmediato", {
+            ...payloadBase,
+            metodo_pago: datosFormulario.metodo_pago || "Efectivo",
           });
         }
         toast.success("Cobro registrado correctamente");

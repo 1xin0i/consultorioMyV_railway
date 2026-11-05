@@ -1,7 +1,12 @@
 /** @format */
-import { useState, useEffect, useCallback } from "react";
-import { calcularHoraFin } from "../features/turnos/utils/calcularHoraFin";
+import { useState, useCallback } from "react";
 
+/**
+ * Hook agnóstico para gestionar el ciclo de vida de modales de formularios CRUD
+ * (creación, edición, activación/toggle y eliminación).
+ *
+ * @param {Object} estadoInicialFormulario - Valores por defecto del formulario.
+ */
 export function useCRUDModal(estadoInicialFormulario) {
   // * DEFINICION DE ESTADOS GENERALES
   const [modalAbierto, setModalAbierto] = useState(false);
@@ -10,14 +15,6 @@ export function useCRUDModal(estadoInicialFormulario) {
   const [editando, setEditando] = useState(false);
   const [itemSeleccionado, setItemSeleccionado] = useState(null);
   const [datosFormulario, setDatosFormulario] = useState(estadoInicialFormulario);
-
-  // Cálculos de hora fin (Creación / Edición)
-  useEffect(() => {
-    // Solo calculamos si el modal está abierto y hay una fecha de inicio
-    if (modalAbierto && datosFormulario.fecha_hora_inicio && datosFormulario.duracion_minutos) {
-      calcularHoraFin(datosFormulario, actualizarDatos);
-    }
-  }, [datosFormulario.fecha_hora_inicio, datosFormulario.duracion_minutos, modalAbierto]);
 
   // * ABRIR MODAL DE CREAR
   const abrirParaCrear = useCallback(
@@ -50,7 +47,7 @@ export function useCRUDModal(estadoInicialFormulario) {
     setModalEliminar(true);
   }, []);
 
-  // * ABRIR MODAL DE CERRAR LOS MODALES (VALORES DEFAULT)
+  // * CERRAR MODALES (RESETEA A VALORES POR DEFECTO)
   const cerrarModal = useCallback(() => {
     setModalAbierto(false);
     setModalEliminar(false);
@@ -76,6 +73,7 @@ export function useCRUDModal(estadoInicialFormulario) {
     editando,
     itemSeleccionado,
     datosFormulario,
+    setDatosFormulario,
     abrirParaCrear,
     abrirParaEditar,
     abrirParaToggle,

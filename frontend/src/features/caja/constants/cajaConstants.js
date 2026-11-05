@@ -12,8 +12,9 @@ export const ESTADO_INICIAL_COBRO = {
   id_paciente: "",
   id_turno: "",
   monto_a_cobrar: "",
-  modalidad: "Contado",
+  modalidad: "inmediato",
   cant_cuotas: 1,
   metodo_pago: "Efectivo",
+  entrega_inicial: "",
   notas: "",
 };

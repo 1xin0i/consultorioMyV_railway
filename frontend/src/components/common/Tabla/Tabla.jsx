@@ -8,6 +8,7 @@ export default function Tabla({
   search = "", // Término de búsqueda opcional
   cantFilasSkeleton = 5, // Cantidad de filas fantasmas a mostrar durante la carga
   sinDatosText = "No hay registros disponibles.",
+  vistaMovil, // Si se provee: en móvil (< md) se muestran tarjetas y la tabla solo desde md
   children,
 }) {
   // Verificamos si los children contienen filas con datos
@@ -15,12 +16,16 @@ export default function Tabla({
   const estaBuscando = search.trim().length > 0;
 
   return (
-    <div className="bg-white border border-gray-100 shadow-sm overflow-hidden flex-1">
+    <>
+      {vistaMovil && <div className="md:hidden">{vistaMovil}</div>}
+      <div
+        className={`bg-white border border-teal-100/90 rounded-2xl shadow-xs overflow-hidden flex-1 ${vistaMovil ? "hidden md:block" : ""}`}
+      >
       <div className="overflow-x-auto">
         <table className="w-full text-left border-collapse">
-          {/* ENCABEZADO DE LA TABLA */}
-          <thead className="bg-[#e8f7f1]">
-            <tr className="border-b border-gray-100 text-xs font-bold text-gray-500 uppercase tracking-wider">
+          {/* ENCABEZADO DE LA TABLA: Fondo tintado clínico con borde y contraste */}
+          <thead className="bg-gradient-to-r from-emerald-50 via-teal-50/80 to-emerald-50/50 border-b-2 border-teal-200">
+            <tr className="text-xs font-bold text-teal-950 uppercase tracking-wider">
               {columnas.map((col, index) => (
                 <th
                   key={index}
@@ -33,7 +38,7 @@ export default function Tabla({
           </thead>
 
           {/* CUERPO DE LA TABLA */}
-          <tbody className="divide-y divide-gray-100 text-sm">
+          <tbody className="divide-y divide-teal-50/80 text-sm">
             {cargando ? (
               /* ESTADO 1: SKELETON (Cargando / Buscando) */
               Array.from({ length: cantFilasSkeleton }).map((_, filaIdx) => (
@@ -84,6 +89,7 @@ export default function Tabla({
           </tbody>
         </table>
       </div>
-    </div>
+      </div>
+    </>
   );
 }

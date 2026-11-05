@@ -1,12 +1,17 @@
 /** @format */
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import api from "../../../services/api";
 
 export function useCajaSearchPagination(limitPorDefecto = 9) {
   // * DEFINICIÓN DE ESTADOS GENERALES
   const [cargando, setCargando] = useState(false);
   const [search, setSearchState] = useState("");
-  const [order, setOrder] = useState({ column: "", direction: "ASC" });
+
+  //* PERÍODO (MES Y AÑO / MODO ANUAL)
+  const fechaHoy = new Date();
+  const [mes, setMesState] = useState(fechaHoy.getMonth() + 1);
+  const [anio, setAnioState] = useState(fechaHoy.getFullYear());
+  const [modoAnual, setModoAnualState] = useState(false);
 
   //* DATOS COBRO
   const [cobros, setCobros] = useState([]);
@@ -20,53 +25,131 @@ export function useCajaSearchPagination(limitPorDefecto = 9) {
   const [totalGasto, setTotalGasto] = useState(0);
   const [totalPagesGasto, setTotalPagesGasto] = useState(1);
 
-  //* DATOS TURNO
+  //* DATOS PENDIENTES Y TOTALES
   const [turnosPendientes, setTurnosPendientes] = useState([]);
+  const [cuotasPendientes, setCuotasPendientes] = useState([]);
+  const [totalesBackend, setTotalesBackend] = useState(null);
+
+  // Identifica la última petición lanzada: las respuestas anteriores se descartan
+  const ultimaPeticion = useRef(0);
 
   // * BUSCAR DATOS UTILIZANDO LA RUTA UNIFICADA DE CAJA
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
+    const idPeticion = ++ultimaPeticion.current;
     setCargando(true);
     try {
-      // 1. Llamada unificada a /caja pasando los parámetros de paginación y búsqueda
-      const respuesta = await api.get("/caja", {
-        params: {
-          pageCobro,
-          limitCobro: limitPorDefecto,
-          pageGasto,
-          limitGasto: limitPorDefecto,
-          searchCobro: search,
-          searchGasto: search,
-        },
-      });
+      const params = {
+        pageCobro,
+        limitCobro: limitPorDefecto,
+        pageGasto,
+        limitGasto: limitPorDefecto,
+        searchCobro: search,
+        searchGasto: search,
+      };
+
+      if (modoAnual) {
+        params.periodo = "anio";
+        params.anio = anio;
+      } else {
+        params.mes = mes;
+        params.anio = anio;
+      }
+
+      const respuesta = await api.get("/caja", { params });
+      if (idPeticion !== ultimaPeticion.current) return;
 
       const { data, meta } = respuesta.data;
 
-      // 2. Asignación limpia de cobros y su metadatos
+      // 1. Asignación de cobros y sus metadatos
       setCobros(data.cobros || []);
       setPageCobro(meta.cobros.page || pageCobro);
       setTotalPagesCobro(meta.cobros.totalPages || 1);
       setTotalCobro(meta.cobros.total || 0);
 
-      // 3. Asignación limpia de gastos y su metadatos
+      // 2. Asignación de gastos y sus metadatos
       setGastos(data.gastos || []);
       setPageGasto(meta.gastos.page || pageGasto);
       setTotalPagesGasto(meta.gastos.totalPages || 1);
       setTotalGasto(meta.gastos.total || 0);
 
-      // 4. Obtener turnos atendidos pendientes de cobro
-      const resTurnos = await api.get("/turnos/atendidos");
-      setTurnosPendientes(resTurnos.data.data || []);
+      // 3. Pendientes (turnos sin cobro y cuotas adeudadas hasta hoy)
+      setTurnosPendientes(data.turnosPendientes || []);
+      setCuotasPendientes(data.cuotasPendientes || []);
+
+      // 4. Totales globales del período calculados en el backend
+      if (data.totales) {
+        setTotalesBackend(data.totales);
+      }
     } catch (error) {
       console.error("Error al cargar los datos consolidados de caja:", error);
     } finally {
-      setCargando(false);
+      if (idPeticion === ultimaPeticion.current) setCargando(false);
+    }
+  }, [pageCobro, limitPorDefecto, pageGasto, search, mes, anio, modoAnual]);
+
+  // * RECARGAR DATOS CUANDO CAMBIA DE PÁGINA, BÚSQUEDA O PERÍODO
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
+
+  // * NAVEGACIÓN DE PERÍODOS
+  const mesAnterior = () => {
+    setModoAnualState(false);
+    setPageCobro(1);
+    setPageGasto(1);
+    if (mes === 1) {
+      setMesState(12);
+      setAnioState((a) => a - 1);
+    } else {
+      setMesState((m) => m - 1);
     }
   };
 
-  // * RECARGAR DATOS CUANDO CAMBIA DE PÁGINA O BÚSQUEDA
-  useEffect(() => {
-    fetchData();
-  }, [pageCobro, pageGasto, search]);
+  const mesSiguiente = () => {
+    setModoAnualState(false);
+    setPageCobro(1);
+    setPageGasto(1);
+    if (mes === 12) {
+      setMesState(1);
+      setAnioState((a) => a + 1);
+    } else {
+      setMesState((m) => m + 1);
+    }
+  };
+
+  const irAMesActual = () => {
+    setModoAnualState(false);
+    setPageCobro(1);
+    setPageGasto(1);
+    const now = new Date();
+    setMesState(now.getMonth() + 1);
+    setAnioState(now.getFullYear());
+  };
+
+  const cambiarMes = (nuevoMes) => {
+    setModoAnualState(false);
+    setPageCobro(1);
+    setPageGasto(1);
+    setMesState(Number(nuevoMes));
+  };
+
+  const cambiarAnio = (nuevoAnio) => {
+    setPageCobro(1);
+    setPageGasto(1);
+    setAnioState(Number(nuevoAnio));
+  };
+
+  const setModoAnual = (valor) => {
+    setPageCobro(1);
+    setPageGasto(1);
+    setModoAnualState(Boolean(valor));
+  };
+
+  const toggleModoAnual = () => {
+    setPageCobro(1);
+    setPageGasto(1);
+    setModoAnualState((prev) => !prev);
+  };
 
   // * SETEA LA BÚSQUEDA
   const setSearch = (nuevoTermino) => {
@@ -88,7 +171,22 @@ export function useCajaSearchPagination(limitPorDefecto = 9) {
     cobros,
     gastos,
     turnosPendientes,
+    cuotasPendientes,
+    totalesBackend,
     cargando,
+
+    mes,
+    anio,
+    modoAnual,
+    periodoTodos: modoAnual,
+    mesAnterior,
+    mesSiguiente,
+    irAMesActual,
+    cambiarMes,
+    cambiarAnio,
+    setModoAnual,
+    toggleModoAnual,
+    setPeriodoTodos: setModoAnual,
 
     pageCobro,
     setPageCobro,
@@ -101,8 +199,6 @@ export function useCajaSearchPagination(limitPorDefecto = 9) {
 
     search,
     setSearch,
-    order,
-    setOrder,
 
     inicioRegistroCobro,
     finRegistroCobro,

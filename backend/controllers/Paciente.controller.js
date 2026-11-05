@@ -3,23 +3,24 @@
 import { Paciente, PacienteObraSocial, ObraSocial } from "../models/index.model.js";
 import { validarTelefono, validarDni } from "../validations/Paciente.validation.js";
 import { Op, Sequelize } from "sequelize";
+import { parsePagination, buildPaginationMeta } from "../utils/pagination.js";
 
 // Obtener todos los pacientes
 export const getAllPacientes = async (req, res) => {
   try {
     // paginacion
-    const page = parseInt(req.query.page) || 1;
-    const limit = parseInt(req.query.limit) || 9;
-    const offset = (page - 1) * limit;
-    const search = req.query.search || "";
-    const sortField = req.query.sortField || "apellido";
-    const sortOrder = req.query.sortOrder || "ASC";
+    const { page, limit, offset, search, sortField, sortOrder } = parsePagination(req.query, {
+      defaultLimit: 9,
+      defaultSortField: "apellido",
+      defaultSortOrder: "ASC",
+      allowedSortFields: Object.keys(Paciente.rawAttributes),
+    });
     const where = {
       activo: true,
     };
 
     // Busqueda por nombre apellido dni telefono
-    if (search.trim() !== "") {
+    if (search !== "") {
       where[Op.or] = [
         { nombre: { [Op.like]: `%${search}%` } },
         { apellido: { [Op.like]: `%${search}%` } },
@@ -47,19 +48,11 @@ export const getAllPacientes = async (req, res) => {
       ],
     });
 
-    const totalPages = Math.ceil(count / limit);
 
     res.status(200).json({
       status: "success",
       data: pacientes,
-      meta: {
-        total: count,
-        page,
-        limit,
-        totalPages,
-        hasNextPage: page < totalPages,
-        hasPrevPage: page > 1,
-      },
+      meta: buildPaginationMeta(count, page, limit),
     });
   } catch (error) {
     console.error("Error al obtener los pacientes:", error);

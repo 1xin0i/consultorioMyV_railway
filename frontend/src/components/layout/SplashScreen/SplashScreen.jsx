@@ -1,4 +1,3 @@
-import React from "react";
 
 /**
  * SplashScreen - Pantalla de Carga / Splash Screen Oficial

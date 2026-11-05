@@ -14,6 +14,7 @@ export const Usuario = sequelize.define(
     nombre_usuario: {
       type: DataTypes.STRING,
       allowNull: false,
+      unique: true,
     },
     contraseña: {
       type: DataTypes.STRING,
@@ -22,6 +23,7 @@ export const Usuario = sequelize.define(
     rol: {
       type: DataTypes.ENUM("admin", "odontologo"),
       allowNull: false,
+      defaultValue: "odontologo",
       validate: {
         isIn: {
           args: [["admin", "odontologo"]],
@@ -35,3 +37,5 @@ export const Usuario = sequelize.define(
     timestamps: false,
   },
 );
+
+export default Usuario;

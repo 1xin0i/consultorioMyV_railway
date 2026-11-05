@@ -1,8 +1,6 @@
 /** @format */
 
-import { Search } from "lucide-react";
-
-// TODO: A futuro (o si notas que la API sufre peticiones de más), sería ideal implementar un pequeño debounce para esperar que termine de escribir
+import { Search, X } from "lucide-react";
 
 export default function TablaHeader({
   inicioRegistro,
@@ -20,7 +18,7 @@ export default function TablaHeader({
       </div>
 
       <div className="flex items-center gap-3 w-full sm:w-auto justify-end">
-        {children} {/* Aquí puedes renderizar selects o filtros adicionales si los hay */}
+        {children}
         <div className="relative flex-1 sm:w-80">
           <Search size={18} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" />
           <input
@@ -28,8 +26,18 @@ export default function TablaHeader({
             placeholder={placeholder}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full pl-10 pr-4 py-2 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#2eb086]/50 focus:border-[#2eb086] transition-all"
+            className="w-full pl-10 pr-9 py-2 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#2eb086]/50 focus:border-[#2eb086] transition-all"
           />
+          {search && (
+            <button
+              type="button"
+              onClick={() => setSearch("")}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors cursor-pointer"
+              title="Borrar búsqueda"
+            >
+              <X size={16} />
+            </button>
+          )}
         </div>
       </div>
     </div>

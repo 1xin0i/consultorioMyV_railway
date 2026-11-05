@@ -1,7 +1,7 @@
 /** @format */
 
 //* useSearchParams E ICONOS
-import { useEffect } from "react";
+import { useState, useEffect } from "react";
 import { useSearchParams } from "react-router-dom"; // * PARA PERMITIR COMPLETAR PACIENTE DESDE AGENDA
 import { Users, Plus, Edit, Phone, Ban, RotateCcw, Eye, Shield } from "lucide-react";
 
@@ -10,6 +10,7 @@ import Header from "../../components/common/Header";
 import Tabla from "../../components/common/Tabla/Tabla";
 import TablaHeader from "../../components/common/Tabla/TablaHeader";
 import TablaPaginacion from "../../components/common/Tabla/TablaPaginacion";
+import { ListaTarjetas, TarjetaRegistro } from "../../components/common/Tabla/TarjetaRegistro";
 
 // * PAGELAYOUT (PARA EL BOTON)
 import PageLayout from "../../components/layout/PageLayout";
@@ -19,7 +20,6 @@ import { useCRUDModal } from "../../hooks/useCRUDModal";
 import { usePaginationSearch } from "../../hooks/usePaginationSearch";
 import { usePacienteActions } from "./hooks/usePacienteActions";
 import { useObrasSocialesCatalogo } from "./hooks/useObrasSocialesCatalogo";
-import { usePacienteVer } from "./hooks/usePacienteVer.jsx";
 
 //* FUNCIONES PARA FORMATEAR FECHAS Y UTILIDADES
 import { formatearPacienteParaEditar } from "./utils/formatearPacienteParaEditar.js";
@@ -64,8 +64,9 @@ export default function GestionPacientes() {
     actualizarDatos,
   } = useCRUDModal(ESTADO_INICIAL);
 
-  // * HOOK DE MODAL VER
-  const { modalCuenta, pacienteVerCuenta, abrirParaVer, cerrarVer } = usePacienteVer();
+  // * ESTADO DE MODAL VER
+  const [pacienteVer, setPacienteVer] = useState(null);
+  const abrirParaVer = (p) => setPacienteVer(p);
 
   // * HOOK PARA OBRAS SOCIALES
   const { obrasSocialesLista, agregarObraSocialForm, actualizarObraSocialForm, eliminarObraSocialForm } =
@@ -81,7 +82,7 @@ export default function GestionPacientes() {
 
   return (
     <PageLayout onAdd={abrirParaCrear}>
-      <div className="w-full flex-1 flex flex-col gap-4 pb-24">
+      <div className="w-full flex-1 flex flex-col gap-4">
         {/* //* HEADER PRINCIPAL */}
         <Header
           icono={Users}
@@ -123,6 +124,85 @@ export default function GestionPacientes() {
                 cargando={cargando}
                 search={search}
                 sinDatosText="No se encontraron pacientes registrados."
+                vistaMovil={
+                  <ListaTarjetas
+                    cargando={cargando}
+                    search={search}
+                    sinDatosText="No se encontraron pacientes registrados."
+                    page={page}
+                    setPage={setPage}
+                    totalPages={totalPages}
+                  >
+                    {pacientes.map((paciente) => (
+                      <TarjetaRegistro
+                        key={paciente.id_paciente}
+                        avatar={`${paciente.nombre?.charAt(0) || ""}${paciente.apellido?.charAt(0) || ""}`}
+                        titulo={`${paciente.nombre} ${paciente.apellido}`}
+                        subtitulo={`DNI: ${paciente.dni || "S/D"}`}
+                        tituloSheet="Opciones del Paciente"
+                        badge={
+                          <span
+                            className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold border shrink-0 ${
+                              paciente.activo
+                                ? "bg-emerald-50 text-emerald-700 border-emerald-200/60"
+                                : "bg-gray-100 text-gray-500 border-gray-200"
+                            }`}
+                          >
+                            {paciente.activo ? "Activo" : "Inactivo"}
+                          </span>
+                        }
+                        acciones={[
+                          {
+                            key: "ver",
+                            label: "Ver ficha",
+                            icon: Eye,
+                            rapida: true,
+                            onClick: () => abrirParaVer(paciente),
+                          },
+                          {
+                            key: "editar",
+                            label: "Editar",
+                            icon: Edit,
+                            tono: "azul",
+                            rapida: true,
+                            onClick: () => abrirParaEditar(paciente, formatearPacienteParaEditar),
+                          },
+                          {
+                            key: "toggle",
+                            label: paciente.activo ? "Desactivar paciente" : "Reactivar paciente",
+                            icon: paciente.activo ? Ban : RotateCcw,
+                            tono: paciente.activo ? "rojo" : "verde",
+                            separador: true,
+                            onClick: () => abrirParaToggle(paciente),
+                          },
+                        ]}
+                      >
+                        <div className="flex items-center gap-2">
+                          <Phone size={14} className="text-gray-400 shrink-0" />
+                          <span className="font-medium text-gray-700">{paciente.telefono || "S/D"}</span>
+                        </div>
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          <Shield size={14} className="text-gray-400 shrink-0" />
+                          {paciente.PacienteObraSocials && paciente.PacienteObraSocials.length > 0 ? (
+                            paciente.PacienteObraSocials.map((pos) => (
+                              <span
+                                key={pos.id_paciente_obra_social || pos.id_obra_social}
+                                className="px-2 py-0.5 rounded-lg text-[11px] font-semibold bg-[#e8f7f1] text-[#2eb086] border border-[#2eb086]/20"
+                              >
+                                {pos.ObraSocial?.nombre || "Obra Social"}
+                                {pos.nro_afiliado ? ` #${pos.nro_afiliado}` : ""}
+                              </span>
+                            ))
+                          ) : (
+                            <span className="px-2 py-0.5 rounded-lg text-[11px] font-medium bg-gray-100 text-gray-500 border border-gray-200">
+                              Particular
+                            </span>
+                          )}
+                        </div>
+                      </TarjetaRegistro>
+                    ))}
+                  </ListaTarjetas>
+                }
                 columnas={[
                   { label: "Paciente" },
                   { label: "DNI" },
@@ -132,69 +212,73 @@ export default function GestionPacientes() {
                 ]}
               >
                 {pacientes.map((paciente) => (
-                  <tr key={paciente.id_paciente} className="hover:bg-gray-50/60 transition-colors">
-                    {/* //* COLUMNAS: NOMBRE Y APELLIDO */}
+                  <tr key={paciente.id_paciente} className="hover:bg-emerald-50/40 transition-colors">
+                    {/* //* COLUMNAS: NOMBRE Y APELLIDO (Foco primario con avatar clínico) */}
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-3">
-                        <div className="hidden md:flex w-9 h-9 rounded-full bg-[#e8f7f1] text-[#2eb086] items-center justify-center font-bold text-sm shrink-0">
+                        <div className="hidden md:flex w-9 h-9 rounded-full bg-emerald-100 text-emerald-700 border border-emerald-200/90 items-center justify-center font-bold text-xs shrink-0 shadow-2xs">
                           {paciente.nombre?.charAt(0)}
                           {paciente.apellido?.charAt(0)}
                         </div>
-                        <span className="font-semibold text-gray-800">
+                        <span className="font-bold text-slate-900 text-sm tracking-tight">
                           {paciente.nombre} {paciente.apellido}
                         </span>
                       </div>
                     </td>
 
-                    {/* //* COLUMNAS: DNI */}
-                    <td className="px-6 py-4 text-gray-600 font-medium">
-                      {paciente.dni || <span className="text-gray-400 italic">S/D</span>}
+                    {/* //* COLUMNAS: DNI (Nivel 2: Soporte) */}
+                    <td className="px-6 py-4 text-slate-700 font-medium text-xs">
+                      {paciente.dni ? (
+                        <span className="font-semibold text-slate-800">{paciente.dni}</span>
+                      ) : (
+                        <span className="text-slate-400 italic">S/D</span>
+                      )}
                     </td>
 
-                    {/* //* COLUMNAS: TELEFONO */}
-                    <td className="px-6 py-4 text-gray-600">
+                    {/* //* COLUMNAS: TELEFONO (Nivel 2: Soporte) */}
+                    <td className="px-6 py-4 text-slate-700 text-xs font-medium">
                       <div className="flex items-center gap-1.5">
-                        <Phone size={14} className="text-gray-400" />
-                        <span>{paciente.telefono}</span>
+                        <Phone size={14} className="text-teal-600" />
+                        <span>{paciente.telefono || <span className="text-slate-400 italic">—</span>}</span>
                       </div>
                     </td>
 
-                    {/* //* COLUMNA 2: BADGES DE OBRAS SOCIALES */}
-                    <td className="hidden md:table-cell px-6 py-4">
+                    {/* //* COLUMNA: BADGES DE OBRAS SOCIALES */}
+                    <td className="px-6 py-4">
                       <div className="flex items-center gap-1.5 flex-wrap">
                         {paciente.PacienteObraSocials && paciente.PacienteObraSocials.length > 0 ? (
                           paciente.PacienteObraSocials.map((pos) => (
                             <span
                               key={pos.id_paciente_obra_social || pos.id_obra_social}
-                              className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-semibold bg-[#e8f7f1] text-[#2eb086] border border-[#2eb086]/20"
+                              className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-semibold bg-emerald-100/70 text-emerald-800 border border-emerald-200/90 shadow-2xs"
                               title={
                                 pos.nro_afiliado ? `N° Afiliado: ${pos.nro_afiliado}` : "Particular / S/N"
                               }
                             >
-                              <Shield size={13} className="shrink-0" />
+                              <Shield size={12} className="shrink-0 text-emerald-600" />
                               <span>{pos.ObraSocial?.nombre || "Obra Social"}</span>
                               {pos.nro_afiliado && (
-                                <span className="text-[10px] opacity-75 font-normal border-l border-[#2eb086]/30 pl-1 ml-0.5">
+                                <span className="text-[10px] opacity-75 font-normal border-l border-emerald-300 pl-1 ml-0.5">
                                   #{pos.nro_afiliado}
                                 </span>
                               )}
                             </span>
                           ))
                         ) : (
-                          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-medium bg-gray-100 text-gray-500 border border-gray-200">
+                          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-semibold bg-slate-100 text-slate-600 border border-slate-200 shadow-2xs">
                             Particular
                           </span>
                         )}
                       </div>
                     </td>
 
-                    {/* //* COLUMNAS: ACCIONES */}
+                    {/* //* COLUMNAS: ACCIONES CON COLOR FUNCIONAL */}
                     <td className="px-6 py-4">
-                      <div className="flex items-center justify-center gap-2">
+                      <div className="flex items-center justify-center gap-1.5">
                         <button
                           type="button"
-                          onClick={() => abrirParaVer(paciente)}
-                          className="p-2 rounded-lg text-emerald-600 hover:bg-emerald-50 transition-colors"
+                          onClick={() => setPacienteVer(paciente)}
+                          className="p-2 rounded-xl text-teal-600 hover:bg-teal-50 hover:scale-105 active:scale-95 transition-all cursor-pointer"
                           title="Ver Ficha y Cuenta Corriente"
                         >
                           <Eye size={18} />
@@ -202,7 +286,7 @@ export default function GestionPacientes() {
                         <button
                           type="button"
                           onClick={() => abrirParaEditar(paciente, formatearPacienteParaEditar)}
-                          className="p-2 rounded-lg text-blue-600 hover:bg-blue-50 transition-colors"
+                          className="p-2 rounded-xl text-blue-600 hover:bg-blue-50 hover:scale-105 active:scale-95 transition-all cursor-pointer"
                           title="Editar Paciente"
                         >
                           <Edit size={18} />
@@ -210,11 +294,12 @@ export default function GestionPacientes() {
                         <button
                           type="button"
                           onClick={() => abrirParaToggle(paciente)}
-                          className={`p-2 rounded-lg transition-colors ${
+                          className={`p-2 rounded-xl hover:scale-105 active:scale-95 transition-all cursor-pointer ${
                             paciente.activo
-                              ? "text-red-500 hover:bg-red-50"
+                              ? "text-rose-600 hover:bg-rose-50"
                               : "text-emerald-600 hover:bg-emerald-50"
                           }`}
+                          title={paciente.activo ? "Desactivar Paciente" : "Reactivar Paciente"}
                         >
                           {paciente.activo ? <Ban size={18} /> : <RotateCcw size={18} />}
                         </button>
@@ -260,8 +345,8 @@ export default function GestionPacientes() {
         )}
 
         {/* //* MODALES: VER */}
-        {modalCuenta && (
-          <VistaPaciente isOpen={modalCuenta} onClose={() => cerrarVer()} paciente={pacienteVerCuenta} />
+        {pacienteVer && (
+          <VistaPaciente isOpen={Boolean(pacienteVer)} onClose={() => setPacienteVer(null)} paciente={pacienteVer} />
         )}
       </div>
     </PageLayout>

@@ -23,7 +23,7 @@ export function FormularioCrearEditar({
         width="max-w-2xl"
         title={editando ? "Editar Paciente" : "Registrar Nuevo Paciente"}
       >
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pb-8 sm:pb-6">
           {/* //* NOMBRE */}
           <div>
             <label className="block text-sm font-semibold text-gray-700 mb-1">Nombre *</label>
@@ -122,7 +122,7 @@ export function FormularioCrearEditar({
             </div>
 
             {datosFormulario.obrasSociales.length === 0 ? (
-              <p className="text-xs text-gray-400 italic">
+              <p className="text-xs text-gray-500 italic py-1">
                 Sin obras sociales asociadas. El paciente se registrará como Particular.
               </p>
             ) : (
@@ -175,21 +175,18 @@ export function FormularioCrearEditar({
           </div>
         </div>
 
-        {/* //* SEPARADOR */}
-        <div className="border-t border-gray-200 my-5" />
-
-        {/* //* ACCIONES MODAL */}
-        <div className="flex justify-end gap-3">
+        {/* //* ACCIONES MODAL FIJAS AL PIE */}
+        <div className="sticky bottom-0 -mx-5 -mb-5 sm:-mx-6 sm:-mb-6 mt-4 p-4 bg-white/95 backdrop-blur-xs border-t border-gray-100 flex justify-end gap-3 z-20 shadow-xs">
           <button
             type="button"
             onClick={cerrarModal}
-            className="px-4 py-2.5 rounded-xl text-gray-600 bg-gray-100 hover:bg-gray-200 transition-colors font-medium text-sm"
+            className="px-4 py-2 rounded-xl text-gray-600 bg-gray-100 hover:bg-gray-200 transition-colors font-medium text-xs sm:text-sm cursor-pointer"
           >
             Cancelar
           </button>
           <button
             type="submit"
-            className="px-5 py-2.5 rounded-xl text-white bg-[#2eb086] hover:bg-[#259370] transition-all shadow-sm font-semibold text-sm"
+            className="px-5 py-2 rounded-xl text-white bg-[#2eb086] hover:bg-[#259370] transition-all shadow-sm font-semibold text-xs sm:text-sm cursor-pointer"
           >
             {editando ? "Guardar Cambios" : "Registrar Paciente"}
           </button>
@@ -225,40 +222,6 @@ export function FormularioToggle({ modalToggle, cerrarModal, pacienteSeleccionad
         <button
           type="button"
           onClick={togglePaciente}
-          className="px-4 py-2 rounded-xl text-white bg-red-500 hover:bg-red-600 font-semibold text-sm transition-colors shadow-sm"
-        >
-          Sí, Desactivar
-        </button>
-      </div>
-    </Modal>
-  );
-}
-export function FormularioEliminar({ modalEliminar, cerrarModal, pacienteSeleccionado, eliminarPaciente }) {
-  return (
-    <Modal isOpen={modalEliminar} onClose={cerrarModal} width="max-w-md" title="Desactivar Paciente">
-      <div className="flex flex-col gap-3">
-        <p className="text-sm text-gray-600">
-          ¿Estás seguro de que deseas desactivar a{" "}
-          <strong className="text-gray-800">
-            {pacienteSeleccionado?.nombre} {pacienteSeleccionado?.apellido}
-          </strong>
-          ? El paciente dejará de figurar en el listado activo.
-        </p>
-      </div>
-
-      <div className="border-t border-gray-200 my-4" />
-
-      <div className="flex justify-end gap-3">
-        <button
-          type="button"
-          onClick={cerrarModal}
-          className="px-4 py-2 rounded-xl text-gray-600 bg-gray-100 hover:bg-gray-200 font-medium text-sm"
-        >
-          Cancelar
-        </button>
-        <button
-          type="button"
-          onClick={eliminarPaciente}
           className="px-4 py-2 rounded-xl text-white bg-red-500 hover:bg-red-600 font-semibold text-sm transition-colors shadow-sm"
         >
           Sí, Desactivar

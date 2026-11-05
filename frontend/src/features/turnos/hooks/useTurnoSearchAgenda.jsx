@@ -1,15 +1,15 @@
 /** @format */
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import api from "../../../services/api";
 
-export function useTurnoSearchAgenda(endpoint, limitPorDefecto = 9) {
+export function useTurnoSearchAgenda(endpoint) {
   const [turnos, setTurnos] = useState([]);
   const [pacientes, setPacientes] = useState([]);
   const [practicasLista, setPracticasLista] = useState([]);
   const [obrasSocialesPaciente, setObrasSocialesPaciente] = useState([]);
   const [cargando, setCargando] = useState(false);
 
-  const fetchTurnos = async () => {
+  const fetchTurnos = useCallback(async () => {
     setCargando(true);
     try {
       const respuesta = await api.get(endpoint);
@@ -19,47 +19,42 @@ export function useTurnoSearchAgenda(endpoint, limitPorDefecto = 9) {
     } finally {
       setCargando(false);
     }
-  };
+  }, [endpoint]);
 
-  const fetchPacientes = async () => {
+  const fetchCatalogos = useCallback(async () => {
     try {
-      const respuesta = await api.get("/pacientes");
-      setPacientes(respuesta.data.data || []);
+      const [resPacientes, resPracticas] = await Promise.all([
+        api.get("/pacientes", { params: { limit: 1000 } }),
+        api.get("/practicas", { params: { limit: 1000 } }),
+      ]);
+      setPacientes(resPacientes.data.data || []);
+      setPracticasLista(resPracticas.data.data || []);
     } catch (error) {
-      console.error("Error al cargar pacientes:", error);
+      console.error("Error al cargar dependencias de agenda:", error);
     }
-  };
+  }, []);
 
   const fetchObrasSocialesPaciente = async (id_paciente) => {
+    if (!id_paciente) return;
     try {
       const respuesta = await api.get(`/pacientes-por-obras-sociales/${id_paciente}`);
-      setObrasSocialesPaciente(respuesta.data.data);
+      setObrasSocialesPaciente(respuesta.data.data || []);
     } catch (error) {
-      console.error("Error al cargar las obras sociales de los pacientes:", error);
-    }
-  };
-
-  const fetchPracticas = async () => {
-    try {
-      const respuesta = await api.get("/practicas");
-      setPracticasLista(respuesta.data.data || []);
-    } catch (error) {
-      console.error("Error al cargar catálogo de prácticas:", error);
+      console.error("Error al cargar las obras sociales del paciente:", error);
     }
   };
 
   useEffect(() => {
     fetchTurnos();
-    fetchPacientes();
-    fetchPracticas();
-  }, []);
+    fetchCatalogos();
+  }, [fetchTurnos, fetchCatalogos]);
 
   return {
-    turnos: turnos,
-    pacientes: pacientes,
-    setPacientes: setPacientes,
-    practicasLista: practicasLista,
-    obrasSocialesPaciente: obrasSocialesPaciente,
+    turnos,
+    pacientes,
+    setPacientes,
+    practicasLista,
+    obrasSocialesPaciente,
     cargando,
     recargar: fetchTurnos,
     buscarOSPaciente: fetchObrasSocialesPaciente,

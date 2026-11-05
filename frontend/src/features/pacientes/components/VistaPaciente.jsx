@@ -1,26 +1,19 @@
 /** @format */
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import Modal from "../../../components/common/Modal";
 import api from "../../../services/api";
 import { calcularEdad } from "../utils/calcularEdad";
 import { formatFechaTabla, formatSoloHora } from "../../../utils/index";
 import { useNavigate } from "react-router-dom";
 import {
-  User,
-  Calendar,
-  Phone,
-  FileText,
-  DollarSign,
   ChevronDown,
   ChevronUp,
   Search,
-  Filter,
   CheckCircle2,
   Clock,
   Banknote,
   AlertCircle,
-  ShieldCheck,
 } from "lucide-react";
 
 export function VistaPaciente({ isOpen, onClose, paciente }) {
@@ -37,13 +30,7 @@ export function VistaPaciente({ isOpen, onClose, paciente }) {
   const [paginaActual, setPaginaActual] = useState(1);
   const TURNOS_POR_PAGINA = 5;
 
-  useEffect(() => {
-    if (isOpen && paciente?.id_paciente) {
-      cargarFichaYTurnosPaciente(paciente.id_paciente);
-    }
-  }, [isOpen, paciente]);
-
-  const cargarFichaYTurnosPaciente = async (idPaciente) => {
+  const cargarFichaYTurnosPaciente = useCallback(async (idPaciente) => {
     setCargando(true);
     try {
       const res = await api.get(`/turnos/paciente/${idPaciente}`);
@@ -55,10 +42,19 @@ export function VistaPaciente({ isOpen, onClose, paciente }) {
     } finally {
       setCargando(false);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    if (isOpen && paciente?.id_paciente) {
+      cargarFichaYTurnosPaciente(paciente.id_paciente);
+    }
+  }, [isOpen, paciente, cargarFichaYTurnosPaciente]);
 
   // Cálculo de la edad
-  const edadCalculada = useMemo(() => calcularEdad(paciente?.fecha_nacimiento), [paciente?.fecha_nacimiento]);
+  const edadCalculada = useMemo(
+    () => calcularEdad(paciente?.fecha_nacimiento),
+    [paciente?.fecha_nacimiento],
+  );
 
   // Cálculos de saldo total pendiente y resumen
   const resumenFinanciero = useMemo(() => {
@@ -68,8 +64,13 @@ export function VistaPaciente({ isOpen, onClose, paciente }) {
     turnos.forEach((t) => {
       const cobro = t.Cobro;
       if (cobro) {
-        const montoAcordado = Number(cobro.monto_a_cobrar || t.precio_final || 0);
-        const pagado = (cobro.Cuota || []).reduce((acc, c) => acc + (Number(c.monto_cobrado) || 0), 0);
+        const montoAcordado = Number(
+          cobro.monto_a_cobrar || t.precio_final || 0,
+        );
+        const pagado = (cobro.Cuota || []).reduce(
+          (acc, c) => acc + (Number(c.monto_cobrado) || 0),
+          0,
+        );
         totalAcordado += montoAcordado;
         totalPagado += pagado;
       }
@@ -92,7 +93,10 @@ export function VistaPaciente({ isOpen, onClose, paciente }) {
       if (soloPendientes) {
         const cobro = t.Cobro;
         if (!cobro) return true; // Si no tiene cobro generado, está pendiente
-        const pagado = (cobro.Cuota || []).reduce((acc, c) => acc + (Number(c.monto_cobrado) || 0), 0);
+        const pagado = (cobro.Cuota || []).reduce(
+          (acc, c) => acc + (Number(c.monto_cobrado) || 0),
+          0,
+        );
         const saldo = Math.max(0, Number(cobro.monto_a_cobrar) - pagado);
         if (saldo <= 0) return false;
       }
@@ -103,7 +107,11 @@ export function VistaPaciente({ isOpen, onClose, paciente }) {
         const fecha = formatFechaTabla(t.fecha_hora_inicio).toLowerCase();
         const notas = (t.notas_consulta || "").toLowerCase();
         const estado = (t.EstadoTurno?.estado || "").toLowerCase();
-        return fecha.includes(query) || notas.includes(query) || estado.includes(query);
+        return (
+          fecha.includes(query) ||
+          notas.includes(query) ||
+          estado.includes(query)
+        );
       }
 
       return true;
@@ -111,7 +119,8 @@ export function VistaPaciente({ isOpen, onClose, paciente }) {
   }, [turnos, soloPendientes, busqueda]);
 
   // Paginación
-  const totalPaginas = Math.ceil(turnosFiltrados.length / TURNOS_POR_PAGINA) || 1;
+  const totalPaginas =
+    Math.ceil(turnosFiltrados.length / TURNOS_POR_PAGINA) || 1;
   const turnosPaginados = useMemo(() => {
     const inicio = (paginaActual - 1) * TURNOS_POR_PAGINA;
     return turnosFiltrados.slice(inicio, inicio + TURNOS_POR_PAGINA);
@@ -121,15 +130,17 @@ export function VistaPaciente({ isOpen, onClose, paciente }) {
     setAcordeonAbiertoId(acordeonAbiertoId === idTurno ? null : idTurno);
   };
 
-  const irACobrar = (idTurno) => {
-    onClose();
-    navigate("/cobros", { state: { id_turno_cobrar: idTurno } });
-  };
+  const irACobrar = (turno) => { onClose(); navigate("/caja", { state: { turnoParaCobrar: turno } }); };
 
   if (!paciente) return null;
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} width="max-w-3xl" title={`Ficha Clinica y Cuenta Corriente`}>
+    <Modal
+      isOpen={isOpen}
+      onClose={onClose}
+      width="max-w-3xl"
+      title={`Ficha Clinica y Cuenta Corriente`}
+    >
       <div className="flex flex-col gap-4 text-sm max-h-[75vh] overflow-y-auto pr-1">
         {/* ─── TARJETA PRINCIPAL DEL PACIENTE ─── */}
         <div className="bg-gradient-to-br from-gray-50 to-[#e8f7f1]/30 p-4 rounded-2xl border border-gray-200/80 space-y-3">
@@ -172,27 +183,42 @@ export function VistaPaciente({ isOpen, onClose, paciente }) {
           {/* INDICADORES FINANCIEROS (RESUMEN DE CUENTA) */}
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5 pt-1">
             <div className="bg-white p-2.5 rounded-xl border border-gray-100">
-              <span className="text-[10px] font-bold text-gray-400 uppercase block">Total Turnos</span>
-              <span className="text-sm font-black text-gray-800">{turnos.length} registrados</span>
+              <span className="text-[10px] font-bold text-gray-400 uppercase block">
+                Total Turnos
+              </span>
+              <span className="text-sm font-black text-gray-800">
+                {turnos.length} registrados
+              </span>
             </div>
 
             <div className="bg-white p-2.5 rounded-xl border border-gray-100">
-              <span className="text-[10px] font-bold text-gray-400 uppercase block">Saldo Pendiente</span>
+              <span className="text-[10px] font-bold text-gray-400 uppercase block">
+                Saldo Pendiente
+              </span>
               <span
                 className={`text-sm font-black ${
-                  resumenFinanciero.saldoPendienteTotal > 0 ? "text-rose-600" : "text-emerald-600"
+                  resumenFinanciero.saldoPendienteTotal > 0
+                    ? "text-rose-600"
+                    : "text-emerald-600"
                 }`}
               >
-                ${resumenFinanciero.saldoPendienteTotal.toLocaleString("es-AR", { minimumFractionDigits: 2 })}
+                $
+                {resumenFinanciero.saldoPendienteTotal.toLocaleString("es-AR", {
+                  minimumFractionDigits: 2,
+                })}
               </span>
             </div>
 
             <div className="col-span-2 sm:col-span-1 bg-white p-2.5 rounded-xl border border-gray-100 flex items-center justify-between">
               <div>
-                <span className="text-[10px] font-bold text-gray-400 uppercase block">Estado Cuenta</span>
+                <span className="text-[10px] font-bold text-gray-400 uppercase block">
+                  Estado Cuenta
+                </span>
                 <span
                   className={`text-xs font-bold ${
-                    resumenFinanciero.alDia ? "text-emerald-700" : "text-amber-700"
+                    resumenFinanciero.alDia
+                      ? "text-emerald-700"
+                      : "text-amber-700"
                   }`}
                 >
                   {resumenFinanciero.alDia ? "Al Día" : "Con Deuda"}
@@ -200,10 +226,16 @@ export function VistaPaciente({ isOpen, onClose, paciente }) {
               </div>
               <span
                 className={`p-1.5 rounded-lg text-xs font-bold ${
-                  resumenFinanciero.alDia ? "bg-emerald-100 text-emerald-800" : "bg-amber-100 text-amber-800"
+                  resumenFinanciero.alDia
+                    ? "bg-emerald-100 text-emerald-800"
+                    : "bg-amber-100 text-amber-800"
                 }`}
               >
-                {resumenFinanciero.alDia ? <CheckCircle2 size={16} /> : <AlertCircle size={16} />}
+                {resumenFinanciero.alDia ? (
+                  <CheckCircle2 size={16} />
+                ) : (
+                  <AlertCircle size={16} />
+                )}
               </span>
             </div>
           </div>
@@ -212,7 +244,10 @@ export function VistaPaciente({ isOpen, onClose, paciente }) {
         {/* ─── BARRA DE BÚSQUEDA Y FILTROS DE TURNOS ─── */}
         <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 bg-gray-50 p-3 rounded-2xl border border-gray-200">
           <div className="relative flex-1">
-            <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+            <Search
+              size={16}
+              className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
+            />
             <input
               type="text"
               placeholder="Buscar por fecha, notas o estado del turno..."
@@ -264,7 +299,9 @@ export function VistaPaciente({ isOpen, onClose, paciente }) {
             <div className="space-y-2">
               {turnosPaginados.map((t) => {
                 const cobro = t.Cobro;
-                const totalAcordado = Number(cobro?.monto_a_cobrar || t.precio_final || 0);
+                const totalAcordado = Number(
+                  cobro?.monto_a_cobrar || t.precio_final || 0,
+                );
                 const totalPagado = (cobro?.Cuota || []).reduce(
                   (acc, c) => acc + (Number(c.monto_cobrado) || 0),
                   0,
@@ -280,13 +317,16 @@ export function VistaPaciente({ isOpen, onClose, paciente }) {
                 if (cobro) {
                   if (saldoRestante === 0 && totalAcordado > 0) {
                     estadoCobroLabel = "Pagado";
-                    estadoCobroColor = "bg-emerald-100 text-emerald-800 border-emerald-200";
+                    estadoCobroColor =
+                      "bg-emerald-100 text-emerald-800 border-emerald-200";
                   } else if (totalPagado > 0) {
                     estadoCobroLabel = `Falta $${saldoRestante.toLocaleString("es-AR")}`;
-                    estadoCobroColor = "bg-amber-100 text-amber-800 border-amber-200";
+                    estadoCobroColor =
+                      "bg-amber-100 text-amber-800 border-amber-200";
                   } else {
                     estadoCobroLabel = `Pendiente $${saldoRestante.toLocaleString("es-AR")}`;
-                    estadoCobroColor = "bg-rose-100 text-rose-800 border-rose-200";
+                    estadoCobroColor =
+                      "bg-rose-100 text-rose-800 border-rose-200";
                   }
                 }
 
@@ -314,7 +354,10 @@ export function VistaPaciente({ isOpen, onClose, paciente }) {
                             </span>
                           </div>
                           <span className="text-[11px] text-gray-500 font-medium block">
-                            Estado Turno: <strong>{t.EstadoTurno?.estado || "Programado"}</strong>
+                            Estado Turno:{" "}
+                            <strong>
+                              {t.EstadoTurno?.estado || "Programado"}
+                            </strong>
                           </span>
                         </div>
                       </div>
@@ -330,7 +373,11 @@ export function VistaPaciente({ isOpen, onClose, paciente }) {
                           type="button"
                           className="p-1 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100"
                         >
-                          {esDesplegado ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
+                          {esDesplegado ? (
+                            <ChevronUp size={18} />
+                          ) : (
+                            <ChevronDown size={18} />
+                          )}
                         </button>
                       </div>
                     </div>
@@ -345,7 +392,8 @@ export function VistaPaciente({ isOpen, onClose, paciente }) {
                               Notas del Turno
                             </span>
                             <p className="bg-white p-2 rounded-xl border border-gray-200 text-gray-700 italic">
-                              {t.notas_consulta || "Sin observaciones registradas."}
+                              {t.notas_consulta ||
+                                "Sin observaciones registradas."}
                             </p>
                           </div>
 
@@ -355,15 +403,23 @@ export function VistaPaciente({ isOpen, onClose, paciente }) {
                             </span>
                             <div className="bg-white p-2 rounded-xl border border-gray-200 space-y-1">
                               <div className="flex justify-between">
-                                <span className="text-gray-500">Monto Total:</span>
-                                <span className="font-bold text-gray-800">${totalAcordado.toFixed(2)}</span>
+                                <span className="text-gray-500">
+                                  Monto Total:
+                                </span>
+                                <span className="font-bold text-gray-800">
+                                  ${totalAcordado.toFixed(2)}
+                                </span>
                               </div>
                               <div className="flex justify-between">
                                 <span className="text-gray-500">Abonado:</span>
-                                <span className="font-bold text-emerald-600">${totalPagado.toFixed(2)}</span>
+                                <span className="font-bold text-emerald-600">
+                                  ${totalPagado.toFixed(2)}
+                                </span>
                               </div>
                               <div className="flex justify-between border-t border-gray-100 pt-1">
-                                <span className="font-bold text-gray-700">Saldo Restante:</span>
+                                <span className="font-bold text-gray-700">
+                                  Saldo Restante:
+                                </span>
                                 <span
                                   className={`font-bold ${saldoRestante > 0 ? "text-rose-600" : "text-emerald-600"}`}
                                 >
@@ -379,7 +435,7 @@ export function VistaPaciente({ isOpen, onClose, paciente }) {
                           <div className="flex justify-end pt-1">
                             <button
                               type="button"
-                              onClick={() => irACobrar(t.id_turno)}
+                              onClick={() => irACobrar(t)}
                               className="flex items-center gap-1.5 bg-[#2eb086] hover:bg-[#259370] text-white px-3 py-1.5 rounded-xl font-bold text-xs transition-all shadow-xs active:scale-95"
                             >
                               <Banknote size={14} />
