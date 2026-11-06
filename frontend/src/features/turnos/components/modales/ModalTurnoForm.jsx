@@ -38,6 +38,9 @@ export function ModalTurnoForm({
     nombre: "",
     apellido: "",
     telefono: "",
+    dni: "",
+    fecha_nacimiento: "",
+    domicilio: "",
   });
 
   // Estado local para el menú desplegable de acciones rápidas dentro del modal
@@ -78,8 +81,9 @@ export function ModalTurnoForm({
         nombre: datosPacienteRapido.nombre.trim(),
         apellido: datosPacienteRapido.apellido.trim(),
         telefono: datosPacienteRapido.telefono.trim(),
-        dni: null,
-        domicilio: null,
+        dni: datosPacienteRapido.dni?.trim() || null,
+        fecha_nacimiento: datosPacienteRapido.fecha_nacimiento || null,
+        domicilio: datosPacienteRapido.domicilio?.trim() || null,
       });
 
       const nuevoPaciente = respuesta.data.data || respuesta.data;
@@ -97,7 +101,14 @@ export function ModalTurnoForm({
       });
 
       toast.success("Paciente creado correctamente");
-      setDatosPacienteRapido({ nombre: "", apellido: "", telefono: "" });
+      setDatosPacienteRapido({
+        nombre: "",
+        apellido: "",
+        telefono: "",
+        dni: "",
+        fecha_nacimiento: "",
+        domicilio: "",
+      });
       setModalPacienteRapidoAbierto(false);
     } catch (error) {
       console.error("Error al crear paciente rápido:", error);
@@ -111,13 +122,13 @@ export function ModalTurnoForm({
 
   return (
     <>
-      <form onSubmit={guardarTurno}>
-        <Modal
-          isOpen={modalAbierto}
-          onClose={cerrarModal}
-          width="max-w-2xl"
-          title={editando ? `Editar Turno #${datosFormulario.id_turno || ""}` : "Agendar Turno Nuevo"}
-        >
+      <Modal
+        isOpen={modalAbierto}
+        onClose={cerrarModal}
+        onSubmit={guardarTurno}
+        width="max-w-2xl"
+        title={editando ? `Editar Turno #${datosFormulario.id_turno || ""}` : "Agendar Turno Nuevo"}
+      >
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pb-8 sm:pb-6">
             {/* Aviso si el turno no es programado */}
             {editando && !esProgramado && (
@@ -129,7 +140,9 @@ export function ModalTurnoForm({
             {/* Paciente */}
             <div className="col-span-1 md:col-span-2">
               <div className="flex items-center justify-between mb-1">
-                <label className="block text-sm font-semibold text-gray-700">Paciente *</label>
+                <label className="block text-sm font-semibold text-gray-700">
+                  Paciente <span className="text-rose-500 font-extrabold">*</span>
+                </label>
                 {(!editando || esProgramado) && (
                   <button
                     type="button"
@@ -161,7 +174,7 @@ export function ModalTurnoForm({
             {!editando && (
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-1">
-                  Fecha y Hora de Inicio *
+                  Fecha y Hora de Inicio <span className="text-rose-500 font-extrabold">*</span>
                 </label>
                 <input
                   type="datetime-local"
@@ -187,7 +200,9 @@ export function ModalTurnoForm({
             {/* Duración (Minutos) */}
             {!editando && (
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-1">Duración (Minutos)</label>
+                <label className="block text-sm font-semibold text-gray-700 mb-1">
+                  Duración (Minutos) <span className="text-rose-500 font-extrabold">*</span>
+                </label>
                 <select
                   name="duracion_minutos"
                   value={datosFormulario.duracion_minutos || 30}
@@ -197,7 +212,7 @@ export function ModalTurnoForm({
                   <option value={15}>15 minutos</option>
                   <option value={30}>30 minutos</option>
                   <option value={45}>45 minutos</option>
-                  <option value={60}>60 minutos (1 hora)</option>
+                  <option value={60}>1 hora</option>
                   <option value={90}>90 minutos (1h 30m)</option>
                   <option value={120}>120 minutos (2 horas)</option>
                 </select>
@@ -291,7 +306,7 @@ export function ModalTurnoForm({
                         className="flex items-center gap-2 px-4 py-2.5 text-xs font-semibold text-[#2b5d73] hover:bg-[#f0f6f9] transition-colors text-left"
                       >
                         <UserRoundX size={16} />
-                        <span>Marcar Inasistente</span>
+                        <span>Marcar Inasistido</span>
                       </button>
                       <button
                         type="button"
@@ -315,33 +330,34 @@ export function ModalTurnoForm({
               <button
                 type="button"
                 onClick={cerrarModal}
-                className="px-4 py-2.5 rounded-xl text-gray-600 bg-gray-100 hover:bg-gray-200 transition-colors font-medium text-sm"
+                className="px-4 py-2.5 rounded-xl text-gray-600 bg-gray-100 hover:bg-gray-200 transition-colors font-medium text-sm cursor-pointer"
               >
                 Cancelar
               </button>
               <button
                 type="submit"
-                className="px-5 py-2.5 rounded-xl text-white bg-[#2eb086] hover:bg-[#259370] transition-all shadow-sm font-semibold text-sm"
+                className="px-5 py-2.5 rounded-xl text-white bg-[#2eb086] hover:bg-[#259370] transition-all shadow-sm font-semibold text-sm cursor-pointer"
               >
                 {editando ? "Guardar Cambios" : "Confirmar Turno"}
               </button>
             </div>
           </div>
         </Modal>
-      </form>
 
       {/* MINI-MODAL: CREAR PACIENTE RÁPIDO */}
       {modalPacienteRapidoAbierto && (
         <Modal
           isOpen={modalPacienteRapidoAbierto}
           onClose={() => setModalPacienteRapidoAbierto(false)}
-          width="max-w-md"
+          width="max-w-2xl"
           title="Registro Rápido de Paciente"
         >
           <form onSubmit={guardarPacienteRapido}>
-            <div className="flex flex-col gap-3">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pb-4">
               <div>
-                <label className="block text-xs font-semibold text-gray-700 mb-1">Nombre *</label>
+                <label className="block text-sm font-bold text-gray-800 mb-1">
+                  Nombre <span className="text-rose-500 font-extrabold">*</span>
+                </label>
                 <input
                   type="text"
                   name="nombre"
@@ -349,12 +365,14 @@ export function ModalTurnoForm({
                   onChange={actualizarDatosPacienteRapido}
                   placeholder="Ej: Juan"
                   required
-                  className="w-full border border-gray-300 p-2.5 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#2eb086]/50"
+                  className="w-full border border-gray-300 p-2.5 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#2eb086]/50 focus:border-[#2eb086]"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-gray-700 mb-1">Apellido *</label>
+                <label className="block text-sm font-bold text-gray-800 mb-1">
+                  Apellido <span className="text-rose-500 font-extrabold">*</span>
+                </label>
                 <input
                   type="text"
                   name="apellido"
@@ -362,12 +380,26 @@ export function ModalTurnoForm({
                   onChange={actualizarDatosPacienteRapido}
                   placeholder="Ej: Pérez"
                   required
-                  className="w-full border border-gray-300 p-2.5 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#2eb086]/50"
+                  className="w-full border border-gray-300 p-2.5 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#2eb086]/50 focus:border-[#2eb086]"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-gray-700 mb-1">Teléfono *</label>
+                <label className="block text-sm font-bold text-gray-800 mb-1">DNI</label>
+                <input
+                  type="text"
+                  name="dni"
+                  value={datosPacienteRapido.dni}
+                  onChange={actualizarDatosPacienteRapido}
+                  placeholder="Ej: 38123456"
+                  className="w-full border border-gray-300 p-2.5 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#2eb086]/50 focus:border-[#2eb086]"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-bold text-gray-800 mb-1">
+                  Teléfono / Celular <span className="text-rose-500 font-extrabold">*</span>
+                </label>
                 <input
                   type="text"
                   name="telefono"
@@ -375,7 +407,30 @@ export function ModalTurnoForm({
                   onChange={actualizarDatosPacienteRapido}
                   placeholder="Ej: 3515551234"
                   required
-                  className="w-full border border-gray-300 p-2.5 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#2eb086]/50"
+                  className="w-full border border-gray-300 p-2.5 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#2eb086]/50 focus:border-[#2eb086]"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-bold text-gray-800 mb-1">Fecha de Nacimiento</label>
+                <input
+                  type="date"
+                  name="fecha_nacimiento"
+                  value={datosPacienteRapido.fecha_nacimiento}
+                  onChange={actualizarDatosPacienteRapido}
+                  className="w-full border border-gray-300 p-2.5 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#2eb086]/50 focus:border-[#2eb086]"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-bold text-gray-800 mb-1">Domicilio</label>
+                <input
+                  type="text"
+                  name="domicilio"
+                  value={datosPacienteRapido.domicilio}
+                  onChange={actualizarDatosPacienteRapido}
+                  placeholder="Ej: Av. Colón 1234"
+                  className="w-full border border-gray-300 p-2.5 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#2eb086]/50 focus:border-[#2eb086]"
                 />
               </div>
             </div>
@@ -386,13 +441,13 @@ export function ModalTurnoForm({
               <button
                 type="button"
                 onClick={() => setModalPacienteRapidoAbierto(false)}
-                className="px-4 py-2 rounded-xl text-gray-600 bg-gray-100 hover:bg-gray-200 font-medium text-sm"
+                className="px-4 py-2 rounded-xl text-gray-600 bg-gray-100 hover:bg-gray-200 font-medium text-sm transition-colors cursor-pointer"
               >
                 Cancelar
               </button>
               <button
                 type="submit"
-                className="px-4 py-2 rounded-xl text-white bg-[#2eb086] hover:bg-[#259370] font-semibold text-sm transition-colors shadow-sm"
+                className="px-4 py-2 rounded-xl text-white bg-[#2eb086] hover:bg-[#259370] font-semibold text-sm transition-colors shadow-sm cursor-pointer"
               >
                 Guardar y Seleccionar
               </button>

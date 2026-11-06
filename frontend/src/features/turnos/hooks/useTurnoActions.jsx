@@ -11,6 +11,15 @@ export function useTurnoActions(recargar, cerrarModal) {
   const { validarTurnoHorario, esDiaLaboral } = useConfiguracion();
 
   const guardarTurno = async (datosFormulario, editando, turnoSeleccionadoCRUD) => {
+    if (!datosFormulario?.id_paciente) {
+      toast.error("Por favor, selecciona un paciente para el turno.");
+      return;
+    }
+    if (!datosFormulario?.fecha_hora_inicio) {
+      toast.error("Por favor, selecciona la fecha y hora de inicio del turno.");
+      return;
+    }
+
     // Validar jornada y día laboral al registrar nuevo turno
     if (!editando && validarTurnoHorario) {
       const validacion = validarTurnoHorario(datosFormulario.fecha_hora_inicio);
@@ -27,24 +36,27 @@ export function useTurnoActions(recargar, cerrarModal) {
       if (editando) {
         payload = {
           id_paciente: Number(datosFormulario.id_paciente),
-          id_estado: Number(datosFormulario.id_estado),
+          id_estado: Number(datosFormulario.id_estado || 1),
           precio_final: parseFloat(datosFormulario.precio_final || 0),
-          notas_consulta: datosFormulario.notas_consulta?.trim() || "",
+          notas_consulta: datosFormulario.notas_consulta?.trim() || undefined,
         };
 
         await api.put(`/turnos/${turnoSeleccionadoCRUD.id_turno}`, payload);
       } else {
         // Al crear, sí requerimos las fechas y la duración completa
-        const restoDatos = { ...datosFormulario };
-        delete restoDatos.duracion_minutos;
+        const duracionMin = Number(datosFormulario.duracion_minutos) || 30;
+        const fechaInicioDate = new Date(datosFormulario.fecha_hora_inicio);
+        const fechaFinDate =
+          datosFormulario.fecha_hora_fin && !isNaN(new Date(datosFormulario.fecha_hora_fin).getTime())
+            ? new Date(datosFormulario.fecha_hora_fin)
+            : new Date(fechaInicioDate.getTime() + duracionMin * 60000);
+
         payload = {
-          ...restoDatos,
-          id_paciente: Number(restoDatos.id_paciente),
-          id_estado: Number(restoDatos.id_estado),
-          precio_final: parseFloat(restoDatos.precio_final || 0),
-          fecha_hora_inicio: new Date(restoDatos.fecha_hora_inicio).toISOString(),
-          fecha_hora_fin: new Date(restoDatos.fecha_hora_fin).toISOString(),
-          notas_consulta: restoDatos.notas_consulta?.trim() || "",
+          id_paciente: Number(datosFormulario.id_paciente),
+          precio_final: parseFloat(datosFormulario.precio_final || 0),
+          fecha_hora_inicio: fechaInicioDate.toISOString(),
+          fecha_hora_fin: fechaFinDate.toISOString(),
+          notas_consulta: datosFormulario.notas_consulta?.trim() || undefined,
         };
 
         await api.post("/turnos", payload);
@@ -65,7 +77,7 @@ export function useTurnoActions(recargar, cerrarModal) {
     if (!turnoSeleccionado) return;
     try {
       const payloadAtencion = {
-        notas_consulta: datosAtencion.notas_consulta.trim(),
+        notas_consulta: datosAtencion.notas_consulta?.trim() || undefined,
         precio_final: parseFloat(datosAtencion.precio_final),
         practicas_realizadas: datosAtencion.practicas
           .filter((p) => p.id_practica)
@@ -102,7 +114,7 @@ export function useTurnoActions(recargar, cerrarModal) {
       }
 
       toast.success(
-        inasistente ? "Turno marcado como inasistente correctamente" : "Turno cancelado correctamente",
+        inasistente ? "Turno marcado como inasistido correctamente" : "Turno cancelado correctamente",
       );
       recargar();
       cerrarModalCancelar();
@@ -110,7 +122,7 @@ export function useTurnoActions(recargar, cerrarModal) {
       console.error("Error al registrar la cancelación:", error);
       manejarErrorApi(
         error,
-        inasistente ? "No se pudo marcar como inasistente" : "No se pudo cancelar el turno.",
+        inasistente ? "No se pudo marcar como inasistido" : "No se pudo cancelar el turno.",
       );
     }
   };
@@ -220,22 +232,11 @@ export function useTurnoActions(recargar, cerrarModal) {
         return;
       }
 
-      // Si no había ningún turno para reprogramar, abrimos el modal de creación
-      abrirParaCrear();
-
-      // Actualizamos la fecha de inicio
-      actualizarDatos({
-        target: { name: "fecha_hora_inicio", value: nuevaFechaInicio },
-      });
-
-      // Actualizamos la duración en el formulario
-      actualizarDatos({
-        target: { name: "duracion_minutos", value: duracionMinutos },
-      });
-
-      // Actualizamos la fecha de fin
-      actualizarDatos({
-        target: { name: "fecha_hora_fin", value: nuevaFechaFin },
+      // Si no había ningún turno para reprogramar, abrimos el modal de creación con los datos iniciales
+      abrirParaCrear({
+        fecha_hora_inicio: nuevaFechaInicio,
+        duracion_minutos: duracionMinutos,
+        fecha_hora_fin: nuevaFechaFin,
       });
     }
   };

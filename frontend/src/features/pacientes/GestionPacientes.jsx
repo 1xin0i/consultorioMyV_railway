@@ -3,7 +3,7 @@
 //* useSearchParams E ICONOS
 import { useState, useEffect } from "react";
 import { useSearchParams } from "react-router-dom"; // * PARA PERMITIR COMPLETAR PACIENTE DESDE AGENDA
-import { Users, Plus, Edit, Phone, Ban, RotateCcw, Eye, Shield } from "lucide-react";
+import { Users, Plus, Edit, Phone, Ban, RotateCcw, Eye, Shield, Trash2 } from "lucide-react";
 
 //* COMPONENTES COMUNES
 import Header from "../../components/common/Header";
@@ -31,6 +31,26 @@ import { ESTADO_INICIAL } from "./constants/pacienteConstants.js";
 import { FormularioCrearEditar, FormularioToggle } from "./components/FormulariosPaciente";
 import { verificarCompletarPaciente } from "./utils/verificarCompletarPaciente.js";
 import { VistaPaciente } from "./components/VistaPaciente.jsx";
+
+const PALETA_AVATAR = [
+  { bg: "bg-emerald-100", text: "text-emerald-700", border: "border-emerald-200/90" },
+  { bg: "bg-sky-100", text: "text-sky-700", border: "border-sky-200/90" },
+  { bg: "bg-indigo-100", text: "text-indigo-700", border: "border-indigo-200/90" },
+  { bg: "bg-amber-100", text: "text-amber-800", border: "border-amber-200/90" },
+  { bg: "bg-purple-100", text: "text-purple-700", border: "border-purple-200/90" },
+  { bg: "bg-rose-100", text: "text-rose-700", border: "border-rose-200/90" },
+  { bg: "bg-teal-100", text: "text-teal-700", border: "border-teal-200/90" },
+  { bg: "bg-cyan-100", text: "text-cyan-700", border: "border-cyan-200/90" },
+];
+
+function obtenerColorAvatar(str = "") {
+  let hash = 0;
+  for (let i = 0; i < str.length; i++) {
+    hash = str.charCodeAt(i) + ((hash << 5) - hash);
+  }
+  const index = Math.abs(hash) % PALETA_AVATAR.length;
+  return PALETA_AVATAR[index];
+}
 
 export default function GestionPacientes() {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -133,74 +153,78 @@ export default function GestionPacientes() {
                     setPage={setPage}
                     totalPages={totalPages}
                   >
-                    {pacientes.map((paciente) => (
-                      <TarjetaRegistro
-                        key={paciente.id_paciente}
-                        avatar={`${paciente.nombre?.charAt(0) || ""}${paciente.apellido?.charAt(0) || ""}`}
-                        titulo={`${paciente.nombre} ${paciente.apellido}`}
-                        subtitulo={`DNI: ${paciente.dni || "S/D"}`}
-                        tituloSheet="Opciones del Paciente"
-                        badge={
-                          <span
-                            className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold border shrink-0 ${
-                              paciente.activo
-                                ? "bg-emerald-50 text-emerald-700 border-emerald-200/60"
-                                : "bg-gray-100 text-gray-500 border-gray-200"
-                            }`}
-                          >
-                            {paciente.activo ? "Activo" : "Inactivo"}
-                          </span>
-                        }
-                        acciones={[
-                          {
-                            key: "ver",
-                            label: "Ver ficha",
-                            icon: Eye,
-                            rapida: true,
-                            onClick: () => abrirParaVer(paciente),
-                          },
-                          {
-                            key: "editar",
-                            label: "Editar",
-                            icon: Edit,
-                            tono: "azul",
-                            rapida: true,
-                            onClick: () => abrirParaEditar(paciente, formatearPacienteParaEditar),
-                          },
-                          {
-                            key: "toggle",
-                            label: paciente.activo ? "Desactivar paciente" : "Reactivar paciente",
-                            icon: paciente.activo ? Ban : RotateCcw,
-                            tono: paciente.activo ? "rojo" : "verde",
-                            separador: true,
-                            onClick: () => abrirParaToggle(paciente),
-                          },
-                        ]}
-                      >
-                        <div className="flex items-center gap-2">
-                          <Phone size={14} className="text-gray-400 shrink-0" />
-                          <span className="font-medium text-gray-700">{paciente.telefono || "S/D"}</span>
-                        </div>
-                        <div className="flex items-center gap-1.5 flex-wrap">
-                          <Shield size={14} className="text-gray-400 shrink-0" />
-                          {paciente.PacienteObraSocials && paciente.PacienteObraSocials.length > 0 ? (
-                            paciente.PacienteObraSocials.map((pos) => (
-                              <span
-                                key={pos.id_paciente_obra_social || pos.id_obra_social}
-                                className="px-2 py-0.5 rounded-lg text-[11px] font-semibold bg-[#e8f7f1] text-[#2eb086] border border-[#2eb086]/20"
-                              >
-                                {pos.ObraSocial?.nombre || "Obra Social"}
-                                {pos.nro_afiliado ? ` #${pos.nro_afiliado}` : ""}
-                              </span>
-                            ))
-                          ) : (
-                            <span className="px-2 py-0.5 rounded-lg text-[11px] font-medium bg-gray-100 text-gray-500 border border-gray-200">
-                              Particular
+                    {pacientes.map((paciente) => {
+                      const coloresAvatar = obtenerColorAvatar(`${paciente.nombre || ""} ${paciente.apellido || ""}`);
+                      return (
+                        <TarjetaRegistro
+                          key={paciente.id_paciente}
+                          avatar={`${paciente.nombre?.charAt(0) || ""}${paciente.apellido?.charAt(0) || ""}`}
+                          avatarClassName={`${coloresAvatar.bg} ${coloresAvatar.text} border ${coloresAvatar.border}`}
+                          titulo={`${paciente.nombre} ${paciente.apellido}`}
+                          subtitulo={`DNI: ${paciente.dni || "S/D"}`}
+                          tituloSheet="Opciones del Paciente"
+                          badge={
+                            <span
+                              className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold border shrink-0 ${
+                                paciente.activo
+                                  ? "bg-emerald-50 text-emerald-700 border-emerald-200/60"
+                                  : "bg-gray-100 text-gray-500 border-gray-200"
+                              }`}
+                            >
+                              {paciente.activo ? "Activo" : "Inactivo"}
                             </span>
-                          )}
-                        </div>
-                      </TarjetaRegistro>
-                    ))}
+                          }
+                          acciones={[
+                            {
+                              key: "ver",
+                              label: "Ver ficha",
+                              icon: Eye,
+                              rapida: true,
+                              onClick: () => abrirParaVer(paciente),
+                            },
+                            {
+                              key: "editar",
+                              label: "Editar",
+                              icon: Edit,
+                              tono: "azul",
+                              rapida: true,
+                              onClick: () => abrirParaEditar(paciente, formatearPacienteParaEditar),
+                            },
+                            {
+                              key: "toggle",
+                              label: paciente.activo ? "Eliminar paciente" : "Reactivar paciente",
+                              icon: paciente.activo ? Trash2 : RotateCcw,
+                              tono: paciente.activo ? "rojo" : "verde",
+                              separador: true,
+                              onClick: () => abrirParaToggle(paciente),
+                            },
+                          ]}
+                        >
+                          <div className="flex items-center gap-2">
+                            <Phone size={14} className="text-gray-400 shrink-0" />
+                            <span className="font-medium text-gray-700">{paciente.telefono || "S/D"}</span>
+                          </div>
+                          <div className="flex items-center gap-1.5 flex-wrap">
+                            <Shield size={14} className="text-gray-400 shrink-0" />
+                            {paciente.PacienteObraSocials && paciente.PacienteObraSocials.length > 0 ? (
+                              paciente.PacienteObraSocials.map((pos) => (
+                                <span
+                                  key={pos.id_paciente_obra_social || pos.id_obra_social}
+                                  className="px-2 py-0.5 rounded-lg text-[11px] font-semibold bg-[#e8f7f1] text-[#2eb086] border border-[#2eb086]/20"
+                                >
+                                  {pos.ObraSocial?.nombre || "Obra Social"}
+                                  {pos.nro_afiliado ? ` #${pos.nro_afiliado}` : ""}
+                                </span>
+                              ))
+                            ) : (
+                              <span className="px-2 py-0.5 rounded-lg text-[11px] font-medium bg-gray-100 text-gray-500 border border-gray-200">
+                                Particular
+                              </span>
+                            )}
+                          </div>
+                        </TarjetaRegistro>
+                      );
+                    })}
                   </ListaTarjetas>
                 }
                 columnas={[
@@ -211,12 +235,14 @@ export default function GestionPacientes() {
                   { label: "Acciones", align: "center" },
                 ]}
               >
-                {pacientes.map((paciente) => (
+                {pacientes.map((paciente) => {
+                  const coloresAvatar = obtenerColorAvatar(`${paciente.nombre || ""} ${paciente.apellido || ""}`);
+                  return (
                   <tr key={paciente.id_paciente} className="hover:bg-emerald-50/40 transition-colors">
                     {/* //* COLUMNAS: NOMBRE Y APELLIDO (Foco primario con avatar clínico) */}
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-3">
-                        <div className="hidden md:flex w-9 h-9 rounded-full bg-emerald-100 text-emerald-700 border border-emerald-200/90 items-center justify-center font-bold text-xs shrink-0 shadow-2xs">
+                        <div className={`hidden md:flex w-9 h-9 rounded-full ${coloresAvatar.bg} ${coloresAvatar.text} border ${coloresAvatar.border} items-center justify-center font-bold text-xs shrink-0 shadow-2xs`}>
                           {paciente.nombre?.charAt(0)}
                           {paciente.apellido?.charAt(0)}
                         </div>
@@ -299,14 +325,15 @@ export default function GestionPacientes() {
                               ? "text-rose-600 hover:bg-rose-50"
                               : "text-emerald-600 hover:bg-emerald-50"
                           }`}
-                          title={paciente.activo ? "Desactivar Paciente" : "Reactivar Paciente"}
+                          title={paciente.activo ? "Eliminar Paciente" : "Reactivar Paciente"}
                         >
-                          {paciente.activo ? <Ban size={18} /> : <RotateCcw size={18} />}
+                          {paciente.activo ? <Trash2 size={18} /> : <RotateCcw size={18} />}
                         </button>
                       </div>
                     </td>
                   </tr>
-                ))}
+                  );
+                })}
               </Tabla>
             </div>
 
@@ -319,7 +346,7 @@ export default function GestionPacientes() {
         {modalAbierto && (
           <FormularioCrearEditar
             guardarPaciente={(e) => {
-              e.preventDefault();
+              if (e && e.preventDefault) e.preventDefault();
               guardarPaciente(datosFormulario, editando, pacienteSeleccionado);
             }}
             modalAbierto={modalAbierto}

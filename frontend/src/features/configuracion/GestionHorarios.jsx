@@ -1,8 +1,9 @@
 /** @format */
 
 import { useState, useEffect } from "react";
-import { Clock, Calendar, Check, RotateCcw, Sparkles } from "lucide-react";
+import { Clock, Calendar, Check } from "lucide-react";
 import toast from "react-hot-toast";
+import Header from "../../components/common/Header";
 import { useConfiguracion } from "../../context/ConfiguracionContext";
 
 const DIAS_SEMANA = [
@@ -19,7 +20,6 @@ export default function GestionHorarios() {
   const {
     config,
     actualizarConfiguracion,
-    restaurarPorDefecto,
     horaInicioNum,
     horaFinNum,
     totalModulosDia,
@@ -77,44 +77,19 @@ export default function GestionHorarios() {
     });
   };
 
-  const handleRestaurar = () => {
-    restaurarPorDefecto();
-    setForm({
-      horaInicio: "08:00",
-      horaFin: "20:00",
-      duracionModuloMinutos: 30,
-      diasLaborales: [1, 2, 3, 4, 5, 6],
-    });
-    toast.success("Se restauraron los horarios por defecto (08:00 a 20:00).");
-  };
-
   const horasJornada = Math.max(0, horaFinNum - horaInicioNum);
 
   return (
-    <div className="w-full max-w-4xl mx-auto p-4 md:p-6 flex flex-col gap-6">
-      {/* Cabecera */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-gray-200 pb-4">
-        <div>
-          <h1 className="text-xl md:text-2xl font-black text-gray-900 flex items-center gap-2.5">
-            <Clock className="text-[#2eb086]" size={26} />
-            Horarios de Atención
-          </h1>
-          <p className="text-xs md:text-sm text-gray-500 mt-1">
-            Configura la jornada laboral y la grilla de slots de la agenda.
-          </p>
-        </div>
+    <div className="w-full min-h-screen flex flex-col">
+      {/* Cabecera común unificada */}
+      <Header
+        icono={Clock}
+        titulo="Horarios de Atención"
+        subtitulo="Horario de atención"
+      />
 
-        <button
-          type="button"
-          onClick={handleRestaurar}
-          className="flex items-center gap-2 px-3 py-2 text-xs font-semibold text-gray-600 bg-white border border-gray-300 rounded-xl hover:bg-gray-50 transition-colors shadow-2xs cursor-pointer w-fit"
-        >
-          <RotateCcw size={15} />
-          <span>Restaurar por defecto</span>
-        </button>
-      </div>
-
-      <form onSubmit={handleGuardar} className="flex flex-col gap-6">
+      <div className="w-full max-w-4xl mx-auto p-4 md:p-6 flex flex-col gap-6">
+        <form onSubmit={handleGuardar} className="flex flex-col gap-6">
         {/* Tarjetas de Selección Horaria */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           {/* Hora Inicio */}
@@ -188,7 +163,7 @@ export default function GestionHorarios() {
               <option value={20}>20 minutos</option>
               <option value={30}>30 minutos (Estándar)</option>
               <option value={45}>45 minutos</option>
-              <option value={60}>60 minutos (1 hora)</option>
+              <option value={60}>1 hora</option>
             </select>
             <span className="text-[11px] text-gray-400">
               División de slots en la grilla
@@ -200,7 +175,7 @@ export default function GestionHorarios() {
         <div className="bg-emerald-50/70 border border-emerald-200 rounded-2xl p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-emerald-900">
           <div className="flex items-center gap-3">
             <div className="p-2.5 bg-[#2eb086] text-white rounded-xl shadow-xs">
-              <Sparkles size={20} />
+              <Clock size={20} />
             </div>
             <div>
               <p className="text-sm font-bold">
@@ -271,6 +246,7 @@ export default function GestionHorarios() {
         </div>
       </form>
     </div>
+  </div>
   );
 }
 

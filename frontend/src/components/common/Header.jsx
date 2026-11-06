@@ -10,11 +10,11 @@ export default function Header({
   children,
 }) {
   return (
-    <div className="flex items-center justify-between gap-3 bg-gradient-to-r from-emerald-50/90 via-teal-50/60 to-white border-b border-teal-100 px-4 py-2.5 sm:px-6 sm:py-3 shadow-xs shrink-0 transition-colors">
+    <div className="flex items-center justify-between gap-3 bg-[#e8f7f1] text-slate-800 border-b border-[#c2e8d9] px-4 py-2.5 sm:px-6 sm:py-3 shadow-2xs shrink-0 transition-colors">
       <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
-        {/* Ícono dinámico clínico con color vivo */}
+        {/* Ícono dinámico clínico con fondo funcional */}
         {Icono && (
-          <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-emerald-100 text-emerald-700 border border-emerald-200/80 flex items-center justify-center shrink-0 shadow-xs">
+          <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-[#2eb086] text-white flex items-center justify-center shrink-0 shadow-xs">
             <Icono size={18} />
           </div>
         )}
@@ -26,13 +26,13 @@ export default function Header({
             </h1>
             {/* Badge opcional */}
             {badge && (
-              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] sm:text-[11px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-300/60 shrink-0 shadow-2xs">
+              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] sm:text-[11px] font-bold bg-[#2eb086]/15 text-[#1a6e54] border border-[#2eb086]/30 shrink-0">
                 {badge}
               </span>
             )}
           </div>
           {subtitulo && (
-            <p className="text-[11px] sm:text-xs text-teal-800/80 font-medium leading-tight truncate">
+            <p className="text-[11px] sm:text-xs text-[#2b725c] font-medium leading-tight truncate">
               {subtitulo}
             </p>
           )}

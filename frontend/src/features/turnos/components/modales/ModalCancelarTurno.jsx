@@ -55,7 +55,7 @@ export function ModalCancelarTurno({
         onClose={cerrar}
         width="max-w-xl"
         variant={inasistente ? "warning" : "danger"}
-        title={`${inasistente ? "Marcar Inasistencia" : "Cancelar Turno"} #${turnoTarget?.id_turno || ""}${
+        title={`${inasistente ? "Marcar Inasistido" : "Cancelar Turno"} #${turnoTarget?.id_turno || ""}${
           nombrePaciente ? ` — ${nombrePaciente}` : ""
         }`}
       >
@@ -76,14 +76,14 @@ export function ModalCancelarTurno({
             </div>
             <p className="text-xs text-slate-600 leading-relaxed">
               {inasistente
-                ? "El turno quedará registrado como inasistencia para el historial del paciente y liberará el horario de atención."
+                ? "El turno quedará registrado como inasistido para el historial del paciente y liberará el horario de atención."
                 : "Se cancelará el turno asignado. Podrás reprogramarlo o registrar el motivo a continuación."}
             </p>
           </div>
 
           <div>
             <label className="block text-xs font-bold text-slate-800 mb-1.5">
-              Motivo u observaciones de la {inasistente ? "inasistencia" : "cancelación"}
+              Motivo u observaciones {inasistente ? "de inasistencia" : "de cancelación"}
             </label>
             <textarea
               rows={3}
@@ -111,7 +111,7 @@ export function ModalCancelarTurno({
               inasistente ? "bg-amber-600 hover:bg-amber-700 shadow-amber-500/30" : "bg-rose-600 hover:bg-rose-700 shadow-rose-500/30"
             } transition-all shadow-sm font-bold text-xs cursor-pointer`}
           >
-            Confirmar {inasistente ? "Inasistencia" : "Cancelación"}
+            Confirmar {inasistente ? "Inasistido" : "Cancelación"}
           </button>
         </div>
       </Modal>

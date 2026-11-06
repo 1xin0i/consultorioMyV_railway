@@ -2,12 +2,23 @@
 
 import { useState, useMemo, useEffect } from "react";
 import { createPortal } from "react-dom";
-import { useNavigate } from "react-router-dom";
-import { AlertTriangle, X, UserCheck, ChevronRight, User } from "lucide-react";
+import { AlertTriangle, X, UserCheck, ChevronRight, User, Check, Loader2 } from "lucide-react";
+import api from "../../../services/api";
+import toast from "react-hot-toast";
+import Modal from "../../../components/common/Modal";
 
 export const AdvertenciaPacienteIncompleto = ({ pacientes = [] }) => {
-  const navigate = useNavigate();
   const [modalAbierto, setModalAbierto] = useState(false);
+  const [pacienteEditando, setPacienteEditando] = useState(null);
+  const [guardando, setGuardando] = useState(false);
+  const [datosForm, setDatosForm] = useState({
+    nombre: "",
+    apellido: "",
+    telefono: "",
+    dni: "",
+    domicilio: "",
+    fecha_nacimiento: "",
+  });
 
   const pacientesIncompletos = useMemo(
     () =>
@@ -33,6 +44,47 @@ export const AdvertenciaPacienteIncompleto = ({ pacientes = [] }) => {
     if (!p.domicilio) faltantes.push("Domicilio");
     if (!p.fecha_nacimiento) faltantes.push("Fecha de Nacimiento");
     return faltantes;
+  };
+
+  const abrirCompletar = (p) => {
+    setPacienteEditando(p);
+    setDatosForm({
+      nombre: p.nombre || "",
+      apellido: p.apellido || "",
+      telefono: p.telefono || "",
+      dni: p.dni || "",
+      domicilio: p.domicilio || "",
+      fecha_nacimiento: p.fecha_nacimiento ? p.fecha_nacimiento.slice(0, 10) : "",
+    });
+  };
+
+  const guardarDatosPaciente = async (e) => {
+    e.preventDefault();
+    if (!pacienteEditando) return;
+    setGuardando(true);
+    try {
+      await api.put(`/pacientes/${pacienteEditando.id_paciente}`, {
+        ...datosForm,
+        dni: datosForm.dni?.trim() || null,
+        domicilio: datosForm.domicilio?.trim() || null,
+        fecha_nacimiento: datosForm.fecha_nacimiento || null,
+      });
+      // Actualizamos los datos en memoria
+      pacienteEditando.dni = datosForm.dni?.trim() || null;
+      pacienteEditando.domicilio = datosForm.domicilio?.trim() || null;
+      pacienteEditando.fecha_nacimiento = datosForm.fecha_nacimiento || null;
+      pacienteEditando.telefono = datosForm.telefono?.trim() || pacienteEditando.telefono;
+      pacienteEditando.nombre = datosForm.nombre?.trim() || pacienteEditando.nombre;
+      pacienteEditando.apellido = datosForm.apellido?.trim() || pacienteEditando.apellido;
+
+      toast.success("Datos del paciente completados correctamente");
+      setPacienteEditando(null);
+    } catch (err) {
+      console.error(err);
+      toast.error("No se pudieron guardar los datos.");
+    } finally {
+      setGuardando(false);
+    }
   };
 
   if (pacientesIncompletos.length === 0) {
@@ -136,10 +188,7 @@ export const AdvertenciaPacienteIncompleto = ({ pacientes = [] }) => {
 
                       <button
                         type="button"
-                        onClick={() => {
-                          setModalAbierto(false);
-                          navigate(`/pacientes?editarId=${paciente.id_paciente}`);
-                        }}
+                        onClick={() => abrirCompletar(paciente)}
                         className="flex items-center justify-center gap-1.5 bg-[#2eb086] hover:bg-[#259370] text-white px-3 py-1.5 rounded-lg text-xs font-semibold transition-all shadow-xs active:scale-95 shrink-0 cursor-pointer self-end sm:self-auto"
                       >
                         <UserCheck size={14} />
@@ -168,6 +217,146 @@ export const AdvertenciaPacienteIncompleto = ({ pacientes = [] }) => {
           </div>,
           document.body,
         )}
+
+      {/* Modal para completar datos sin navegar fuera de donde se encuentra */}
+      {pacienteEditando && (
+        <Modal
+          isOpen={Boolean(pacienteEditando)}
+          onClose={() => setPacienteEditando(null)}
+          onSubmit={guardarDatosPaciente}
+          width="max-w-2xl"
+          title={`Completar Ficha: ${pacienteEditando.nombre} ${pacienteEditando.apellido}`}
+        >
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pb-4">
+            <div>
+              <label className="block text-xs font-bold text-gray-700 mb-1">
+                Nombre <span className="text-rose-500 font-extrabold">*</span>
+              </label>
+              <input
+                type="text"
+                required
+                value={datosForm.nombre}
+                onChange={(e) => setDatosForm({ ...datosForm, nombre: e.target.value })}
+                className="w-full border border-gray-300 p-2.5 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#2eb086]/50"
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-bold text-gray-700 mb-1">
+                Apellido <span className="text-rose-500 font-extrabold">*</span>
+              </label>
+              <input
+                type="text"
+                required
+                value={datosForm.apellido}
+                onChange={(e) => setDatosForm({ ...datosForm, apellido: e.target.value })}
+                className="w-full border border-gray-300 p-2.5 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#2eb086]/50"
+              />
+            </div>
+
+            <div>
+              <div className="flex items-center justify-between mb-1">
+                <label className="block text-xs font-bold text-gray-700">DNI</label>
+                {!datosForm.dni && (
+                  <span className="text-[10px] text-amber-700 font-bold bg-amber-100 px-1.5 py-0.5 rounded border border-amber-200">
+                    Dato faltante
+                  </span>
+                )}
+              </div>
+              <input
+                type="text"
+                placeholder="Ej: 38123456"
+                value={datosForm.dni}
+                onChange={(e) => setDatosForm({ ...datosForm, dni: e.target.value })}
+                className={`w-full border p-2.5 rounded-xl text-sm focus:outline-none focus:ring-2 transition-colors ${
+                  !datosForm.dni
+                    ? "border-amber-400 bg-amber-50/40 text-amber-950 focus:ring-amber-400/50"
+                    : "border-gray-300 focus:ring-[#2eb086]/50"
+                }`}
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-bold text-gray-700 mb-1">
+                Teléfono <span className="text-rose-500 font-extrabold">*</span>
+              </label>
+              <input
+                type="text"
+                required
+                value={datosForm.telefono}
+                onChange={(e) => setDatosForm({ ...datosForm, telefono: e.target.value })}
+                className="w-full border border-gray-300 p-2.5 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#2eb086]/50"
+              />
+            </div>
+
+            <div>
+              <div className="flex items-center justify-between mb-1">
+                <label className="block text-xs font-bold text-gray-700">Fecha de Nacimiento</label>
+                {!datosForm.fecha_nacimiento && (
+                  <span className="text-[10px] text-amber-700 font-bold bg-amber-100 px-1.5 py-0.5 rounded border border-amber-200">
+                    Dato faltante
+                  </span>
+                )}
+              </div>
+              <input
+                type="date"
+                value={datosForm.fecha_nacimiento}
+                onChange={(e) => setDatosForm({ ...datosForm, fecha_nacimiento: e.target.value })}
+                className={`w-full border p-2.5 rounded-xl text-sm focus:outline-none focus:ring-2 transition-colors ${
+                  !datosForm.fecha_nacimiento
+                    ? "border-amber-400 bg-amber-50/40 text-amber-950 focus:ring-amber-400/50"
+                    : "border-gray-300 focus:ring-[#2eb086]/50"
+                }`}
+              />
+            </div>
+
+            <div>
+              <div className="flex items-center justify-between mb-1">
+                <label className="block text-xs font-bold text-gray-700">Domicilio</label>
+                {!datosForm.domicilio && (
+                  <span className="text-[10px] text-amber-700 font-bold bg-amber-100 px-1.5 py-0.5 rounded border border-amber-200">
+                    Dato faltante
+                  </span>
+                )}
+              </div>
+              <input
+                type="text"
+                placeholder="Ej: Av. Colón 1234"
+                value={datosForm.domicilio}
+                onChange={(e) => setDatosForm({ ...datosForm, domicilio: e.target.value })}
+                className={`w-full border p-2.5 rounded-xl text-sm focus:outline-none focus:ring-2 transition-colors ${
+                  !datosForm.domicilio
+                    ? "border-amber-400 bg-amber-50/40 text-amber-950 focus:ring-amber-400/50"
+                    : "border-gray-300 focus:ring-[#2eb086]/50"
+                }`}
+              />
+            </div>
+          </div>
+
+          <div className="flex justify-end gap-2 pt-3 border-t border-gray-100">
+            <button
+              type="button"
+              disabled={guardando}
+              onClick={() => setPacienteEditando(null)}
+              className="px-4 py-2 rounded-xl text-xs font-bold text-gray-600 hover:bg-gray-100 transition-colors cursor-pointer"
+            >
+              Cancelar
+            </button>
+            <button
+              type="submit"
+              disabled={guardando}
+              className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold text-white bg-[#2eb086] hover:bg-[#259370] transition-colors shadow-sm cursor-pointer"
+            >
+              {guardando ? (
+                <Loader2 size={14} className="animate-spin" />
+              ) : (
+                <Check size={14} />
+              )}
+              <span>Guardar Cambios</span>
+            </button>
+          </div>
+        </Modal>
+      )}
     </>
   );
 };

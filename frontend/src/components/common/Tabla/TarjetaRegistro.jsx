@@ -26,7 +26,7 @@ const TONOS_SHEET = {
  *  - rapida: se muestra como botón de 44px en el pie (máx. 2)
  *  - todas las acciones están disponibles en el menú ⋮ (bottom sheet)
  */
-export function TarjetaRegistro({ avatar, titulo, subtitulo, badge, children, acciones = [], tituloSheet }) {
+export function TarjetaRegistro({ avatar, avatarClassName, titulo, subtitulo, badge, children, acciones = [], tituloSheet }) {
   const [sheetAbierto, setSheetAbierto] = useState(false);
   const visibles = acciones.filter((a) => !a.oculto);
   const rapidas = visibles.filter((a) => a.rapida).slice(0, 2);
@@ -49,9 +49,17 @@ export function TarjetaRegistro({ avatar, titulo, subtitulo, badge, children, ac
       <div className="px-4 pt-3.5 pb-2.5 flex items-start justify-between gap-2 border-b border-gray-100">
         <div className="flex items-center gap-2.5 min-w-0">
           {avatar && (
-            <div className="w-9 h-9 rounded-full bg-[#e8f7f1] text-[#2eb086] flex items-center justify-center font-bold text-sm shrink-0">
-              {avatar}
-            </div>
+            typeof avatar === "string" ? (
+              <div
+                className={`w-9 h-9 rounded-full ${
+                  avatarClassName || "bg-[#e8f7f1] text-[#2eb086]"
+                } flex items-center justify-center font-bold text-sm shrink-0`}
+              >
+                {avatar}
+              </div>
+            ) : (
+              avatar
+            )
           )}
           <div className="min-w-0">
             <h3 className="font-bold text-gray-900 text-[15px] leading-snug truncate">{titulo}</h3>

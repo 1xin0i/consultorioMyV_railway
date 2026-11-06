@@ -4,7 +4,6 @@ import { useState, useEffect, useCallback } from "react";
 import Modal from "../../../../components/common/Modal";
 import api from "../../../../services/api";
 import { formatFechaHoraTabla } from "../../../../utils/formatearFecha";
-import { useNavigate } from "react-router-dom";
 import {
   Calendar,
   Clock,
@@ -30,7 +29,6 @@ export function VistaTurno({
   abrirParaCancelar,
   abrirParaInasistente,
 }) {
-  const navigate = useNavigate();
   const [historial, setHistorial] = useState([]);
   const [practicasTurno, setPracticasTurno] = useState([]);
   const [cargandoDetalles, setCargandoDetalles] = useState(false);
@@ -96,11 +94,6 @@ export function VistaTurno({
     idEstado === 4 ||
     nombreEstado === "Cancelado" ||
     nombreEstado === "Inasistente";
-
-  const irACobrar = (turnoTarget) => {
-    onClose(); // Cerrar modal de detalles
-    navigate("/caja", { state: { turnoParaCobrar: turnoTarget } });
-  };
 
   return (
     <Modal
@@ -350,17 +343,17 @@ export function VistaTurno({
                 <span className="hidden md:inline">Reprogramar</span>
               </button>
 
-              {/* Marcar Inasistente */}
+              {/* Marcar Inasistido */}
               <button
                 type="button"
                 onClick={() => {
                   if (abrirParaInasistente) abrirParaInasistente(turno);
                 }}
                 className="flex items-center gap-1.5 px-2.5 sm:px-3 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-xs sm:text-sm transition-all"
-                title="Marcar Inasistente"
+                title="Marcar Inasistido"
               >
                 <UserRoundX size={16} />
-                <span className="hidden md:inline">Inasistente</span>
+                <span className="hidden md:inline">Inasistido</span>
               </button>
 
               {/* Cancelar */}
@@ -388,17 +381,6 @@ export function VistaTurno({
             >
               <CalendarDays size={16} />
               <span>Reprogramar</span>
-            </button>
-          )}
-
-          {esAtendido && (
-            <button
-              type="button"
-              onClick={() => irACobrar(turno)}
-              className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-xs sm:text-sm transition-all"
-            >
-              <Banknote size={16} />
-              <span>Cobrar</span>
             </button>
           )}
         </div>

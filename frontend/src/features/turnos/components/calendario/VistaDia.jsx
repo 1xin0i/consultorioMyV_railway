@@ -130,11 +130,9 @@ export const VistaDia = ({
               onTouchMove={onTouchMove}
               onTouchEnd={onTouchEnd}
               className={`w-full border-b border-gray-200 transition-colors select-none flex items-center px-3 justify-between ${
-                bloqueado
-                  ? "bg-slate-200/90 text-slate-600 cursor-not-allowed border-slate-300"
-                  : pasado
-                    ? "bg-slate-100/70 cursor-not-allowed opacity-75"
-                    : "bg-white hover:bg-emerald-50/30 cursor-pointer"
+                bloqueado || pasado
+                  ? "bg-slate-100/90 text-slate-600 cursor-not-allowed border-slate-200"
+                  : "bg-white hover:bg-emerald-50/30 cursor-pointer"
               } ${seleccion ? "!bg-emerald-100/90" : ""}`}
             >
               {bloqueado && (

@@ -41,6 +41,8 @@ export function BotonAccionesTurno({
       <button
         ref={botonRef}
         type="button"
+        aria-label="Más opciones de turno"
+        title="Más opciones de turno"
         onClick={(e) => {
           e.stopPropagation();
           setMenuAbiertoId(estaAbierto ? null : turno.id_turno);
@@ -84,7 +86,7 @@ export function BotonAccionesTurno({
           className="flex items-center gap-2.5 px-4 py-2.5 text-xs font-semibold text-amber-800 hover:bg-amber-50 text-left transition-colors cursor-pointer"
         >
           <UserRoundX size={16} className="text-amber-600" />
-          <span>Inasistente</span>
+          <span>Inasistido</span>
         </button>
       </MenuFlotantePortal>
     </div>

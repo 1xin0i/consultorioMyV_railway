@@ -227,7 +227,6 @@ export default function GestionCaja() {
           icono={Wallet}
           titulo="Balance del Periodo"
           subtitulo="Consolidado de ingresos, egresos operativos y cuentas por cobrar"
-          badge="En línea"
           botonAccion={
             <div className="hidden sm:flex items-center gap-2">
               <button
@@ -235,8 +234,8 @@ export default function GestionCaja() {
                 onClick={abrirParaCrearGasto}
                 className="flex items-center gap-1.5 bg-rose-500 hover:bg-rose-600 text-white px-3.5 py-2 rounded-xl font-bold text-xs transition-all shadow-sm cursor-pointer"
               >
-                <Minus size={16} />
-                <span>+ Nuevo Gasto</span>
+                <Plus size={16} />
+                <span>Nuevo Gasto</span>
               </button>
 
               <button
@@ -245,7 +244,7 @@ export default function GestionCaja() {
                 className="flex items-center gap-1.5 bg-[#2eb086] hover:bg-[#259370] text-white px-3.5 py-2 rounded-xl font-bold text-xs transition-all shadow-sm cursor-pointer"
               >
                 <Plus size={16} />
-                <span>+ Registrar Cobro</span>
+                <span>Registrar Cobro</span>
               </button>
             </div>
           }
@@ -279,21 +278,22 @@ export default function GestionCaja() {
                   </span>
                 </div>
               ) : (
-                <div className="flex items-center gap-1 bg-gray-50 border border-gray-200 rounded-xl px-2 py-1">
-                  <button
-                    type="button"
-                    onClick={mesAnterior}
-                    aria-label="Mes anterior"
-                    className="p-1 hover:bg-white rounded-lg transition-colors text-gray-600 hover:text-gray-900 cursor-pointer"
-                  >
-                    <ChevronLeft size={16} />
-                  </button>
+                <div className="flex items-center gap-2">
+                  {/* Selector de Mes con Flechas */}
+                  <div className="flex items-center gap-1 bg-gray-50 border border-gray-200 rounded-xl px-1.5 py-1">
+                    <button
+                      type="button"
+                      onClick={mesAnterior}
+                      aria-label="Mes anterior"
+                      className="p-1 hover:bg-white rounded-lg transition-colors text-gray-600 hover:text-gray-900 cursor-pointer"
+                    >
+                      <ChevronLeft size={16} />
+                    </button>
 
-                  <div className="flex items-center gap-1 px-1">
                     <select
                       value={mes}
                       onChange={(e) => cambiarMes(e.target.value)}
-                      className="bg-transparent font-bold text-xs text-gray-800 focus:outline-none cursor-pointer"
+                      className="bg-transparent font-bold text-xs text-gray-800 focus:outline-none cursor-pointer px-1"
                     >
                       {MESES.map((m, idx) => (
                         <option key={m} value={idx + 1}>
@@ -302,6 +302,18 @@ export default function GestionCaja() {
                       ))}
                     </select>
 
+                    <button
+                      type="button"
+                      onClick={mesSiguiente}
+                      aria-label="Mes siguiente"
+                      className="p-1 hover:bg-white rounded-lg transition-colors text-gray-600 hover:text-gray-900 cursor-pointer"
+                    >
+                      <ChevronRight size={16} />
+                    </button>
+                  </div>
+
+                  {/* Selector de Año Separado */}
+                  <div className="flex items-center bg-gray-50 border border-gray-200 rounded-xl px-2.5 py-1">
                     <select
                       value={anio}
                       onChange={(e) => cambiarAnio(e.target.value)}
@@ -314,26 +326,29 @@ export default function GestionCaja() {
                       ))}
                     </select>
                   </div>
-
-                  <button
-                    type="button"
-                    onClick={mesSiguiente}
-                    aria-label="Mes siguiente"
-                    className="p-1 hover:bg-white rounded-lg transition-colors text-gray-600 hover:text-gray-900 cursor-pointer"
-                  >
-                    <ChevronRight size={16} />
-                  </button>
                 </div>
               )}
 
-              {!esMesActual && (
-                <button
-                  type="button"
-                  onClick={irAMesActual}
-                  className="text-[11px] font-bold text-[#2eb086] hover:text-[#259370] bg-[#e8f7f1] px-2.5 py-1 rounded-xl transition-all cursor-pointer"
-                >
-                  Este Mes
-                </button>
+              {modoAnual ? (
+                anio !== fechaHoy.getFullYear() && (
+                  <button
+                    type="button"
+                    onClick={() => cambiarAnio(fechaHoy.getFullYear())}
+                    className="text-xs font-bold text-emerald-800 bg-emerald-50 hover:bg-emerald-100 border border-emerald-300/80 px-3 py-1.5 rounded-xl shadow-2xs transition-all active:scale-95 cursor-pointer flex items-center gap-1"
+                  >
+                    Volver a este año
+                  </button>
+                )
+              ) : (
+                !esMesActual && (
+                  <button
+                    type="button"
+                    onClick={irAMesActual}
+                    className="text-xs font-bold text-emerald-800 bg-emerald-50 hover:bg-emerald-100 border border-emerald-300/80 px-3 py-1.5 rounded-xl shadow-2xs transition-all active:scale-95 cursor-pointer flex items-center gap-1"
+                  >
+                    Volver a este mes
+                  </button>
+                )
               )}
             </div>
 
@@ -378,7 +393,7 @@ export default function GestionCaja() {
                     : "text-gray-500"
                 }`}
               >
-                Detalle Egresos
+                Detalle de Egresos
               </button>
               <button
                 type="button"

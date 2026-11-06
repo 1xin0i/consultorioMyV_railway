@@ -9,9 +9,7 @@ import {
   AlertCircle,
   CalendarClock,
   Eye,
-  Wallet,
 } from "lucide-react";
-import { useNavigate } from "react-router-dom";
 
 //* COMPONENTES COMUNES
 import Header from "../../components/common/Header";
@@ -54,7 +52,6 @@ import {
 } from "./components/FormulariosTurno";
 
 export default function GestionTurnos() {
-  const navigate = useNavigate();
   //* HOOK DE PAGINACIÓN
   const {
     datos: turnos,
@@ -235,23 +232,13 @@ export default function GestionTurnos() {
                         </div>
                       </td>
 
-                      {/* //* COLUMNAS: PRECIO FINAL (Bloque destacado con fondo clínico) */}
+                      {/* //* COLUMNAS: PRECIO FINAL */}
                       <td className="hidden md:table-cell px-5 py-4">
-                        {Number(turno.precio_final) > 0 ? (
-                          <span className="inline-flex items-center px-2.5 py-1 rounded-xl bg-emerald-100/70 border border-emerald-200/90 text-emerald-900 font-extrabold text-sm tabular-nums shadow-2xs">
-                            $
-                            {Number(turno.precio_final).toLocaleString(
-                              "es-AR",
-                              {
-                                minimumFractionDigits: 2,
-                              },
-                            )}
-                          </span>
-                        ) : (
-                          <span className="inline-flex items-center px-2 py-0.5 rounded-lg bg-slate-100 text-slate-500 font-medium text-xs border border-slate-200/60 tabular-nums">
-                            $0,00
-                          </span>
-                        )}
+                        <span className="font-semibold text-slate-700 text-xs sm:text-sm tabular-nums">
+                          ${Number(turno.precio_final || 0).toLocaleString("es-AR", {
+                            minimumFractionDigits: 2,
+                          })}
+                        </span>
                       </td>
 
                       {/* //* COLUMNAS: ESTADO */}
@@ -260,7 +247,7 @@ export default function GestionTurnos() {
                           className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold border shadow-2xs ${estadoInfo.color}`}
                         >
                           <IconoEstado size={13} />
-                          <span>{turno.EstadoTurno.estado}</span>
+                          <span>{estadoInfo.label || turno.EstadoTurno.estado}</span>
                         </span>
                       </td>
 
@@ -307,22 +294,6 @@ export default function GestionTurnos() {
                               title="Editar Turno"
                             >
                               <Edit size={18} />
-                            </button>
-                          )}
-
-                          {/* Botón rápido contextual para cobrar turno atendido */}
-                          {turno.EstadoTurno?.estado === "Atendido" && (
-                            <button
-                              type="button"
-                              onClick={() =>
-                                navigate("/caja", {
-                                  state: { turnoParaCobrar: turno },
-                                })
-                              }
-                              className="px-2.5 py-1.5 rounded-xl text-emerald-900 bg-emerald-100 hover:bg-emerald-200 border border-emerald-300 font-bold text-xs transition-all shadow-xs hover:scale-105 active:scale-95 cursor-pointer flex items-center gap-1.5"
-                              title="Cobrar Turno en Caja"
-                            >
-                              <Wallet size={16} />
                             </button>
                           )}
 
@@ -397,7 +368,7 @@ export default function GestionTurnos() {
             datosFormulario={datosFormulario}
             actualizarDatos={actualizarDatos}
             guardarTurno={(e) => {
-              e.preventDefault();
+              if (e && e.preventDefault) e.preventDefault();
               guardarTurno(datosFormulario, editando, turnoSeleccionado);
             }}
             abrirParaAtender={() => {

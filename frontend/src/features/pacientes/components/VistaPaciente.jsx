@@ -5,7 +5,6 @@ import Modal from "../../../components/common/Modal";
 import api from "../../../services/api";
 import { calcularEdad } from "../utils/calcularEdad";
 import { formatFechaTabla, formatSoloHora } from "../../../utils/index";
-import { useNavigate } from "react-router-dom";
 import {
   ChevronDown,
   ChevronUp,
@@ -14,15 +13,17 @@ import {
   Clock,
   Banknote,
   AlertCircle,
+  CalendarCheck,
+  CalendarClock,
 } from "lucide-react";
 
 export function VistaPaciente({ isOpen, onClose, paciente }) {
-  const navigate = useNavigate();
   const [turnos, setTurnos] = useState([]);
   const [cargando, setCargando] = useState(false);
 
   // Estados de Filtros y Acordeón
   const [busqueda, setBusqueda] = useState("");
+  const [filtroEstado, setFiltroEstado] = useState("todos"); // 'todos' | 'atendidos' | 'programados'
   const [soloPendientes, setSoloPendientes] = useState(false);
   const [acordeonAbiertoId, setAcordeonAbiertoId] = useState(null);
 
@@ -89,6 +90,12 @@ export function VistaPaciente({ isOpen, onClose, paciente }) {
   // Filtrado de Turnos
   const turnosFiltrados = useMemo(() => {
     return turnos.filter((t) => {
+      const estado = t.EstadoTurno?.estado || "";
+
+      // Filtro por Estado (Atendidos vs Programados)
+      if (filtroEstado === "atendidos" && estado !== "Atendido") return false;
+      if (filtroEstado === "programados" && estado !== "Programado") return false;
+
       // Filtro de pendientes de cobro
       if (soloPendientes) {
         const cobro = t.Cobro;
@@ -106,17 +113,17 @@ export function VistaPaciente({ isOpen, onClose, paciente }) {
         const query = busqueda.toLowerCase();
         const fecha = formatFechaTabla(t.fecha_hora_inicio).toLowerCase();
         const notas = (t.notas_consulta || "").toLowerCase();
-        const estado = (t.EstadoTurno?.estado || "").toLowerCase();
+        const estadoNorm = (t.EstadoTurno?.estado || "").toLowerCase();
         return (
           fecha.includes(query) ||
           notas.includes(query) ||
-          estado.includes(query)
+          estadoNorm.includes(query)
         );
       }
 
       return true;
     });
-  }, [turnos, soloPendientes, busqueda]);
+  }, [turnos, filtroEstado, soloPendientes, busqueda]);
 
   // Paginación
   const totalPaginas =
@@ -130,8 +137,6 @@ export function VistaPaciente({ isOpen, onClose, paciente }) {
     setAcordeonAbiertoId(acordeonAbiertoId === idTurno ? null : idTurno);
   };
 
-  const irACobrar = (turno) => { onClose(); navigate("/caja", { state: { turnoParaCobrar: turno } }); };
-
   if (!paciente) return null;
 
   return (
@@ -141,9 +146,9 @@ export function VistaPaciente({ isOpen, onClose, paciente }) {
       width="max-w-3xl"
       title={`Ficha Clinica y Cuenta Corriente`}
     >
-      <div className="flex flex-col gap-4 text-sm max-h-[75vh] overflow-y-auto pr-1">
+      <div className="flex flex-col gap-4 text-sm">
         {/* ─── TARJETA PRINCIPAL DEL PACIENTE ─── */}
-        <div className="bg-gradient-to-br from-gray-50 to-[#e8f7f1]/30 p-4 rounded-2xl border border-gray-200/80 space-y-3">
+        <div className="bg-gradient-to-br from-gray-50 to-[#e8f7f1]/30 p-4 rounded-2xl border border-gray-200/80 space-y-3 shrink-0">
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 border-b border-gray-200/60 pb-3">
             <div className="flex items-center gap-3">
               <div className="w-12 h-12 rounded-2xl bg-[#2eb086] text-white flex items-center justify-center font-black text-lg shrink-0 shadow-sm">
@@ -241,8 +246,56 @@ export function VistaPaciente({ isOpen, onClose, paciente }) {
           </div>
         </div>
 
+        {/* ─── FILTROS DE ESTADO: TODOS, ATENDIDOS, PROGRAMADOS ─── */}
+        <div className="flex items-center gap-2 overflow-x-auto pb-1 shrink-0 min-h-[36px]">
+          <button
+            type="button"
+            onClick={() => {
+              setFiltroEstado("todos");
+              setPaginaActual(1);
+            }}
+            className={`px-3.5 py-1.5 min-h-[32px] rounded-xl text-xs font-bold transition-all cursor-pointer shrink-0 inline-flex items-center justify-center ${
+              filtroEstado === "todos"
+                ? "bg-[#2eb086] text-white shadow-2xs"
+                : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+            }`}
+          >
+            Todos ({turnos.length})
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              setFiltroEstado("atendidos");
+              setPaginaActual(1);
+            }}
+            className={`px-3.5 py-1.5 min-h-[32px] rounded-xl text-xs font-bold transition-all cursor-pointer inline-flex items-center justify-center gap-1.5 shrink-0 ${
+              filtroEstado === "atendidos"
+                ? "bg-emerald-600 text-white shadow-2xs"
+                : "bg-emerald-50 text-emerald-800 hover:bg-emerald-100 border border-emerald-200/60"
+            }`}
+          >
+            <CalendarCheck size={14} />
+            <span>Atendidos ({turnos.filter((t) => t.EstadoTurno?.estado === "Atendido").length})</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              setFiltroEstado("programados");
+              setPaginaActual(1);
+            }}
+            className={`px-3.5 py-1.5 min-h-[32px] rounded-xl text-xs font-bold transition-all cursor-pointer inline-flex items-center justify-center gap-1.5 shrink-0 ${
+              filtroEstado === "programados"
+                ? "bg-sky-600 text-white shadow-2xs"
+                : "bg-sky-50 text-sky-800 hover:bg-sky-100 border border-sky-200/60"
+            }`}
+          >
+            <CalendarClock size={14} />
+            <span>Programados ({turnos.filter((t) => t.EstadoTurno?.estado === "Programado").length})</span>
+          </button>
+        </div>
+
         {/* ─── BARRA DE BÚSQUEDA Y FILTROS DE TURNOS ─── */}
-        <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 bg-gray-50 p-3 rounded-2xl border border-gray-200">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 bg-gray-50 p-3 rounded-2xl border border-gray-200 shrink-0">
           <div className="relative flex-1">
             <Search
               size={16}
@@ -430,17 +483,13 @@ export function VistaPaciente({ isOpen, onClose, paciente }) {
                           </div>
                         </div>
 
-                        {/* ACCIÓN IR A COBRAR */}
+                        {/* INDICADOR DE SALDO PENDIENTE */}
                         {saldoRestante > 0 && (
                           <div className="flex justify-end pt-1">
-                            <button
-                              type="button"
-                              onClick={() => irACobrar(t)}
-                              className="flex items-center gap-1.5 bg-[#2eb086] hover:bg-[#259370] text-white px-3 py-1.5 rounded-xl font-bold text-xs transition-all shadow-xs active:scale-95"
-                            >
-                              <Banknote size={14} />
-                              <span>Registrar Cobro para este Turno</span>
-                            </button>
+                            <span className="flex items-center gap-1.5 bg-amber-50 text-amber-800 border border-amber-200/80 px-3 py-1.5 rounded-xl font-bold text-xs">
+                              <Banknote size={14} className="text-amber-600" />
+                              <span>Saldo pendiente de cobro: ${saldoRestante.toFixed(2)}</span>
+                            </span>
                           </div>
                         )}
                       </div>
@@ -453,7 +502,7 @@ export function VistaPaciente({ isOpen, onClose, paciente }) {
 
           {/* PAGINACIÓN DE LA FICHA */}
           {totalPaginas > 1 && (
-            <div className="flex items-center justify-between pt-2 px-1">
+            <div className="flex items-center justify-between pt-2 px-1 shrink-0">
               <span className="text-[11px] text-gray-500 font-medium">
                 Página {paginaActual} de {totalPaginas}
               </span>
@@ -462,7 +511,7 @@ export function VistaPaciente({ isOpen, onClose, paciente }) {
                   type="button"
                   disabled={paginaActual === 1}
                   onClick={() => setPaginaActual((p) => p - 1)}
-                  className="px-2.5 py-1 rounded-lg bg-gray-100 hover:bg-gray-200 text-xs font-semibold disabled:opacity-40"
+                  className="px-2.5 py-1 rounded-lg bg-gray-100 hover:bg-gray-200 text-xs font-semibold disabled:opacity-40 cursor-pointer"
                 >
                   Anterior
                 </button>
@@ -470,7 +519,7 @@ export function VistaPaciente({ isOpen, onClose, paciente }) {
                   type="button"
                   disabled={paginaActual === totalPaginas}
                   onClick={() => setPaginaActual((p) => p + 1)}
-                  className="px-2.5 py-1 rounded-lg bg-gray-100 hover:bg-gray-200 text-xs font-semibold disabled:opacity-40"
+                  className="px-2.5 py-1 rounded-lg bg-gray-100 hover:bg-gray-200 text-xs font-semibold disabled:opacity-40 cursor-pointer"
                 >
                   Siguiente
                 </button>
@@ -480,11 +529,11 @@ export function VistaPaciente({ isOpen, onClose, paciente }) {
         </div>
 
         {/* PIE DEL MODAL */}
-        <div className="border-t border-gray-200 pt-3 flex justify-end">
+        <div className="border-t border-gray-200 pt-3 flex justify-end shrink-0">
           <button
             type="button"
             onClick={onClose}
-            className="px-4 py-2 rounded-xl text-white bg-[#2eb086] hover:bg-[#259370] font-bold text-xs transition-colors"
+            className="px-4 py-2 rounded-xl text-white bg-[#2eb086] hover:bg-[#259370] font-bold text-xs transition-colors cursor-pointer"
           >
             Cerrar Ventana
           </button>

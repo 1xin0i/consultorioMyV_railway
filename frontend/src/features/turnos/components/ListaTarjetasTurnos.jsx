@@ -1,6 +1,5 @@
 /** @format */
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
 import { createPortal } from "react-dom";
 import {
   Calendar,
@@ -42,7 +41,6 @@ export function ListaTarjetasTurnos({
   setPage,
   totalPages,
 }) {
-  const navigate = useNavigate();
   const [turnoMenuActivo, setTurnoMenuActivo] = useState(null);
 
   const {
@@ -281,16 +279,6 @@ export function ListaTarjetasTurnos({
                     <span>Atender</span>
                   </button>
                 )}
-                {turno.EstadoTurno?.estado === "Atendido" && (
-                  <button
-                    type="button"
-                    onClick={() => navigate("/caja", { state: { turnoParaCobrar: turno } })}
-                    className="flex-1 min-h-[44px] px-3 rounded-xl bg-emerald-100 border border-emerald-300 text-emerald-900 hover:bg-emerald-200 active:scale-[0.98] font-bold text-xs flex items-center justify-center gap-1.5 transition-all shadow-xs cursor-pointer"
-                  >
-                    <Wallet size={16} className="shrink-0" />
-                    <span>Cobrar</span>
-                  </button>
-                )}
 
                 {/* Botón de tres puntos (⋮) con área táctil de 44x44 px que abre el Bottom Sheet */}
                 <button
@@ -409,20 +397,6 @@ export function ListaTarjetasTurnos({
                   </button>
                 )}
 
-                {turnoMenuActivo.EstadoTurno?.estado === "Atendido" && (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setTurnoMenuActivo(null);
-                      navigate("/caja", { state: { turnoParaCobrar: turnoMenuActivo } });
-                    }}
-                    className="w-full min-h-[48px] px-4 rounded-xl flex items-center gap-3 text-sm font-semibold text-emerald-700 hover:bg-emerald-50 active:bg-emerald-100/60 transition-colors text-left"
-                  >
-                    <Wallet size={18} className="shrink-0" />
-                    <span>Cobrar atención en Caja</span>
-                  </button>
-                )}
-
                 {turnoMenuActivo.EstadoTurno?.estado === "Programado" && (
                   <>
                     <div className="my-1 border-t border-gray-100" />
@@ -456,7 +430,7 @@ export function ListaTarjetasTurnos({
                       className="w-full min-h-[48px] px-4 rounded-xl flex items-center gap-3 text-sm font-semibold text-[#2b5d73] hover:bg-[#f0f6f9] active:bg-[#e1eef4] transition-colors text-left"
                     >
                       <UserRoundX size={18} className="shrink-0" />
-                      <span>Marcar como Inasistente</span>
+                      <span>Marcar como Inasistido</span>
                     </button>
 
                     <button

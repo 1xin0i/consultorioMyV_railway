@@ -64,7 +64,9 @@ export function FormularioCrearEditar({
             {/* CATEGORÍA CON INPUTFILTRO Y BOTÓN NUEVO */}
             <div className="col-span-1 md:col-span-2">
               <div className="flex items-center justify-between mb-1">
-                <label className="block text-sm font-semibold text-gray-700">Categoría *</label>
+                <label className="block text-sm font-bold text-gray-800">
+                  Categoría <span className="text-rose-500 font-bold">*</span>
+                </label>
                 <button
                   type="button"
                   onClick={() => setModalCategoriaRapida(true)}
@@ -72,7 +74,7 @@ export function FormularioCrearEditar({
                   title="Crear nueva categoría"
                 >
                   <Plus size={14} />
-                  <span>+ Nueva Categoría</span>
+                  <span>Nueva Categoría</span>
                 </button>
               </div>
 
@@ -91,35 +93,20 @@ export function FormularioCrearEditar({
             </div>
 
             {/* MONTO */}
-            <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-1">Monto ($) *</label>
+            <div className="col-span-1 md:col-span-2">
+              <label className="block text-sm font-bold text-gray-800 mb-1">
+                Monto ($) <span className="text-rose-500 font-bold">*</span>
+              </label>
               <input
                 type="number"
                 step="0.01"
                 name="monto"
                 value={datosFormulario.monto}
                 onChange={actualizarDatos}
-                placeholder="Ej: 15000.00"
+                placeholder="Utilizar . para decimales"
                 required
                 className="w-full border border-gray-300 p-2.5 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#2eb086]/50 focus:border-[#2eb086]"
               />
-            </div>
-
-            {/* MÉTODO DE PAGO */}
-            <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-1">Método de Pago *</label>
-              <select
-                name="metodo_pago"
-                value={datosFormulario.metodo_pago}
-                onChange={actualizarDatos}
-                required
-                className="w-full border border-gray-300 p-2.5 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#2eb086]/50 focus:border-[#2eb086]"
-              >
-                <option value="Efectivo">Efectivo</option>
-                <option value="Transferencia">Transferencia</option>
-                <option value="Tarjeta">Tarjeta Débito/Crédito</option>
-                <option value="Otro">Otro</option>
-              </select>
             </div>
 
             {/* CONCEPTO */}

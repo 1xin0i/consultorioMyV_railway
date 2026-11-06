@@ -18,8 +18,13 @@ export const AgendaCalendar = ({ turnos = [], onDateSelect, onEventClick }) => {
     configuracion,
     slotsHoras,
     horaInicioNum,
+    totalModulosDia,
     esDiaLaboral,
   } = useConfiguracion();
+
+  const capacidadTotal = totalModulosDia || 24;
+  const corte60 = Math.round(capacidadTotal * 0.6);
+  const corte85 = Math.round(capacidadTotal * 0.85);
 
   const {
     restricciones,
@@ -44,7 +49,7 @@ export const AgendaCalendar = ({ turnos = [], onDateSelect, onEventClick }) => {
   const obtenerRestriccionDia = useCallback(
     (fecha) => {
       if (esDiaLaboral && !esDiaLaboral(fecha)) {
-        return { motivo: "Día no laboral (Cerrado)" };
+        return { motivo: "Día no laboral" };
       }
       return obtenerRestriccionDiaOriginal
         ? obtenerRestriccionDiaOriginal(fecha)
@@ -659,22 +664,25 @@ export const AgendaCalendar = ({ turnos = [], onDateSelect, onEventClick }) => {
         {/* Leyenda de ocupación exclusiva para vista mes */}
         {vista === "mes" && (
           <div className="px-2 pb-2.5 sm:px-3.5 sm:pb-3 -mt-1 flex justify-end items-center">
-            <div className="flex flex-wrap items-center justify-end gap-2.5 sm:gap-4 text-[11px] text-gray-600">
+            <div className="flex flex-wrap items-center justify-end gap-2 sm:gap-3.5 text-[11px] text-gray-600">
+              <span className="font-bold text-gray-800 flex items-center gap-1">
+                Ocupación:
+              </span>
               <span className="inline-flex items-center gap-1.5">
                 <span className="w-2.5 h-2.5 rounded border border-gray-300 inline-block bg-white" />
-                <span>Sin turnos (0%)</span>
+                <span>Libre ({capacidadTotal} disp.)</span>
               </span>
               <span className="inline-flex items-center gap-1.5">
-                <span className="w-2.5 h-2.5 rounded border inline-block bg-green-500" />
-                <span>&lt; 60%</span>
+                <span className="w-2.5 h-2.5 rounded border inline-block bg-emerald-500" />
+                <span>Baja (1 a {corte60} módulos)</span>
               </span>
               <span className="inline-flex items-center gap-1.5">
-                <span className="w-2.5 h-2.5 rounded border inline-block bg-yellow-500" />
-                <span>60% - 85%</span>
+                <span className="w-2.5 h-2.5 rounded border inline-block bg-amber-500" />
+                <span>Media ({corte60 + 1} a {corte85} módulos)</span>
               </span>
               <span className="inline-flex items-center gap-1.5">
-                <span className="w-2.5 h-2.5 rounded border inline-block bg-red-500" />
-                <span>&gt; 85%</span>
+                <span className="w-2.5 h-2.5 rounded border inline-block bg-rose-500" />
+                <span>Alta (&gt; {corte85} módulos)</span>
               </span>
             </div>
           </div>

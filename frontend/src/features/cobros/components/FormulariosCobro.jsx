@@ -227,23 +227,23 @@ export function FormularioCrearEditarCobro({
             </div>
           </div>
 
-          {/* 2. MODALIDADES DE COBRO: 2 OPCIONES BALANCEADAS */}
+          {/* 2. MODALIDADES DE COBRO */}
           <div>
             <h4 className="text-xs font-bold uppercase tracking-wider text-gray-600 mb-2.5 flex items-center gap-1.5">
               <Banknote size={15} className="text-[#2eb086]" />
               2. Modalidad de Cobro
             </h4>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <SelectorModalidad
-                titulo="1 Pago Total (Inmediato)"
-                descripcion="Cancelación completa en el momento. El turno queda saldado."
+                titulo="Pago Total (Al Contado)"
+                descripcion="Cancelación completa en el acto. El turno queda saldado."
                 activa={modalidadActual === "inmediato"}
                 onClick={() => seleccionarModalidad("inmediato")}
                 Icono={CheckCircle2}
               />
               <SelectorModalidad
-                titulo="Acuerdo Informal / A Cuenta"
-                descripcion="Costo total acordado con entregas parciales y saldo abierto."
+                titulo="Acuerdo Informal"
+                descripcion="Costo total acordado con entregas parciales a cuenta."
                 activa={modalidadActual === "informal"}
                 onClick={() => seleccionarModalidad("informal")}
                 Icono={FileText}
@@ -368,6 +368,78 @@ function DetalleInmediato({ datosFormulario, actualizarDatos }) {
             <option value="Tarjeta">Tarjeta Débito/Crédito</option>
             <option value="Otro">Otro</option>
           </select>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function DetalleCuotas({ datosFormulario, actualizarDatos }) {
+  const costoTotal = Number(datosFormulario.monto_a_cobrar) || 0;
+  const cantCuotas = Number(datosFormulario.cant_cuotas) || 3;
+  const valorCuota = cantCuotas > 0 ? (costoTotal / cantCuotas).toFixed(2) : "0.00";
+
+  return (
+    <div className="bg-gray-50/70 p-3.5 rounded-2xl border border-gray-200/80 space-y-3">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1">
+        <h4 className="text-xs font-bold uppercase tracking-wider text-gray-600 flex items-center gap-1.5">
+          <CreditCard size={15} className="text-[#2eb086]" />
+          3. Detalle del Plan de Cuotas
+        </h4>
+        <span className="text-xs font-bold bg-[#e8f7f1] text-[#2eb086] px-3 py-1 rounded-full border border-[#2eb086]/30 w-fit">
+          {cantCuotas} cuotas de ${valorCuota}
+        </span>
+      </div>
+
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+        <div>
+          <label className="block text-xs font-semibold text-gray-700 mb-1">
+            Monto Total a Financiar *
+          </label>
+          <input
+            type="number"
+            step="0.01"
+            name="monto_a_cobrar"
+            value={datosFormulario.monto_a_cobrar}
+            onChange={actualizarDatos}
+            placeholder="0.00"
+            required
+            className="w-full border border-gray-300 p-2.5 rounded-xl text-xs sm:text-sm bg-white focus:ring-2 focus:ring-[#2eb086]/50"
+          />
+        </div>
+
+        <div>
+          <label className="block text-xs font-semibold text-gray-700 mb-1">
+            Cantidad de Cuotas *
+          </label>
+          <select
+            name="cant_cuotas"
+            value={datosFormulario.cant_cuotas || 3}
+            onChange={actualizarDatos}
+            className="w-full border border-gray-300 p-2.5 rounded-xl text-xs sm:text-sm bg-white focus:ring-2 focus:ring-[#2eb086]/50 font-medium text-gray-800"
+          >
+            {[2, 3, 4, 5, 6, 9, 12].map((num) => (
+              <option key={num} value={num}>
+                {num} Cuotas Fijas
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <div>
+          <label className="block text-xs font-semibold text-gray-700 mb-1">
+            1° Vencimiento *
+          </label>
+          <input
+            type="date"
+            name="fecha_primer_vencimiento"
+            value={
+              datosFormulario.fecha_primer_vencimiento ||
+              new Date().toISOString().split("T")[0]
+            }
+            onChange={actualizarDatos}
+            className="w-full border border-gray-300 p-2.5 rounded-xl text-xs sm:text-sm bg-white focus:ring-2 focus:ring-[#2eb086]/50 font-medium text-gray-800"
+          />
         </div>
       </div>
     </div>

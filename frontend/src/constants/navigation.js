@@ -50,11 +50,6 @@ export const NAV_ITEMS = [
  */
 export const CONFIG_ITEMS = [
   {
-    to: "/configuracion/horarios",
-    label: "Horarios",
-    Icon: Clock,
-  },
-  {
     to: "/configuracion/obras-sociales",
     label: "Obras Sociales",
     Icon: Shield,
@@ -64,5 +59,9 @@ export const CONFIG_ITEMS = [
     label: "Prácticas",
     Icon: FileText,
   },
+  {
+    to: "/configuracion/horarios",
+    label: "Horarios",
+    Icon: Clock,
+  },
 ];
-

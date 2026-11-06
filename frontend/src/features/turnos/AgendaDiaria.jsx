@@ -155,7 +155,7 @@ export default function AgendaDiaria() {
           datosFormulario={datosFormulario}
           actualizarDatos={actualizarDatos}
           guardarTurno={(e) => {
-            e.preventDefault();
+            if (e && e.preventDefault) e.preventDefault();
             guardarTurno(datosFormulario, editando, turnoSeleccionado);
           }}
           abrirParaAtender={() => {

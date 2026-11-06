@@ -20,6 +20,13 @@ export const estadosMap = {
   },
   Inasistente: {
     id_estado: 4,
+    label: "Inasistido",
+    color: "bg-slate-100 text-slate-700 border-slate-200",
+    icon: UserRoundX,
+  },
+  Inasistido: {
+    id_estado: 4,
+    label: "Inasistido",
     color: "bg-slate-100 text-slate-700 border-slate-200",
     icon: UserRoundX,
   },

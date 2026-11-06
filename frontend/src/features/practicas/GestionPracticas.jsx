@@ -172,7 +172,7 @@ export default function GestionPracticas() {
                         </div>
                         <div className="flex items-center justify-between pt-2 border-t border-dashed border-gray-200">
                           <span className="font-medium text-gray-500">Precio ref.</span>
-                          <span className="text-sm font-extrabold text-gray-900">
+                          <span className="text-sm font-semibold text-slate-700 tabular-nums">
                             $
                             {Number(practica.precio_referencia).toLocaleString("es-AR", {
                               minimumFractionDigits: 2,
@@ -219,20 +219,13 @@ export default function GestionPracticas() {
                       {practica.especialidad}
                     </td>
 
-                    {/* //* COLUMNAS: PRECIO DE REFERENCIA (Bloque destacado) */}
+                    {/* //* COLUMNAS: PRECIO DE REFERENCIA */}
                     <td className="px-6 py-4">
-                      {Number(practica.precio_referencia) > 0 ? (
-                        <span className="inline-flex items-center px-2.5 py-1 rounded-xl bg-emerald-100/70 border border-emerald-200/90 text-emerald-900 font-extrabold text-sm tabular-nums shadow-2xs">
-                          $
-                          {Number(practica.precio_referencia).toLocaleString("es-AR", {
-                            minimumFractionDigits: 2,
-                          })}
-                        </span>
-                      ) : (
-                        <span className="inline-flex items-center px-2 py-0.5 rounded-lg bg-slate-100 text-slate-500 font-medium text-xs border border-slate-200/60 tabular-nums">
-                          $0,00
-                        </span>
-                      )}
+                      <span className="font-semibold text-slate-700 text-xs sm:text-sm tabular-nums">
+                        ${Number(practica.precio_referencia || 0).toLocaleString("es-AR", {
+                          minimumFractionDigits: 2,
+                        })}
+                      </span>
                     </td>
 
                     {/* //* COLUMNAS: ESTADO */}

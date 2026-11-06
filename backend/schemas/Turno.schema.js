@@ -16,14 +16,12 @@ export const createTurnoSchema = z.object({
   fecha_hora_inicio: z.coerce
     .date({
       invalid_type_error: "Formato de fecha inválido",
-    })
-    .min(hoy, { message: "La fecha de inicio no es válida" }),
+    }),
 
   fecha_hora_fin: z.coerce
     .date({
       invalid_type_error: "Formato de fecha inválido",
-    })
-    .min(hoy, { message: "La fecha de fin no es válida" }),
+    }),
 
   precio_final: z
     .number({
@@ -38,7 +36,7 @@ export const createTurnoSchema = z.object({
   notas_consulta: z
     .string({ invalid_type_error: "Las notas de consulta deben ser un texto" })
     .trim()
-    .optional(),
+    .nullish(),
 });
 
 export const updateTurnoSchema = z.object({
@@ -65,7 +63,7 @@ export const updateTurnoSchema = z.object({
   notas_consulta: z
     .string({ invalid_type_error: "Las notas de consulta deben ser un texto" })
     .trim()
-    .optional(),
+    .nullish(),
 });
 
 export const atenderTurnoSchema = z.object({
@@ -106,7 +104,7 @@ export const atenderTurnoSchema = z.object({
   notas_consulta: z
     .string({ invalid_type_error: "Las notas de consulta deben ser un texto" })
     .trim()
-    .optional(),
+    .nullish(),
 
   practicas_realizadas: z
     .array(z.number(), {

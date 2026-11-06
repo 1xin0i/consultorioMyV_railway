@@ -14,6 +14,7 @@ export default function ModalCambiarPassword() {
 
   const [showActual, setShowActual] = useState(false);
   const [showNueva, setShowNueva] = useState(false);
+  const [showConfirmar, setShowConfirmar] = useState(false);
   const [cargando, setCargando] = useState(false);
   const [error, setError] = useState("");
 
@@ -86,7 +87,7 @@ export default function ModalCambiarPassword() {
         {/* Contraseña Actual */}
         <div>
           <label className="block text-xs font-bold text-gray-700 mb-1">
-            Contraseña Actual *
+            Contraseña Actual <span className="text-rose-500 font-extrabold">*</span>
           </label>
           <div className="relative flex items-center">
             <span className="absolute left-3 text-gray-400">
@@ -114,7 +115,7 @@ export default function ModalCambiarPassword() {
         {/* Nueva Contraseña */}
         <div>
           <label className="block text-xs font-bold text-gray-700 mb-1">
-            Nueva Contraseña * (mínimo 6 caracteres)
+            Nueva Contraseña <span className="text-rose-500 font-extrabold">*</span> (mínimo 6 caracteres)
           </label>
           <div className="relative flex items-center">
             <span className="absolute left-3 text-gray-400">
@@ -142,21 +143,28 @@ export default function ModalCambiarPassword() {
         {/* Confirmar Nueva Contraseña */}
         <div>
           <label className="block text-xs font-bold text-gray-700 mb-1">
-            Confirmar Nueva Contraseña *
+            Confirmar Nueva Contraseña <span className="text-rose-500 font-extrabold">*</span>
           </label>
           <div className="relative flex items-center">
             <span className="absolute left-3 text-gray-400">
               <Lock size={15} />
             </span>
             <input
-              type={showNueva ? "text" : "password"}
+              type={showConfirmar ? "text" : "password"}
               value={confirmarPassword}
               onChange={(e) => setConfirmarPassword(e.target.value)}
               disabled={cargando}
               required
               placeholder="Repetí la nueva clave"
-              className="w-full pl-9 pr-4 py-2 bg-gray-50 border border-gray-200 rounded-xl text-xs font-medium text-gray-800 focus:outline-none focus:ring-2 focus:ring-[#2eb086]/40 focus:border-[#2eb086]"
+              className="w-full pl-9 pr-10 py-2 bg-gray-50 border border-gray-200 rounded-xl text-xs font-medium text-gray-800 focus:outline-none focus:ring-2 focus:ring-[#2eb086]/40 focus:border-[#2eb086]"
             />
+            <button
+              type="button"
+              onClick={() => setShowConfirmar(!showConfirmar)}
+              className="absolute right-3 text-gray-400 hover:text-gray-600 p-1 cursor-pointer"
+            >
+              {showConfirmar ? <EyeOff size={15} /> : <Eye size={15} />}
+            </button>
           </div>
         </div>
 

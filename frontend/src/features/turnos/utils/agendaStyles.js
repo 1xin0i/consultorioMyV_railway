@@ -38,7 +38,7 @@ export const OBTENER_ESTILOS_ESTADO = (estado) => {
       icon: XCircle,
     };
   }
-  if (nombreEstado.includes("inasistente")) {
+  if (nombreEstado.includes("inasistente") || nombreEstado.includes("inasistido")) {
     return {
       bg: "bg-[#f0f6f9]/95 hover:bg-[#e4eff4]",
       border: "border-[#93BBCF]",

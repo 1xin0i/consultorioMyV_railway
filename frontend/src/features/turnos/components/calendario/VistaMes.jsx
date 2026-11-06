@@ -21,8 +21,9 @@ export const VistaMes = ({
   onDragStart,
   onDragEnd,
 }) => {
-  const { totalModulosDia } = useConfiguracion();
+  const { totalModulosDia, duracionModuloMinutos } = useConfiguracion();
   const capacidadDia = totalModulosDia || 24;
+  const duracionModulo = Number(duracionModuloMinutos) || 30;
 
   const [modalAbierto, setModalAbierto] = useState(false);
   const [rangoModal, setRangoModal] = useState({ inicio: new Date(), fin: new Date() });
@@ -371,11 +372,33 @@ export const VistaMes = ({
           const tieneBloqueoParcial =
             !diaBloqueado && restriccionesDelDia.length > 0;
 
-          // Cálculo dinámico de ocupación según la capacidad configurada
+          // Cálculo dinámico de ocupación sumando los módulos de cada turno
+          const modulosOcupados = turnosDelDia.reduce((total, t) => {
+            if (!t.fecha_hora_inicio) return total;
+            let minutos = 0;
+            if (t.fecha_hora_fin) {
+              const diffMs =
+                new Date(t.fecha_hora_fin).getTime() -
+                new Date(t.fecha_hora_inicio).getTime();
+              if (diffMs > 0) {
+                minutos = Math.round(diffMs / 60000);
+              }
+            }
+            if (!minutos && t.duracion_minutos) {
+              minutos = Number(t.duracion_minutos);
+            }
+            const modulosTurno =
+              minutos > 0
+                ? Math.max(1, Math.round(minutos / duracionModulo))
+                : 1;
+            return total + modulosTurno;
+          }, 0);
+
           const cantTurnos = turnosDelDia.length;
+          const modulosLibres = Math.max(0, capacidadDia - modulosOcupados);
           const porcentaje = Math.min(
             100,
-            Math.round((cantTurnos / capacidadDia) * 100),
+            Math.round((modulosOcupados / capacidadDia) * 100),
           );
           const ocupacion = OBTENER_ESTILOS_OCUPACION_MES(porcentaje);
 
@@ -458,19 +481,22 @@ export const VistaMes = ({
                 )}
 
                 <div className="flex items-center justify-end w-full">
-                  {diaBloqueado ? (
-                    <span className="text-[10px] md:text-xs font-bold text-slate-500">
-                      Cerrado
-                    </span>
-                  ) : (
+                  {!diaBloqueado && (
                     <div className="flex flex-col items-end gap-1 w-full">
                       <span
                         className={`text-[10px] font-bold px-1.5 py-0.5 rounded-md border flex items-center gap-1 truncate ${ocupacion.badgeColor}`}
+                        title={`${modulosOcupados} módulos ocupados (${cantTurnos} turnos) de ${capacidadDia}. Quedan ${modulosLibres} módulos libres.`}
                       >
                         <span
                           className={`w-1.5 h-1.5 rounded-full shrink-0 ${ocupacion.dotColor}`}
                         />
-                        <span>{porcentaje}%</span>
+                        <span>
+                          {modulosOcupados === 0
+                            ? `${capacidadDia} libres`
+                            : modulosLibres <= 0
+                            ? "Completo"
+                            : `${modulosLibres} libres`}
+                        </span>
                       </span>
 
                       {/* Mini barra de progreso sutil al pie */}

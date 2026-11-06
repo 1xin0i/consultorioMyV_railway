@@ -42,8 +42,16 @@ export function useCobroActions(recargar, cerrarModal) {
             entrega_inicial: Number(datosFormulario.entrega_inicial) || 0,
             metodo_pago: datosFormulario.metodo_pago || "Efectivo",
           });
+        } else if (modalidad === "cuotas") {
+          await api.post("/cobros/cuotas", {
+            ...payloadBase,
+            cant_cuotas: Number(datosFormulario.cant_cuotas) || 3,
+            fecha_primer_vencimiento:
+              datosFormulario.fecha_primer_vencimiento ||
+              new Date().toISOString().split("T")[0],
+          });
         } else {
-          // Por defecto y para "inmediato": 1 Pago Total
+          // Por defecto y para "inmediato": Al Contado
           await api.post("/cobros/inmediato", {
             ...payloadBase,
             metodo_pago: datosFormulario.metodo_pago || "Efectivo",
