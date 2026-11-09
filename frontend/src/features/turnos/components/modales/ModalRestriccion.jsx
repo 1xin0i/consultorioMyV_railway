@@ -58,7 +58,7 @@ export default function ModalRestriccion({
   }, [isOpen, esRangoVariosDias]);
 
   const handleSubmit = (e) => {
-    e.preventDefault();
+    if (e && e.preventDefault) e.preventDefault();
 
     if (!todoElDia && horaFin <= horaInicio) {
       toast.error("La hora de fin debe ser posterior a la hora de inicio.");
@@ -95,10 +95,11 @@ export default function ModalRestriccion({
     <Modal
       isOpen={isOpen}
       onClose={onClose}
+      onSubmit={handleSubmit}
       title="Bloqueo de Horario / Restricción"
       width="max-w-md"
     >
-      <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+      <div className="flex flex-col gap-4">
         {/* Banner de fecha seleccionada */}
         <div className="bg-slate-100 border border-slate-200 rounded-xl p-3 flex items-center gap-3">
           <div className="p-2 bg-slate-700 text-white rounded-lg">
@@ -262,7 +263,7 @@ export default function ModalRestriccion({
             <span>Guardar Bloqueo</span>
           </button>
         </div>
-      </form>
+      </div>
     </Modal>
   );
 }

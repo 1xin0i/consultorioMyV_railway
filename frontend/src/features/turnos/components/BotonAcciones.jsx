@@ -14,7 +14,14 @@ export function BotonAccionesTurno({
   const botonRef = useRef(null);
 
   // Saber si este menú específico está abierto
-  const estaAbierto = menuAbiertoId === turno.id_turno;
+  const estaAbierto = menuAbiertoId === turno?.id_turno;
+
+  const estadoNombre = turno?.EstadoTurno?.estado || turno?.estado;
+  const idEstado = Number(turno?.id_estado);
+  const esAtendido =
+    estadoNombre === "Atendido" ||
+    idEstado === 3 ||
+    (idEstado === 2 && estadoNombre === "Atendido");
 
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -35,6 +42,11 @@ export function BotonAccionesTurno({
       }
     }, 0);
   };
+
+  // Si está atendido, no hay transiciones disponibles (estado terminal)
+  if (esAtendido) {
+    return null;
+  }
 
   return (
     <div className="relative menu-acciones-container">
@@ -92,3 +104,5 @@ export function BotonAccionesTurno({
     </div>
   );
 }
+
+export default BotonAccionesTurno;

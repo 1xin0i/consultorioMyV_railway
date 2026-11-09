@@ -59,99 +59,98 @@ export function ModalReprogramarTurno({
     }
   };
 
+  const datos = datosExternos?.fecha_hora_inicio ? datosExternos : datosInternos;
+
   const handleSubmit = (e) => {
-    e.preventDefault();
+    if (e && e.preventDefault) e.preventDefault();
     if (typeof onConfirm === "function") {
-      onConfirm(datosInternos, turnoTarget);
+      onConfirm(datos, turnoTarget);
     } else if (typeof procesarReprogramacionTurno === "function") {
       procesarReprogramacionTurno(e);
     }
   };
 
-  const datos = datosExternos?.fecha_hora_inicio ? datosExternos : datosInternos;
-
   return (
-    <form onSubmit={handleSubmit}>
-      <Modal
-        isOpen={abierto}
-        onClose={cerrar}
-        width="max-w-md"
-        title={`Reprogramar Turno #${turnoTarget?.id_turno || ""}`}
-      >
-        <div className="flex flex-col gap-4">
-          {/* Fecha y Hora de Inicio */}
-          <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-1">
-              Nueva Fecha y Hora de Inicio *
-            </label>
-            <input
-              type="datetime-local"
-              name="fecha_hora_inicio"
-              value={datos.fecha_hora_inicio || ""}
-              onChange={handleChange}
-              required
-              className="w-full border border-gray-300 p-2.5 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#2eb086]/50 focus:border-[#2eb086]"
-            />
-          </div>
-
-          {/* Duración (Minutos) */}
-          <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-1">Duración (Minutos)</label>
-            <select
-              name="duracion_minutos"
-              value={datos.duracion_minutos || 30}
-              onChange={handleChange}
-              className="w-full border border-gray-300 p-2.5 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#2eb086]/50 focus:border-[#2eb086]"
-            >
-              <option value={15}>15 minutos</option>
-              <option value={30}>30 minutos</option>
-              <option value={45}>45 minutos</option>
-              <option value={60}>60 minutos (1 hora)</option>
-              <option value={90}>90 minutos (1h 30m)</option>
-              <option value={120}>120 minutos (2 horas)</option>
-              {![15, 30, 45, 60, 90, 120].includes(Number(datos.duracion_minutos)) &&
-                Boolean(datos.duracion_minutos) && (
-                  <option value={datos.duracion_minutos}>
-                    {datos.duracion_minutos} minutos
-                  </option>
-                )}
-            </select>
-          </div>
-
-          {/* Fecha y Hora de Fin (Calculado) */}
-          <div className="bg-gray-50 p-3 rounded-xl border border-gray-200">
-            <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">
-              Nueva Fecha y Hora de Fin (Calculado automáticamente)
-            </label>
-            <input
-              type="datetime-local"
-              name="fecha_hora_fin"
-              value={datos.fecha_hora_fin || ""}
-              disabled
-              className="w-full bg-gray-100 border border-gray-300 p-2 rounded-lg text-sm text-gray-600 cursor-not-allowed font-medium"
-            />
-          </div>
+    <Modal
+      isOpen={abierto}
+      onClose={cerrar}
+      onSubmit={handleSubmit}
+      width="max-w-md"
+      title={`Reprogramar Turno #${turnoTarget?.id_turno || ""}`}
+    >
+      <div className="flex flex-col gap-4">
+        {/* Fecha y Hora de Inicio */}
+        <div>
+          <label className="block text-sm font-semibold text-gray-700 mb-1">
+            Nueva Fecha y Hora de Inicio *
+          </label>
+          <input
+            type="datetime-local"
+            name="fecha_hora_inicio"
+            value={datos.fecha_hora_inicio || ""}
+            onChange={handleChange}
+            required
+            className="w-full border border-gray-300 p-2.5 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#2eb086]/50 focus:border-[#2eb086]"
+          />
         </div>
 
-        <div className="border-t border-gray-200 my-4" />
-
-        <div className="flex justify-end gap-3">
-          <button
-            type="button"
-            onClick={cerrar}
-            className="px-4 py-2.5 rounded-xl text-gray-600 bg-gray-100 hover:bg-gray-200 transition-colors font-medium text-sm cursor-pointer"
+        {/* Duración (Minutos) */}
+        <div>
+          <label className="block text-sm font-semibold text-gray-700 mb-1">Duración (Minutos)</label>
+          <select
+            name="duracion_minutos"
+            value={datos.duracion_minutos || 30}
+            onChange={handleChange}
+            className="w-full border border-gray-300 p-2.5 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#2eb086]/50 focus:border-[#2eb086]"
           >
-            Cancelar
-          </button>
-          <button
-            type="submit"
-            className="px-5 py-2.5 rounded-xl text-white bg-[#2eb086] hover:bg-[#259370] transition-all shadow-sm font-semibold text-sm cursor-pointer"
-          >
-            Confirmar Reprogramación
-          </button>
+            <option value={15}>15 minutos</option>
+            <option value={30}>30 minutos</option>
+            <option value={45}>45 minutos</option>
+            <option value={60}>60 minutos (1 hora)</option>
+            <option value={90}>90 minutos (1h 30m)</option>
+            <option value={120}>120 minutos (2 horas)</option>
+            {![15, 30, 45, 60, 90, 120].includes(Number(datos.duracion_minutos)) &&
+              Boolean(datos.duracion_minutos) && (
+                <option value={datos.duracion_minutos}>
+                  {datos.duracion_minutos} minutos
+                </option>
+              )}
+          </select>
         </div>
-      </Modal>
-    </form>
+
+        {/* Fecha y Hora de Fin (Calculado) */}
+        <div className="bg-gray-50 p-3 rounded-xl border border-gray-200">
+          <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">
+            Nueva Fecha y Hora de Fin (Calculado automáticamente)
+          </label>
+          <input
+            type="datetime-local"
+            name="fecha_hora_fin"
+            value={datos.fecha_hora_fin || ""}
+            disabled
+            className="w-full bg-gray-100 border border-gray-300 p-2 rounded-lg text-sm text-gray-600 cursor-not-allowed font-medium"
+          />
+        </div>
+      </div>
+
+      <div className="border-t border-gray-200 my-4" />
+
+      <div className="flex justify-end gap-3">
+        <button
+          type="button"
+          onClick={cerrar}
+          className="px-4 py-2.5 rounded-xl text-gray-600 bg-gray-100 hover:bg-gray-200 transition-colors font-medium text-sm cursor-pointer"
+        >
+          Cancelar
+        </button>
+        <button
+          type="submit"
+          className="px-5 py-2.5 rounded-xl text-white bg-[#2eb086] hover:bg-[#259370] transition-all shadow-sm font-semibold text-sm cursor-pointer"
+        >
+          Confirmar Reprogramación
+        </button>
+      </div>
+    </Modal>
   );
 }
 

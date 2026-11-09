@@ -142,7 +142,7 @@ export function ModalAtenderTurno({
   };
 
   const handleSubmit = (e) => {
-    e.preventDefault();
+    if (e && e.preventDefault) e.preventDefault();
     if (typeof onConfirm === "function") {
       onConfirm(datosAtencion, turnoTarget);
     } else if (typeof fnSubmitExt === "function") {
@@ -155,148 +155,147 @@ export function ModalAtenderTurno({
     : "";
 
   return (
-    <form onSubmit={handleSubmit}>
-      <Modal
-        isOpen={abierto}
-        onClose={cerrar}
-        width="max-w-2xl"
-        title={`Atender Turno #${turnoTarget?.id_turno || ""}${nombrePaciente ? ` - ${nombrePaciente}` : ""}`}
-      >
-        <div className="flex flex-col gap-4">
-          <div className="bg-emerald-50/70 border border-emerald-200/80 p-4 rounded-2xl flex items-center justify-between shadow-xs">
-            <div className="w-full flex flex-col gap-1.5">
-              <label className="block text-xs font-bold text-emerald-800 uppercase tracking-wider">
-                Precio Base Calculado (Suma de Prácticas)
-              </label>
-              <div className="relative flex items-center max-w-xs">
-                <span className="absolute left-3.5 text-emerald-700 font-bold text-sm">$</span>
-                <input
-                  type="number"
-                  step="0.01"
-                  value={datosAtencion.precio_final}
-                  onChange={(e) =>
-                    actualizarDatos(
-                      "precio_final",
-                      e.target.value === "" ? "" : Number(e.target.value)
-                    )
-                  }
-                  placeholder="0.00"
-                  required
-                  className="w-full pl-8 pr-4 py-2.5 bg-white border border-emerald-300/80 rounded-xl text-emerald-950 font-bold text-lg shadow-2xs focus:outline-none focus:ring-2 focus:ring-[#2eb086]/50 focus:border-[#2eb086]"
-                />
-              </div>
-            </div>
-          </div>
-
-          {/* Sección de Prácticas Realizadas */}
-          <div className="border-t border-gray-200 pt-4">
-            <div className="flex items-center justify-between mb-3">
-              <div className="flex items-center gap-2">
-                <CheckSquare size={18} className="text-[#2eb086]" />
-                <h3 className="text-sm font-bold text-gray-800">Prácticas Realizadas y Cobertura</h3>
-              </div>
-              <button
-                type="button"
-                onClick={agregarPractica}
-                className="flex items-center gap-1 text-xs font-semibold text-[#2eb086] hover:text-[#259370] bg-[#e8f7f1] px-3 py-1.5 rounded-lg transition-colors cursor-pointer"
-              >
-                <Plus size={14} />
-                <span>Agregar Práctica</span>
-              </button>
-            </div>
-
-            {datosAtencion.practicas.length === 0 ? (
-              <p className="text-xs text-gray-400 italic">
-                No se han agregado prácticas todavía. Haga clic en &quot;Agregar Práctica&quot; para registrar los procedimientos.
-              </p>
-            ) : (
-              <div className="flex flex-col gap-3 max-h-60 overflow-y-auto pr-1">
-                {datosAtencion.practicas.map((practicaItem, index) => (
-                  <div
-                    key={index}
-                    className="flex flex-col sm:flex-row items-center gap-2 bg-gray-50 p-3 rounded-xl border border-gray-200"
-                  >
-                    <InputFiltro
-                      datos={practicasLista}
-                      camposFiltrado={[
-                        "codigo_nomenclador",
-                        "nombre_nomenclador",
-                        "nombre_referencia",
-                        "especialidad",
-                      ]}
-                      formatoVisual={(p) =>
-                        `${p.nombre_referencia} ($ ${Number(p.precio_referencia).toLocaleString("es-AR")})`
-                      }
-                      placeholder="Busca una practica..."
-                      alSeleccionar={(p) => actualizarPractica(index, "id_practica", p?.id_practica || "")}
-                      valorInicial={practicaItem.id_practica || ""}
-                    />
-
-                    <InputFiltro
-                      datos={pacientesObrasSociales}
-                      camposFiltrado={["nombre"]}
-                      formatoVisual={(rel) =>
-                        `${rel.ObraSocial?.nombre || `Obra Social #${rel.id_obra_social}`} ${
-                          rel.nro_afiliado ? `(Afiliado: ${rel.nro_afiliado})` : ""
-                        }`
-                      }
-                      placeholder="Busca una obra social..."
-                      alSeleccionar={(os) =>
-                        actualizarPractica(index, "id_obra_social", os?.id_obra_social || "")
-                      }
-                      valorInicial={practicaItem.id_obra_social || ""}
-                    />
-
-                    <button
-                      type="button"
-                      onClick={() => eliminarPractica(index)}
-                      className="p-2 text-gray-400 hover:text-red-500 rounded-lg hover:bg-gray-200 transition-colors self-end sm:self-center cursor-pointer"
-                      title="Eliminar práctica"
-                    >
-                      <X size={16} />
-                    </button>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-
-          {/* Notas de la Consulta */}
-          <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-1">
-              Notas de la Consulta / Diagnóstico
+    <Modal
+      isOpen={abierto}
+      onClose={cerrar}
+      onSubmit={handleSubmit}
+      width="max-w-2xl"
+      title={`Atender Turno #${turnoTarget?.id_turno || ""}${nombrePaciente ? ` - ${nombrePaciente}` : ""}`}
+    >
+      <div className="flex flex-col gap-4">
+        <div className="bg-emerald-50/70 border border-emerald-200/80 p-4 rounded-2xl flex items-center justify-between shadow-xs">
+          <div className="w-full flex flex-col gap-1.5">
+            <label className="block text-xs font-bold text-emerald-800 uppercase tracking-wider">
+              Precio Base Calculado (Suma de Prácticas)
             </label>
-            <textarea
-              rows={3}
-              value={datosAtencion.notas_consulta}
-              onChange={(e) =>
-                actualizarDatos("notas_consulta", e.target.value === "" ? "" : e.target.value)
-              }
-              placeholder="Detalles sobre la atención, indicaciones médicas..."
-              className="w-full border border-gray-300 p-2.5 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#2eb086]/50 focus:border-[#2eb086]"
-            />
+            <div className="relative flex items-center max-w-xs">
+              <span className="absolute left-3.5 text-emerald-700 font-bold text-sm">$</span>
+              <input
+                type="number"
+                step="0.01"
+                value={datosAtencion.precio_final}
+                onChange={(e) =>
+                  actualizarDatos(
+                    "precio_final",
+                    e.target.value === "" ? "" : Number(e.target.value)
+                  )
+                }
+                placeholder="0.00"
+                required
+                className="w-full pl-8 pr-4 py-2.5 bg-white border border-emerald-300/80 rounded-xl text-emerald-950 font-bold text-lg shadow-2xs focus:outline-none focus:ring-2 focus:ring-[#2eb086]/50 focus:border-[#2eb086]"
+              />
+            </div>
           </div>
         </div>
 
-        <div className="border-t border-gray-200 my-5" />
+        {/* Sección de Prácticas Realizadas */}
+        <div className="border-t border-gray-200 pt-4">
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center gap-2">
+              <CheckSquare size={18} className="text-[#2eb086]" />
+              <h3 className="text-sm font-bold text-gray-800">Prácticas Realizadas y Cobertura</h3>
+            </div>
+            <button
+              type="button"
+              onClick={agregarPractica}
+              className="flex items-center gap-1 text-xs font-semibold text-[#2eb086] hover:text-[#259370] bg-[#e8f7f1] px-3 py-1.5 rounded-lg transition-colors cursor-pointer"
+            >
+              <Plus size={14} />
+              <span>Agregar Práctica</span>
+            </button>
+          </div>
 
-        <div className="flex justify-end gap-3">
-          <button
-            type="button"
-            onClick={cerrar}
-            className="px-4 py-2.5 rounded-xl text-gray-600 bg-gray-100 hover:bg-gray-200 transition-colors font-medium text-sm cursor-pointer"
-          >
-            Cancelar
-          </button>
-          <button
-            type="submit"
-            className="px-5 py-2.5 rounded-xl text-white bg-[#2eb086] hover:bg-[#259370] transition-all shadow-sm font-semibold text-sm cursor-pointer"
-          >
-            Finalizar y Marcar Atendido
-          </button>
+          {datosAtencion.practicas.length === 0 ? (
+            <p className="text-xs text-gray-400 italic">
+              No se han agregado prácticas todavía. Haga clic en &quot;Agregar Práctica&quot; para registrar los procedimientos.
+            </p>
+          ) : (
+            <div className="flex flex-col gap-3 max-h-60 overflow-y-auto pr-1">
+              {datosAtencion.practicas.map((practicaItem, index) => (
+                <div
+                  key={index}
+                  className="flex flex-col sm:flex-row items-center gap-2 bg-gray-50 p-3 rounded-xl border border-gray-200"
+                >
+                  <InputFiltro
+                    datos={practicasLista}
+                    camposFiltrado={[
+                      "codigo_nomenclador",
+                      "nombre_nomenclador",
+                      "nombre_referencia",
+                      "especialidad",
+                    ]}
+                    formatoVisual={(p) =>
+                      `${p.nombre_referencia} ($ ${Number(p.precio_referencia).toLocaleString("es-AR")})`
+                    }
+                    placeholder="Busca una practica..."
+                    alSeleccionar={(p) => actualizarPractica(index, "id_practica", p?.id_practica || "")}
+                    valorInicial={practicaItem.id_practica || ""}
+                  />
+
+                  <InputFiltro
+                    datos={pacientesObrasSociales}
+                    camposFiltrado={["nombre"]}
+                    formatoVisual={(rel) =>
+                      `${rel.ObraSocial?.nombre || `Obra Social #${rel.id_obra_social}`} ${
+                        rel.nro_afiliado ? `(Afiliado: ${rel.nro_afiliado})` : ""
+                      }`
+                    }
+                    placeholder="Busca una obra social..."
+                    alSeleccionar={(os) =>
+                      actualizarPractica(index, "id_obra_social", os?.id_obra_social || "")
+                    }
+                    valorInicial={practicaItem.id_obra_social || ""}
+                  />
+
+                  <button
+                    type="button"
+                    onClick={() => eliminarPractica(index)}
+                    className="p-2 text-gray-400 hover:text-red-500 rounded-lg hover:bg-gray-200 transition-colors self-end sm:self-center cursor-pointer"
+                    title="Eliminar práctica"
+                  >
+                    <X size={16} />
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
-      </Modal>
-    </form>
+
+        {/* Notas de la Consulta */}
+        <div>
+          <label className="block text-sm font-semibold text-gray-700 mb-1">
+            Notas de la Consulta / Diagnóstico
+          </label>
+          <textarea
+            rows={3}
+            value={datosAtencion.notas_consulta}
+            onChange={(e) =>
+              actualizarDatos("notas_consulta", e.target.value === "" ? "" : e.target.value)
+            }
+            placeholder="Detalles sobre la atención, indicaciones médicas..."
+            className="w-full border border-gray-300 p-2.5 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#2eb086]/50 focus:border-[#2eb086]"
+          />
+        </div>
+      </div>
+
+      <div className="border-t border-gray-200 my-5" />
+
+      <div className="flex justify-end gap-3">
+        <button
+          type="button"
+          onClick={cerrar}
+          className="px-4 py-2.5 rounded-xl text-gray-600 bg-gray-100 hover:bg-gray-200 transition-colors font-medium text-sm cursor-pointer"
+        >
+          Cancelar
+        </button>
+        <button
+          type="submit"
+          className="px-5 py-2.5 rounded-xl text-white bg-[#2eb086] hover:bg-[#259370] transition-all shadow-sm font-semibold text-sm cursor-pointer"
+        >
+          Finalizar y Marcar Atendido
+        </button>
+      </div>
+    </Modal>
   );
 }
 

@@ -30,7 +30,7 @@ export default function ModalCambiarPassword() {
   };
 
   const handleSubmit = async (e) => {
-    e.preventDefault();
+    if (e && e.preventDefault) e.preventDefault();
     setError("");
 
     if (!passwordActual) {
@@ -68,10 +68,11 @@ export default function ModalCambiarPassword() {
     <Modal
       isOpen={modalPasswordAbierto}
       onClose={limpiarYSalir}
+      onSubmit={handleSubmit}
       title="Cambiar Contraseña"
       width="max-w-md"
     >
-      <form onSubmit={handleSubmit} className="flex flex-col gap-4 py-1">
+      <div className="flex flex-col gap-4 py-1">
         <div className="flex items-center gap-2 p-3 bg-teal-50 border border-teal-200/80 rounded-xl text-teal-800 text-xs font-medium">
           <KeyRound size={16} className="text-[#2eb086] shrink-0" />
           <span>Ingresá tu clave actual para verificar tu identidad y definí la nueva.</span>
@@ -190,8 +191,7 @@ export default function ModalCambiarPassword() {
             <span>{cargando ? "Actualizando..." : "Actualizar Contraseña"}</span>
           </button>
         </div>
-      </form>
+      </div>
     </Modal>
   );
 }
-

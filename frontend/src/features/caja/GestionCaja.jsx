@@ -168,7 +168,7 @@ export default function GestionCaja() {
 
   //* CONFIRMAR COBRO DE UNA CUOTA PENDIENTE
   const confirmarCobroCuota = async (e) => {
-    e.preventDefault();
+    if (e && e.preventDefault) e.preventDefault();
     if (!cuotaParaCobrar) return;
     setProcesandoCobroCuota(true);
     try {
@@ -532,6 +532,7 @@ export default function GestionCaja() {
           <Modal
             isOpen={Boolean(cuotaParaCobrar)}
             onClose={() => setCuotaParaCobrar(null)}
+            onSubmit={confirmarCobroCuota}
             title="Registrar Cobro de Cuota"
             subtitle={`Cuota #${cuotaParaCobrar.nro_cuota} de ${
               cuotaParaCobrar.Cobro?.Paciente
@@ -539,7 +540,7 @@ export default function GestionCaja() {
                 : "Paciente"
             }`}
           >
-            <form onSubmit={confirmarCobroCuota} className="space-y-4">
+            <div className="space-y-4">
               <div className="bg-emerald-50 border border-emerald-100 rounded-xl p-3 flex justify-between items-center">
                 <span className="text-xs font-bold text-emerald-800">
                   Monto a cobrar:
@@ -591,7 +592,7 @@ export default function GestionCaja() {
                   </span>
                 </button>
               </div>
-            </form>
+            </div>
           </Modal>
         )}
 
@@ -605,7 +606,7 @@ export default function GestionCaja() {
             categorias={categorias}
             recargarCategorias={recargarCategorias}
             guardarGasto={(e) => {
-              e.preventDefault();
+              if (e && e.preventDefault) e.preventDefault();
               guardarGasto(datosGasto, false, null);
             }}
           />
@@ -620,7 +621,7 @@ export default function GestionCaja() {
             actualizarDatos={actualizarDatosCobro}
             turnosAtendidos={turnosPendientes}
             guardarCobro={(e) => {
-              e.preventDefault();
+              if (e && e.preventDefault) e.preventDefault();
               guardarCobro(datosCobro, false, null);
             }}
           />

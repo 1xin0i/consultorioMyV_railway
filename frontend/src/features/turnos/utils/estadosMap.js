@@ -8,15 +8,15 @@ export const estadosMap = {
     color: "bg-amber-50 text-amber-700 border-amber-200/80",
     icon: Clock,
   },
-  Atendido: {
-    id_estado: 2,
-    color: "bg-emerald-50 text-[#1b7f5b] border-emerald-200/80",
-    icon: CheckCircle2,
-  },
   Cancelado: {
-    id_estado: 3,
+    id_estado: 2,
     color: "bg-rose-50 text-rose-700 border-rose-200/80",
     icon: XCircle,
+  },
+  Atendido: {
+    id_estado: 3,
+    color: "bg-emerald-50 text-[#1b7f5b] border-emerald-200/80",
+    icon: CheckCircle2,
   },
   Inasistente: {
     id_estado: 4,

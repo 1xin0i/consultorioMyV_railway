@@ -61,5 +61,6 @@ router.patch(
 );
 
 router.patch("/:id/delete", validarExistencia(Turno, "id", "params"), TurnoController.deleteTurno);
+router.delete("/:id", validarExistencia(Turno, "id", "params"), TurnoController.deleteTurno);
 
 export default router;

@@ -88,204 +88,203 @@ export function FormularioCrearEditarCobro({
   };
 
   return (
-    <form onSubmit={manejarEnvio}>
-      <Modal
-        isOpen={modalAbierto}
-        onClose={cerrarModal}
-        width="max-w-2xl"
-        title={editando ? "Editar Registro de Cobro" : "Registrar Cobro"}
-      >
-        <div className="text-xs text-gray-500 mb-4 -mt-2 font-medium">
-          Módulo administrativo y contable de cobros
-        </div>
+    <Modal
+      isOpen={modalAbierto}
+      onClose={cerrarModal}
+      onSubmit={manejarEnvio}
+      width="max-w-2xl"
+      title={editando ? "Editar Registro de Cobro" : "Registrar Cobro"}
+    >
+      <div className="text-xs text-gray-500 mb-4 -mt-2 font-medium">
+        Módulo administrativo y contable de cobros
+      </div>
 
-        <div className="flex flex-col gap-4 text-sm pb-8 sm:pb-6">
-          {/* 1. SELECCIÓN DE TURNO Y PACIENTE */}
-          <div className="bg-gray-50/70 p-3.5 rounded-2xl border border-gray-200/80">
-            <h4 className="text-xs font-bold uppercase tracking-wider text-gray-600 mb-2.5 flex items-center gap-1.5">
-              <User size={15} className="text-[#2eb086]" />
-              1. Selección de Turno y Datos del Paciente
-            </h4>
+      <div className="flex flex-col gap-4 text-sm pb-8 sm:pb-6">
+        {/* 1. SELECCIÓN DE TURNO Y PACIENTE */}
+        <div className="bg-gray-50/70 p-3.5 rounded-2xl border border-gray-200/80">
+          <h4 className="text-xs font-bold uppercase tracking-wider text-gray-600 mb-2.5 flex items-center gap-1.5">
+            <User size={15} className="text-[#2eb086]" />
+            1. Selección de Turno y Datos del Paciente
+          </h4>
 
-            <div className="flex flex-col gap-3">
-              <div>
-                <label className="block text-xs font-semibold text-gray-700 mb-1">
-                  Seleccionar Turno Atendido *
-                </label>
+          <div className="flex flex-col gap-3">
+            <div>
+              <label className="block text-xs font-semibold text-gray-700 mb-1">
+                Seleccionar Turno Atendido *
+              </label>
 
-                {turnosAtendidos.length === 0 ? (
-                  <div className="bg-amber-50 border border-amber-200/80 rounded-xl p-3 text-xs text-amber-800 font-medium flex items-center justify-between">
-                    <span>No hay turnos atendidos pendientes de cobrar.</span>
-                    <span className="text-[10px] bg-amber-100 text-amber-900 px-2 py-0.5 rounded-md font-bold">
-                      Al día
-                    </span>
-                  </div>
-                ) : (
-                  <InputFiltro
-                    datos={turnosAtendidos}
-                    camposFiltrado={[
-                      "id_turno",
-                      "Paciente.nombre",
-                      "Paciente.apellido",
-                      "Paciente.dni",
-                    ]}
-                    formatoVisual={(t) =>
-                      `Turno #${t.id_turno} - ${t.Paciente?.nombre || ""} ${t.Paciente?.apellido || ""} ($${t.precio_final || 0})`
-                    }
-                    placeholder="Buscar por ID de turno o nombre de paciente..."
-                    valorInicial={datosFormulario.id_turno || ""}
-                    alSeleccionar={(t) => {
-                      actualizarDatos({
-                        target: { name: "id_turno", value: t.id_turno },
-                      });
-                      actualizarDatos({
-                        target: { name: "id_paciente", value: t.id_paciente },
-                      });
-                      actualizarDatos({
-                        target: {
-                          name: "monto_a_cobrar",
-                          value: t.precio_final || "",
-                        },
-                      });
-                    }}
-                  />
-                )}
-              </div>
-
-              {/* Tarjeta dinámica de información */}
-              {turnoSeleccionado && (
-                <div className="bg-white p-3 rounded-xl border border-gray-200 mt-1 space-y-2.5 text-xs">
-                  <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center border-b border-gray-100 pb-2 gap-1">
-                    <div>
-                      <span className="text-[10px] uppercase font-bold text-gray-400 block tracking-wider">
-                        Paciente Asociado
-                      </span>
-                      <span className="text-xs sm:text-sm font-bold text-gray-800">
-                        {turnoSeleccionado.Paciente?.nombre}{" "}
-                        {turnoSeleccionado.Paciente?.apellido}
-                      </span>
-                    </div>
-                    <div className="text-left sm:text-right">
-                      <span className="text-[10px] uppercase font-bold text-gray-400 block tracking-wider">
-                        DNI / Teléfono
-                      </span>
-                      <span className="text-xs font-medium text-gray-600">
-                        DNI: {turnoSeleccionado.Paciente?.dni || "S/D"} | Tel:{" "}
-                        {turnoSeleccionado.Paciente?.telefono || "S/D"}
-                      </span>
-                    </div>
-                  </div>
-
-                  <div>
-                    <span className="text-[10px] uppercase font-bold text-gray-400 tracking-wider mb-1 flex items-center gap-1">
-                      <ShieldCheck size={12} className="text-[#2eb086]" />
-                      Prácticas Realizadas (Desde el turno)
-                    </span>
-
-                    {cargandoDetalles ? (
-                      <p className="text-xs text-gray-400 italic">
-                        Cargando detalles...
-                      </p>
-                    ) : practicasTurno.length > 0 ? (
-                      <div className="flex flex-col gap-1.5">
-                        {practicasTurno.map((pt, idx) => (
-                          <div
-                            key={idx}
-                            className="flex flex-col sm:flex-row sm:items-center justify-between bg-gray-50 p-2 rounded-lg gap-1"
-                          >
-                            <span className="font-semibold text-gray-700 text-xs">
-                              {pt.Practica?.nombre_referencia ||
-                                pt.Practica?.nombre_nomenclador ||
-                                `Práctica #${pt.id_practica}`}
-                            </span>
-                            <span
-                              className={`px-2 py-0.5 rounded-md text-[10px] font-bold w-fit ${
-                                pt.ObraSocial
-                                  ? "bg-blue-50 text-blue-600 border border-blue-200"
-                                  : "bg-emerald-50 text-emerald-600 border border-emerald-200"
-                              }`}
-                            >
-                              {pt.ObraSocial?.nombre ||
-                                "Particular / Sin Obra Social"}
-                            </span>
-                          </div>
-                        ))}
-                      </div>
-                    ) : (
-                      <div className="flex flex-col sm:flex-row sm:items-center justify-between bg-gray-50 p-2 rounded-lg gap-1">
-                        <span className="text-gray-500 font-medium text-xs">
-                          Consulta Odontológica General
-                        </span>
-                        <span className="px-2 py-0.5 rounded-md text-[10px] font-bold bg-emerald-50 text-emerald-600 border border-emerald-200 w-fit">
-                          Particular / Sin Obra Social
-                        </span>
-                      </div>
-                    )}
-                  </div>
+              {turnosAtendidos.length === 0 ? (
+                <div className="bg-amber-50 border border-amber-200/80 rounded-xl p-3 text-xs text-amber-800 font-medium flex items-center justify-between">
+                  <span>No hay turnos atendidos pendientes de cobrar.</span>
+                  <span className="text-[10px] bg-amber-100 text-amber-900 px-2 py-0.5 rounded-md font-bold">
+                    Al día
+                  </span>
                 </div>
+              ) : (
+                <InputFiltro
+                  datos={turnosAtendidos}
+                  camposFiltrado={[
+                    "id_turno",
+                    "Paciente.nombre",
+                    "Paciente.apellido",
+                    "Paciente.dni",
+                  ]}
+                  formatoVisual={(t) =>
+                    `Turno #${t.id_turno} - ${t.Paciente?.nombre || ""} ${t.Paciente?.apellido || ""} ($${t.precio_final || 0})`
+                  }
+                  placeholder="Buscar por ID de turno o nombre de paciente..."
+                  valorInicial={datosFormulario.id_turno || ""}
+                  alSeleccionar={(t) => {
+                    actualizarDatos({
+                      target: { name: "id_turno", value: t.id_turno },
+                    });
+                    actualizarDatos({
+                      target: { name: "id_paciente", value: t.id_paciente },
+                    });
+                    actualizarDatos({
+                      target: {
+                        name: "monto_a_cobrar",
+                        value: t.precio_final || "",
+                      },
+                    });
+                  }}
+                />
               )}
             </div>
+
+            {/* Tarjeta dinámica de información */}
+            {turnoSeleccionado && (
+              <div className="bg-white p-3 rounded-xl border border-gray-200 mt-1 space-y-2.5 text-xs">
+                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center border-b border-gray-100 pb-2 gap-1">
+                  <div>
+                    <span className="text-[10px] uppercase font-bold text-gray-400 block tracking-wider">
+                      Paciente Asociado
+                    </span>
+                    <span className="text-xs sm:text-sm font-bold text-gray-800">
+                      {turnoSeleccionado.Paciente?.nombre}{" "}
+                      {turnoSeleccionado.Paciente?.apellido}
+                    </span>
+                  </div>
+                  <div className="text-left sm:text-right">
+                    <span className="text-[10px] uppercase font-bold text-gray-400 block tracking-wider">
+                      DNI / Teléfono
+                    </span>
+                    <span className="text-xs font-medium text-gray-600">
+                      DNI: {turnoSeleccionado.Paciente?.dni || "S/D"} | Tel:{" "}
+                      {turnoSeleccionado.Paciente?.telefono || "S/D"}
+                    </span>
+                  </div>
+                </div>
+
+                <div>
+                  <span className="text-[10px] uppercase font-bold text-gray-400 tracking-wider mb-1 flex items-center gap-1">
+                    <ShieldCheck size={12} className="text-[#2eb086]" />
+                    Prácticas Realizadas (Desde el turno)
+                  </span>
+
+                  {cargandoDetalles ? (
+                    <p className="text-xs text-gray-400 italic">
+                      Cargando detalles...
+                    </p>
+                  ) : practicasTurno.length > 0 ? (
+                    <div className="flex flex-col gap-1.5">
+                      {practicasTurno.map((pt, idx) => (
+                        <div
+                          key={idx}
+                          className="flex flex-col sm:flex-row sm:items-center justify-between bg-gray-50 p-2 rounded-lg gap-1"
+                        >
+                          <span className="font-semibold text-gray-700 text-xs">
+                            {pt.Practica?.nombre_referencia ||
+                              pt.Practica?.nombre_nomenclador ||
+                              `Práctica #${pt.id_practica}`}
+                          </span>
+                          <span
+                            className={`px-2 py-0.5 rounded-md text-[10px] font-bold w-fit ${
+                              pt.ObraSocial
+                                ? "bg-blue-50 text-blue-600 border border-blue-200"
+                                : "bg-emerald-50 text-emerald-600 border border-emerald-200"
+                            }`}
+                          >
+                            {pt.ObraSocial?.nombre ||
+                              "Particular / Sin Obra Social"}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between bg-gray-50 p-2 rounded-lg gap-1">
+                      <span className="text-gray-500 font-medium text-xs">
+                        Consulta Odontológica General
+                      </span>
+                      <span className="px-2 py-0.5 rounded-md text-[10px] font-bold bg-emerald-50 text-emerald-600 border border-emerald-200 w-fit">
+                        Particular / Sin Obra Social
+                      </span>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
           </div>
-
-          {/* 2. MODALIDADES DE COBRO */}
-          <div>
-            <h4 className="text-xs font-bold uppercase tracking-wider text-gray-600 mb-2.5 flex items-center gap-1.5">
-              <Banknote size={15} className="text-[#2eb086]" />
-              2. Modalidad de Cobro
-            </h4>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <SelectorModalidad
-                titulo="Pago Total (Al Contado)"
-                descripcion="Cancelación completa en el acto. El turno queda saldado."
-                activa={modalidadActual === "inmediato"}
-                onClick={() => seleccionarModalidad("inmediato")}
-                Icono={CheckCircle2}
-              />
-              <SelectorModalidad
-                titulo="Acuerdo Informal"
-                descripcion="Costo total acordado con entregas parciales a cuenta."
-                activa={modalidadActual === "informal"}
-                onClick={() => seleccionarModalidad("informal")}
-                Icono={FileText}
-                esAmber
-              />
-            </div>
-          </div>
-
-          {/* 3. VISTAS ESPECÍFICAS SEGÚN MODALIDAD */}
-          {modalidadActual === "inmediato" && (
-            <DetalleInmediato
-              datosFormulario={datosFormulario}
-              actualizarDatos={actualizarDatos}
-            />
-          )}
-
-          {modalidadActual === "informal" && (
-            <DetalleInformal
-              datosFormulario={datosFormulario}
-              actualizarDatos={actualizarDatos}
-            />
-          )}
         </div>
 
-        {/* ACCIONES DEL MODAL FIJAS AL PIE */}
-        <div className="border-t border-gray-100 mt-4 -mx-5 -mb-5 sm:-mx-6 sm:-mb-6 p-4 bg-white/95 backdrop-blur-xs flex justify-end gap-3 sticky bottom-0 z-20 shadow-xs">
-          <button
-            type="button"
-            onClick={cerrarModal}
-            className="px-4 py-2.5 rounded-xl text-gray-600 bg-gray-100 hover:bg-gray-200 font-medium text-xs sm:text-sm transition-colors cursor-pointer"
-          >
-            Cancelar
-          </button>
-          <button
-            type="submit"
-            className="px-5 py-2.5 rounded-xl text-white bg-[#2eb086] hover:bg-[#259370] font-semibold text-xs sm:text-sm transition-all shadow-sm cursor-pointer"
-          >
-            {editando ? "Guardar Cambios" : "Confirmar Registro"}
-          </button>
+        {/* 2. MODALIDADES DE COBRO */}
+        <div>
+          <h4 className="text-xs font-bold uppercase tracking-wider text-gray-600 mb-2.5 flex items-center gap-1.5">
+            <Banknote size={15} className="text-[#2eb086]" />
+            2. Modalidad de Cobro
+          </h4>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <SelectorModalidad
+              titulo="Pago Total (Al Contado)"
+              descripcion="Cancelación completa en el acto. El turno queda saldado."
+              activa={modalidadActual === "inmediato"}
+              onClick={() => seleccionarModalidad("inmediato")}
+              Icono={CheckCircle2}
+            />
+            <SelectorModalidad
+              titulo="Acuerdo Informal"
+              descripcion="Costo total acordado con entregas parciales a cuenta."
+              activa={modalidadActual === "informal"}
+              onClick={() => seleccionarModalidad("informal")}
+              Icono={FileText}
+              esAmber
+            />
+          </div>
         </div>
-      </Modal>
-    </form>
+
+        {/* 3. VISTAS ESPECÍFICAS SEGÚN MODALIDAD */}
+        {modalidadActual === "inmediato" && (
+          <DetalleInmediato
+            datosFormulario={datosFormulario}
+            actualizarDatos={actualizarDatos}
+          />
+        )}
+
+        {modalidadActual === "informal" && (
+          <DetalleInformal
+            datosFormulario={datosFormulario}
+            actualizarDatos={actualizarDatos}
+          />
+        )}
+      </div>
+
+      {/* ACCIONES DEL MODAL FIJAS AL PIE */}
+      <div className="border-t border-gray-100 mt-4 -mx-5 -mb-5 sm:-mx-6 sm:-mb-6 p-4 bg-white/95 backdrop-blur-xs flex justify-end gap-3 sticky bottom-0 z-20 shadow-xs">
+        <button
+          type="button"
+          onClick={cerrarModal}
+          className="px-4 py-2.5 rounded-xl text-gray-600 bg-gray-100 hover:bg-gray-200 font-medium text-xs sm:text-sm transition-colors cursor-pointer"
+        >
+          Cancelar
+        </button>
+        <button
+          type="submit"
+          className="px-5 py-2.5 rounded-xl text-white bg-[#2eb086] hover:bg-[#259370] font-semibold text-xs sm:text-sm transition-all shadow-sm cursor-pointer"
+        >
+          {editando ? "Guardar Cambios" : "Confirmar Registro"}
+        </button>
+      </div>
+    </Modal>
   );
 }
 

@@ -57,8 +57,9 @@ const Modal = ({
         e.preventDefault();
         onClose?.();
       } else if (e.key === "Enter" && onSubmit) {
-        // Evitamos enviar si el foco está en un textarea para permitir saltos de línea
-        if (e.target.tagName.toLowerCase() === "textarea") return;
+        // Permitimos que los inputs, selects, textareas y botones manejen Enter con validación nativa del navegador
+        const tag = e.target.tagName?.toLowerCase();
+        if (tag === "textarea" || tag === "input" || tag === "select" || tag === "button") return;
 
         e.preventDefault();
         onSubmit(e);
