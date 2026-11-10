@@ -7,6 +7,7 @@ import { Users, Plus, Edit, Phone, Ban, RotateCcw, Eye, Shield, CalendarClock } 
 
 //* COMPONENTES COMUNES
 import Header from "../../components/common/Header";
+import BadgeInicial from "../../components/common/BadgeInicial";
 import Modal from "../../components/common/Modal";
 import Tabla from "../../components/common/Tabla/Tabla";
 import TablaHeader from "../../components/common/Tabla/TablaHeader";
@@ -158,11 +159,13 @@ export default function GestionPacientes() {
                   >
                     {/* //* COLUMNAS: NOMBRE Y APELLIDO */}
                     <td className="px-3 md:px-6 py-4">
-                      <div className="flex items-center gap-3 min-w-0">
-                        <div className="hidden md:flex w-9 h-9 rounded-full bg-[#e8f7f1] text-[#2eb086] items-center justify-center font-bold text-sm shrink-0">
-                          {paciente.nombre?.charAt(0)}
-                          {paciente.apellido?.charAt(0)}
-                        </div>
+                      <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
+                        <BadgeInicial
+                          inicial={
+                            `${(paciente.nombre || "").trim().charAt(0)}${(paciente.apellido || "").trim().charAt(0)}`.toUpperCase() || "P"
+                          }
+                          className="hidden md:flex"
+                        />
                         <span className="font-semibold text-gray-800 break-words min-w-0">
                           {paciente.nombre} {paciente.apellido}
                         </span>

@@ -2,18 +2,55 @@
 import { useMemo } from "react";
 
 export function useMovimientosCaja(cobros = [], gastos = [], turnosPendientes = [], busqueda = "", resumenPeriodo = null) {
-  const totalPendienteCobro = useMemo(() => {
-    if (turnosPendientes && turnosPendientes.length > 0) {
-      return turnosPendientes.reduce((acc, t) => {
-        const saldo =
-          t.saldo_pendiente !== undefined
-            ? Number(t.saldo_pendiente)
-            : (Number(t.total_deuda) || Number(t.precio_final) || 0);
-        return acc + (saldo > 0 ? saldo : 0);
-      }, 0);
-    }
-    return 0;
+  // Filtro defensivo: solo turnos efectivamente atendidos con saldo pendiente
+  const turnosFiltrados = useMemo(() => {
+    if (!turnosPendientes || !Array.isArray(turnosPendientes)) return [];
+    return turnosPendientes.filter((item) => {
+      const turno = item.Turno || item;
+
+      const estadoNombre = (
+        turno.estado ||
+        turno.EstadoTurno?.nombre ||
+        turno.EstadoTurno?.estado ||
+        turno.estado_turno ||
+        ""
+      ).toString().toLowerCase().trim();
+
+      const estaAtendido = estadoNombre === "atendido" || Number(turno.id_estado) === 3;
+
+      const saldo = Number(
+        item.saldo_pendiente ??
+        turno.saldo_pendiente ??
+        item.total_deuda ??
+        turno.total_deuda ??
+        item.precio_final ??
+        turno.precio_final ??
+        item.precio ??
+        turno.precio ??
+        0
+      );
+
+      return estaAtendido && saldo > 0;
+    });
   }, [turnosPendientes]);
+
+  const totalPendienteCobro = useMemo(() => {
+    return turnosFiltrados.reduce((acc, item) => {
+      const turno = item.Turno || item;
+      const saldo = Number(
+        item.saldo_pendiente ??
+        turno.saldo_pendiente ??
+        item.total_deuda ??
+        turno.total_deuda ??
+        item.precio_final ??
+        turno.precio_final ??
+        item.precio ??
+        turno.precio ??
+        0
+      );
+      return acc + (saldo > 0 ? saldo : 0);
+    }, 0);
+  }, [turnosFiltrados]);
 
   const kpis = useMemo(() => {
     if (resumenPeriodo && (resumenPeriodo.ingresosTotales !== undefined || resumenPeriodo.egresosTotales !== undefined)) {
@@ -90,5 +127,7 @@ export function useMovimientosCaja(cobros = [], gastos = [], turnosPendientes = 
   return {
     kpis,
     movimientosUnificados,
+    turnosFiltrados,
+    turnosPorCobrarValidos: turnosFiltrados,
   };
 }

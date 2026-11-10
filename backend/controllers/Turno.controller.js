@@ -16,7 +16,7 @@ import {
 import { validarSolapaminetoHorarios, validarHorarioAtencion } from "../validations/Turno.validation.js";
 import { ESTADOS } from "../constants/EstadosTurno.js";
 import { obtenerEstadoTurno } from "../states/TurnoState.js";
-import { defaultTurnoIncludes } from "../constants/TurnoIncludes.js";
+import { defaultTurnoIncludes, includePacienteConObrasSociales, includePracticasTurno, includeHistorialEstadoTurno } from "../constants/TurnoIncludes.js";
 import {
   formatearTurnoResponse,
   extraerIdsPracticas,
@@ -101,15 +101,28 @@ export const getAllTurnos = async (req, res) => {
 
 export const getAllTurnosAtendidos = async (req, res) => {
   try {
+    const estadoAtendido = await EstadoTurno.findOne({
+      where: {
+        estado: { [Op.in]: ["Atendido", "atendido"] },
+      },
+    });
+
+    const whereTurno = { activo: true };
+    if (estadoAtendido) {
+      whereTurno.id_estado = estadoAtendido.id_estado;
+    }
+
     const turnos = await Turno.findAll({
-      where: { activo: true },
+      where: whereTurno,
       include: [
-        ...defaultTurnoIncludes,
+        includePacienteConObrasSociales,
         {
           model: EstadoTurno,
-          where: { estado: "Atendido" },
+          where: { estado: { [Op.in]: ["Atendido", "atendido"] } },
           required: true,
         },
+        includePracticasTurno,
+        includeHistorialEstadoTurno,
         {
           model: Cobro,
           where: { activo: true },
@@ -135,15 +148,22 @@ export const getAllTurnosAtendidos = async (req, res) => {
       order: [["fecha_hora_inicio", "DESC"]],
     });
 
-    // Filtramos para retornar SOLO los turnos que aún tienen saldo pendiente
+    // Filtramos para retornar SOLO los turnos que fueron efectivamente atendidos y aún tienen saldo pendiente
     const turnosPendientesDeCobro = turnos.filter((t) => {
-      // Si no tiene cobro generado, debe cobrarse
-      if (!t.Cobro) return true;
+      // 1. Validar estrictamente que el estado sea Atendido
+      const nombreEstado = (t.EstadoTurno?.estado || "").toLowerCase();
+      const esAtendido =
+        nombreEstado === "atendido" ||
+        (estadoAtendido && t.id_estado === estadoAtendido.id_estado);
+      if (!esAtendido) return false;
 
-      const totalDeuda = Number(t.Cobro.monto_a_cobrar) || Number(t.precio_final) || 0;
+      const totalDeuda = Number(t.Cobro?.monto_a_cobrar) || Number(t.precio_final) || 0;
 
       // Si el turno fue gratuito, no hay nada que cobrar
       if (totalDeuda <= 0) return false;
+
+      // Si no tiene cobro generado, debe cobrarse
+      if (!t.Cobro) return true;
 
       // Sumar lo que efectivamente se cobró en sus cuotas
       const cuotas = t.Cobro.Cuotas || t.Cobro.Cuota || [];
@@ -172,6 +192,7 @@ export const getAllTurnosAtendidos = async (req, res) => {
 
       return {
         ...formatted,
+        estado: (t.EstadoTurno?.estado || "atendido").toLowerCase(),
         total_deuda: totalDeuda,
         total_pagado: totalPagado,
         saldo_pendiente: saldoPendiente,
@@ -256,8 +277,18 @@ export const createTurno = async (req, res) => {
       return res.status(400).json({ error: "El horario de atención es de 09:00 a 19:00 hs. El turno debe comenzar a partir de las 09:00 y finalizar a más tardar a las 19:00 hs." });
     }
 
-    const haySolapamiento = await validarSolapaminetoHorarios(inicioStr, finStr, null);
-    if (haySolapamiento) return res.status(409).json({ error: "El horario seleccionado se superpone." });
+    const conflicto = await validarSolapaminetoHorarios(inicioStr, finStr, null);
+    if (conflicto) {
+      const nombrePac = conflicto.Paciente
+        ? `${conflicto.Paciente.nombre} ${conflicto.Paciente.apellido}`
+        : "otro paciente";
+      const hIni = conflicto.fecha_hora_inicio ? new Date(conflicto.fecha_hora_inicio).toTimeString().slice(0, 5) : "";
+      const hFin = conflicto.fecha_hora_fin ? new Date(conflicto.fecha_hora_fin).toTimeString().slice(0, 5) : "";
+      return res.status(409).json({
+        error: `Horario no disponible: se solapa con el turno de ${nombrePac} (${hIni} a ${hFin} hs).`,
+        data: conflicto,
+      });
+    }
 
     let precioFinal = Number(req.body.precio_final) || 0;
     let practicas = [];
@@ -304,7 +335,27 @@ export const createTurno = async (req, res) => {
 export const updateTurno = async (req, res) => {
   try {
     const turno = req.turno;
-    const { id_paciente, precio_final, notas_consulta } = req.body;
+    const { id_paciente, precio_final, notas_consulta, fecha_hora_inicio, fecha_hora_fin, duracion_minutos } = req.body;
+
+    let nuevoInicio = turno.fecha_hora_inicio;
+    let nuevoFin = turno.fecha_hora_fin;
+
+    if (fecha_hora_inicio) {
+      nuevoInicio = formatearFechaHoraStr(fecha_hora_inicio);
+      nuevoFin = fecha_hora_fin ? formatearFechaHoraStr(fecha_hora_fin) : calcularFechaHoraFinStr(nuevoInicio, duracion_minutos || 30);
+      const conflicto = await validarSolapaminetoHorarios(nuevoInicio, nuevoFin, turno.id_turno);
+      if (conflicto) {
+        const nombrePac = conflicto.Paciente
+          ? `${conflicto.Paciente.nombre} ${conflicto.Paciente.apellido}`
+          : "otro paciente";
+        const hIni = conflicto.fecha_hora_inicio ? new Date(conflicto.fecha_hora_inicio).toTimeString().slice(0, 5) : "";
+        const hFin = conflicto.fecha_hora_fin ? new Date(conflicto.fecha_hora_fin).toTimeString().slice(0, 5) : "";
+        return res.status(409).json({
+          error: `Horario no disponible: se solapa con el turno de ${nombrePac} (${hIni} a ${hFin} hs).`,
+          data: conflicto,
+        });
+      }
+    }
 
     if (id_paciente) {
       const paciente = await Paciente.findByPk(id_paciente);
@@ -434,8 +485,18 @@ export const turnoReprogramado = async (req, res) => {
       return res.status(400).json({ error: "El horario de atención es de 09:00 a 19:00 hs. El turno debe comenzar a partir de las 09:00 y finalizar a más tardar a las 19:00 hs." });
     }
 
-    const haySolapamiento = await validarSolapaminetoHorarios(inicioStr, finStr, turno.id_turno);
-    if (haySolapamiento) return res.status(409).json({ error: "El horario seleccionado se superpone." });
+    const conflicto = await validarSolapaminetoHorarios(inicioStr, finStr, turno.id_turno);
+    if (conflicto) {
+      const nombrePac = conflicto.Paciente
+        ? `${conflicto.Paciente.nombre} ${conflicto.Paciente.apellido}`
+        : "otro paciente";
+      const hIni = conflicto.fecha_hora_inicio ? new Date(conflicto.fecha_hora_inicio).toTimeString().slice(0, 5) : "";
+      const hFin = conflicto.fecha_hora_fin ? new Date(conflicto.fecha_hora_fin).toTimeString().slice(0, 5) : "";
+      return res.status(409).json({
+        error: `Horario no disponible: se solapa con el turno de ${nombrePac} (${hIni} a ${hFin} hs).`,
+        data: conflicto,
+      });
+    }
 
     const turnoActualizado = await sequelize.transaction(async (t) => {
       const [estadoProgramado] = await EstadoTurno.findOrCreate({

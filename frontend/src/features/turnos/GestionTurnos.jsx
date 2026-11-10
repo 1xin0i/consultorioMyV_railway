@@ -18,6 +18,7 @@ import {
 
 //* COMPONENTES COMUNES
 import Header from "../../components/common/Header";
+import BadgeInicial from "../../components/common/BadgeInicial";
 import Modal from "../../components/common/Modal";
 import Tabla from "../../components/common/Tabla/Tabla";
 import TablaHeader from "../../components/common/Tabla/TablaHeader";
@@ -139,7 +140,7 @@ export default function GestionTurnos() {
     procesarCancelacionTurno,
     procesarReprogramacionTurno,
     ejecutarEliminacion,
-  } = useTurnoActions(recargar, cerrarModal);
+  } = useTurnoActions(recargar, cerrarModal, turnos);
 
   return (
     <PageLayout onAdd={abrirParaCrear}>
@@ -215,10 +216,11 @@ export default function GestionTurnos() {
 
                       {/* //* COLUMNAS: PACIENTE */}
                       <td className="px-5 py-4">
-                        <div className="flex items-center gap-3">
-                          <div className="hidden md:flex w-8 h-8 rounded-full bg-[#e8f7f1] text-[#2eb086] items-center justify-center font-bold text-xs shrink-0">
-                            {turno.Paciente?.nombre?.charAt(0) || "P"}
-                          </div>
+                        <div className="flex items-center gap-2.5 sm:gap-3">
+                          <BadgeInicial
+                            inicial={(turno.Paciente?.nombre || turno.paciente?.nombre || "P").charAt(0).toUpperCase()}
+                            className="hidden md:flex"
+                          />
                           <div className="flex flex-col">
                             <span className="font-semibold text-gray-800 text-sm">
                               {turno.Paciente
@@ -433,6 +435,7 @@ export default function GestionTurnos() {
             modalAbierto={modalAbierto}
             cerrarModal={cerrarModal}
             editando={editando}
+            turnos={turnos}
             pacientes={pacientes}
             datosFormulario={datosFormulario}
             actualizarDatos={actualizarDatos}
@@ -495,6 +498,7 @@ export default function GestionTurnos() {
           <FormularioReprogramar
             modalReprogramarAbierto={modalReprogramar}
             cerrarModal={cerrarModalReprogramar}
+            turnos={turnos}
             turnoSeleccionado={turnoSeleccionadoReprogramar}
             datosReprogramacion={datosReprogramacion}
             actualizarDatosReprogramacion={actualizarDatosReprogramacion}

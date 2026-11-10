@@ -1,7 +1,7 @@
 /** @format */
 
 import { Op } from "sequelize";
-import { Turno, EstadoTurno } from "../models/index.model.js";
+import { Turno, EstadoTurno, Paciente } from "../models/index.model.js";
 
 export const HORARIO_ATENCION_CONFIG = Object.freeze({
   HORA_INICIO: 9,
@@ -33,24 +33,39 @@ export const validarSolapaminetoHorarios = async (fechaInicio, fechaFin, turnoId
   const inicio = new Date(fechaInicio);
   const fin = new Date(fechaFin);
 
-  const [estadoProgramado, created] = await EstadoTurno.findOrCreate({
-    where: { estado: "Programado" },
+  const estadoCancelado = await EstadoTurno.findOne({
+    where: { estado: { [Op.in]: ["Cancelado", "cancelado"] } },
   });
 
-  // Obtenemos los turnos en conflicto
+  const whereCondition = {
+    activo: true,
+    fecha_hora_inicio: { [Op.lt]: fin },
+    fecha_hora_fin: { [Op.gt]: inicio },
+    ...(turnoIdExcluir && { id_turno: { [Op.ne]: turnoIdExcluir } }),
+  };
+
+  if (estadoCancelado) {
+    whereCondition.id_estado = { [Op.ne]: estadoCancelado.id_estado };
+  }
+
+  // Obtenemos el primer turno en conflicto (cualquiera activo no cancelado)
   const turnoExistente = await Turno.findOne({
-    where: {
-      id_estado: { [Op.eq]: estadoProgramado.id_estado },
-      activo: true,
-      // Condición de solapamiento
-      fecha_hora_inicio: { [Op.lt]: fin },
-      fecha_hora_fin: { [Op.gt]: inicio },
-      // Si estamos editando un turno existente, lo excluimos de la búsqueda
-      ...(turnoIdExcluir && { id_turno: { [Op.ne]: turnoIdExcluir } }),
-    },
+    where: whereCondition,
+    include: [
+      {
+        model: EstadoTurno,
+        where: { estado: { [Op.notIn]: ["Cancelado", "cancelado"] } },
+        required: false,
+      },
+      {
+        model: Paciente,
+        attributes: ["nombre", "apellido"],
+        required: false,
+      },
+    ],
   });
 
-  return !!turnoExistente;
+  return turnoExistente;
 };
 
 export const validarHorarioAtencion = (

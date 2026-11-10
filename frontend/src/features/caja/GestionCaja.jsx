@@ -36,7 +36,7 @@ import { ESTADO_INICIAL_COBRO, ESTADO_INICIAL_GASTO } from "./constants/cajaCons
 
 export default function GestionCaja() {
   //* VARIABLES GENERALES
-  const [vistaActiva, setVistaActiva] = useState("cronologico"); // 'cronologico' | 'mayor' | 'pendientes'
+  const [vistaActiva, setVistaActiva] = useState("cronologico"); // 'cronologico' | 'ingresos' | 'mayor' | 'pendientes'
   const [categoriaAbierta, setCategoriaAbierta] = useState(null);
   const [pacienteBalanceId, setPacienteBalanceId] = useState(null);
   const [cobroParaCuotas, setCobroParaCuotas] = useState(null);
@@ -105,7 +105,7 @@ export default function GestionCaja() {
   const { categorias, recargarCategorias } = useCategoriasGastosCatalogo();
 
   //* HOOK DE CÁLCULOS Y KPIS (Ahora sincronizados con el mes)
-  const { kpis, movimientosUnificados } = useMovimientosCaja(
+  const { kpis, movimientosUnificados, turnosFiltrados } = useMovimientosCaja(
     cobros,
     gastos,
     turnosPendientes,
@@ -207,6 +207,15 @@ export default function GestionCaja() {
               </button>
               <button
                 type="button"
+                onClick={() => setVistaActiva("ingresos")}
+                className={`flex-1 md:flex-none px-4 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                  vistaActiva === "ingresos" ? "bg-white text-gray-800 shadow-2xs" : "text-gray-500"
+                }`}
+              >
+                Detalle Ingresos
+              </button>
+              <button
+                type="button"
                 onClick={() => setVistaActiva("mayor")}
                 className={`flex-1 md:flex-none px-4 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
                   vistaActiva === "mayor" ? "bg-white text-gray-800 shadow-2xs" : "text-gray-500"
@@ -221,7 +230,7 @@ export default function GestionCaja() {
                   vistaActiva === "pendientes" ? "bg-white text-gray-800 shadow-2xs" : "text-gray-500"
                 }`}
               >
-                Por Cobrar ({turnosPendientes.length})
+                Por Cobrar ({(turnosFiltrados || []).length})
               </button>
             </div>
 
@@ -248,6 +257,17 @@ export default function GestionCaja() {
             </div>
           )}
 
+          {/* VISTA: DETALLE INGRESOS */}
+          {vistaActiva === "ingresos" && (
+            <div className="flex flex-col gap-4">
+              <VistaCronologica
+                movimientosUnificados={movimientosUnificados.filter((m) => m.tipo === "ingreso")}
+                onVerCuotas={(cobro) => setCobroParaCuotas(cobro)}
+              />
+              <TablaPaginacion page={pageCobro} setPage={setPageCobro} totalPages={totalPagesCobro} />
+            </div>
+          )}
+
           {/* VISTA: LIBRO MAYOR */}
           {vistaActiva === "mayor" && (
             <div className="flex flex-col gap-4">
@@ -264,7 +284,7 @@ export default function GestionCaja() {
           {vistaActiva === "pendientes" && (
             <div className="flex flex-col gap-4">
               <VistaPendientes
-                turnosPendientes={turnosPendientes}
+                turnosPendientes={turnosFiltrados}
                 abrirCobroParaTurno={abrirCobroParaTurno}
                 abrirGestionCuotas={(cobro) => setCobroParaCuotas(cobro)}
                 onVerBalance={(id) => setPacienteBalanceId(id)}
@@ -297,7 +317,7 @@ export default function GestionCaja() {
             editando={editandoCobro}
             datosFormulario={datosCobro}
             actualizarDatos={actualizarDatosCobro}
-            turnosAtendidos={turnosPendientes}
+            turnosAtendidos={turnosFiltrados}
             procesarFormulario={(e) => {
               e.preventDefault();
               guardarCobro(datosCobro, editandoCobro, cobroSeleccionado);

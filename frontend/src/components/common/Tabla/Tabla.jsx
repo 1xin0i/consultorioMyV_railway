@@ -16,16 +16,18 @@ export default function Tabla({
   const estaBuscando = search.trim().length > 0;
 
   return (
-    <div className="bg-white border border-gray-100 shadow-sm overflow-hidden flex-1">
+    <div className="bg-white border border-gray-100 shadow-sm overflow-hidden flex-1 rounded-2xl">
       <div className="overflow-x-auto">
         <table className={`w-full text-left border-collapse ${layoutFijo ? "table-fixed md:table-auto" : ""}`}>
           {/* ENCABEZADO DE LA TABLA */}
-          <thead className="bg-[#e8f7f1]">
-            <tr className="border-b border-gray-100 text-xs font-bold text-gray-500 uppercase tracking-wider">
+          <thead className="bg-teal-50/70 border-b-2 border-teal-300">
+            <tr className="border-b-2 border-teal-300 border-t-0 text-xs font-semibold uppercase tracking-wider text-teal-900">
               {columnas.map((col, index) => (
                 <th
                   key={index}
-                  className={`px-3 md:px-6 py-4 ${col.align === "center" ? "text-center" : "text-left"} ${col.className || ""}`}
+                  className={`px-3 md:px-6 py-3.5 border-t-0 border-l-0 border-r-0 text-xs font-semibold uppercase tracking-wider text-teal-900 first:rounded-tl-xl last:rounded-tr-xl ${
+                    col.align === "center" ? "text-center" : "text-left"
+                  } ${col.className || ""}`}
                 >
                   {col.label}
                 </th>

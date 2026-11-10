@@ -5,6 +5,7 @@ import { FileText, Plus, Edit, Trash2, CheckCircle2, XCircle, RotateCcw, Tag, Ba
 
 //* COMPONENTES COMUNES
 import Header from "../../components/common/Header";
+import BadgeInicial from "../../components/common/BadgeInicial";
 import Tabla from "../../components/common/Tabla/Tabla";
 import TablaHeader from "../../components/common/Tabla/TablaHeader";
 import TablaPaginacion from "../../components/common/Tabla/TablaPaginacion";
@@ -142,16 +143,23 @@ export default function GestionPracticas() {
 
                     {/* //* COLUMNAS: NOMBRE REFERENCIA */}
                     <td className="px-3 md:px-6 py-4">
-                      <span className="font-semibold text-gray-800 text-sm">
-                        {practica.nombre_nomenclador}
-                      </span>
-                      <br className="hidden md:block" />
-                      <span className="hidden md:block texs-xs text-gray-400 text-sm">
-                        {practica.nombre_referencia}
-                      </span>
-                      {!practica.activo && (
-                        <span className="md:hidden block text-xs text-gray-400 italic">Inactiva</span>
-                      )}
+                      <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
+                        <BadgeInicial
+                          inicial={(practica.nombre_nomenclador || practica.nombre_referencia || "P").charAt(0).toUpperCase()}
+                          className="hidden md:flex"
+                        />
+                        <div className="flex flex-col min-w-0">
+                          <span className="font-semibold text-gray-800 text-sm break-words">
+                            {practica.nombre_nomenclador}
+                          </span>
+                          <span className="hidden md:block text-xs text-gray-400">
+                            {practica.nombre_referencia}
+                          </span>
+                          {!practica.activo && (
+                            <span className="md:hidden block text-xs text-gray-400 italic">Inactiva</span>
+                          )}
+                        </div>
+                      </div>
                     </td>
 
                     {/* //* COLUMNAS: ESPECIALIDAD */}

@@ -126,19 +126,52 @@ export function VistaLibroMayor({ egresosPorCategoria, categoriaAbierta, setCate
 }
 
 export function VistaPendientes({
-  turnosPendientes,
+  turnosPendientes = [],
   abrirCobroParaTurno,
   abrirGestionCuotas,
   onVerBalance,
 }) {
+  const turnosFiltrados = (turnosPendientes || []).filter((item) => {
+    const turno = item.Turno || item; // Por si viene anidado en un cobro
+
+    // Extraer el nombre del estado venga donde venga
+    const estadoNombre = (
+      turno.estado || 
+      turno.EstadoTurno?.nombre || 
+      turno.EstadoTurno?.estado || 
+      turno.estado_turno || 
+      ''
+    ).toString().toLowerCase().trim();
+
+    // Condición 1: Debe estar efectivamente atendido
+    const estaAtendido = estadoNombre === 'atendido' || Number(turno.id_estado) === 3;
+
+    // Condición 2: Debe tener saldo pendiente mayor a 0
+    const saldo = Number(
+      item.saldo_pendiente ??
+      turno.saldo_pendiente ??
+      item.total_deuda ??
+      turno.total_deuda ??
+      item.precio_final ??
+      turno.precio_final ??
+      item.precio ??
+      turno.precio ??
+      0
+    );
+
+    return estaAtendido && saldo > 0;
+  });
+
+  console.log('TURNO POR COBRAR:', turnosFiltrados[0]);
+
   return (
     <div className="bg-white rounded-2xl border border-gray-100 shadow-2xs overflow-hidden divide-y divide-gray-100">
-      {turnosPendientes.length === 0 ? (
+      {turnosFiltrados.length === 0 ? (
         <p className="text-xs text-gray-400 italic text-center py-8">
-          ¡Genial! No hay atenciones pendientes de cobro.
+          No hay turnos atendidos con saldos pendientes de cobro.
         </p>
       ) : (
-        turnosPendientes.map((t) => {
+        turnosFiltrados.map((t) => {
           const totalDeuda = t.total_deuda !== undefined ? t.total_deuda : (t.precio_final || 0);
           const saldoPendiente = t.saldo_pendiente !== undefined ? t.saldo_pendiente : totalDeuda;
           const totalPagado = t.total_pagado !== undefined ? t.total_pagado : 0;

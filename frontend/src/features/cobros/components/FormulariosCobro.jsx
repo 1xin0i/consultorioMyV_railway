@@ -1,217 +1,303 @@
 /** @format */
-import { useEffect } from "react";
+
+import { useState, useEffect, useMemo } from "react";
 import Modal from "../../../components/common/Modal";
-import { CheckCircle2, Coins } from "lucide-react";
+import InputFiltro from "../../../components/common/InputFiltro";
+import api from "../../../services/api";
+import { User, CheckCircle2, FileText, ShieldCheck, CreditCard, Banknote } from "lucide-react";
 
 export function FormularioCrearEditarCobro({
+  procesarFormulario,
   modalAbierto,
   cerrarModal,
+  editando,
   datosFormulario,
   actualizarDatos,
-  procesarFormulario,
+  turnosAtendidos = [],
 }) {
-  const montoTotal = Number(datosFormulario?.monto_a_cobrar) || 0;
-  // Soporta tanto monto_abonado como entrega_inicial para evitar fallos de lectura
-  const valorAbonadoRaw = datosFormulario?.monto_abonado ?? datosFormulario?.entrega_inicial ?? "";
-  const montoAbonado = Number(valorAbonadoRaw) || 0;
-  const saldoRestante = Math.max(0, montoTotal - montoAbonado);
-  const modalidadActual = datosFormulario?.modalidad || "inmediato";
-  const metodoPagoActual = datosFormulario?.metodo_pago || "Efectivo";
+  const [practicasTurno, setPracticasTurno] = useState([]);
 
-  // Asegura la inicialización inmediata de campos requeridos al abrir el modal
-  useEffect(() => {
-    if (modalAbierto) {
-      if (!datosFormulario?.modalidad) {
-        actualizarDatos({ target: { name: "modalidad", value: "inmediato" } });
-      }
-      if (!datosFormulario?.metodo_pago) {
-        actualizarDatos({ target: { name: "metodo_pago", value: "Efectivo" } });
-      }
-      if (
-        (datosFormulario?.modalidad === "inmediato" || !datosFormulario?.modalidad) &&
-        montoTotal > 0 &&
-        !datosFormulario?.monto_abonado
-      ) {
-        actualizarDatos({ target: { name: "monto_abonado", value: String(montoTotal) } });
-        actualizarDatos({ target: { name: "entrega_inicial", value: String(montoTotal) } });
-      }
+  // Turno seleccionado derivado de los datos del formulario y la lista de turnos atendidos
+  const turnoSeleccionado = useMemo(() => {
+    const idTurno = datosFormulario?.id_turno;
+    if (!idTurno || !turnosAtendidos) return null;
+    return turnosAtendidos.find((t) => String(t.id_turno) === String(idTurno)) || null;
+  }, [datosFormulario?.id_turno, turnosAtendidos]);
+
+  // Monto acordado del turno seleccionado (monto fijo para pago único o base para acuerdo informal)
+  const montoAcordado = useMemo(() => {
+    if (turnoSeleccionado) {
+      return Number(
+        turnoSeleccionado.saldo_pendiente !== undefined
+          ? turnoSeleccionado.saldo_pendiente
+          : (turnoSeleccionado.precio_final || 0)
+      );
     }
-  }, [modalAbierto, montoTotal]);
+    return Number(datosFormulario?.monto_a_cobrar) || 0;
+  }, [turnoSeleccionado, datosFormulario?.monto_a_cobrar]);
 
-  // Sincroniza ambos nombres (monto_abonado y entrega_inicial) para compatibilidad
-  const setMontoPago = (valor) => {
-    actualizarDatos({ target: { name: "monto_abonado", value: valor } });
-    actualizarDatos({ target: { name: "entrega_inicial", value: valor } });
+  // Carga asíncrona de las prácticas asociadas al turno
+  useEffect(() => {
+    const idTurno = datosFormulario?.id_turno;
+    if (!idTurno) return;
+
+    let activo = true;
+
+    const cargarPracticas = async () => {
+      try {
+        const res = await api.get(`/practicas-turnos/${idTurno}/turno`);
+        if (activo) {
+          setPracticasTurno(res.data.data || res.data || []);
+        }
+      } catch (err) {
+        console.warn("Aviso al obtener prácticas del turno:", err);
+        if (activo) {
+          setPracticasTurno([]);
+        }
+      }
+    };
+
+    cargarPracticas();
+
+    return () => {
+      activo = false;
+    };
+  }, [datosFormulario?.id_turno]);
+
+  const practicasAMostrar = datosFormulario?.id_turno ? practicasTurno : [];
+
+  const seleccionarModalidad = (mod) => {
+    if (typeof actualizarDatos === "function") {
+      actualizarDatos((prev) => {
+        const base = typeof prev === "object" && prev !== null ? prev : {};
+        const monto =
+          mod === "inmediato" && montoAcordado > 0
+            ? String(montoAcordado)
+            : base.monto_a_cobrar || String(montoAcordado || "");
+
+        return {
+          ...base,
+          modalidad: mod,
+          monto_a_cobrar: monto,
+          monto_abonado: mod === "inmediato" ? monto : base.monto_abonado || base.entrega_inicial || "",
+          entrega_inicial: mod === "inmediato" ? monto : base.entrega_inicial || "",
+          cant_cuotas: 1,
+          metodo_pago: base.metodo_pago || "Efectivo",
+        };
+      });
+    }
   };
 
-  const seleccionarModalidad = (tipo) => {
-    if (tipo === "inmediato") {
-      actualizarDatos({ target: { name: "modalidad", value: "inmediato" } });
-      setMontoPago(String(montoTotal));
-    } else {
-      actualizarDatos({ target: { name: "modalidad", value: "informal" } });
-      setMontoPago("");
+  const manejarSubmit = (e) => {
+    e.preventDefault();
+    if (!datosFormulario?.modalidad) {
+      alert("Por favor, selecciona una modalidad de cobro (Pago Único o Acuerdo Informal).");
+      return;
+    }
+
+    if (!datosFormulario?.id_turno) {
+      alert("Por favor, selecciona un turno para registrar el cobro.");
+      return;
+    }
+
+    if (procesarFormulario) {
+      procesarFormulario(e);
     }
   };
 
   return (
-    <Modal
-      isOpen={modalAbierto}
-      onClose={cerrarModal}
-      width="max-w-lg"
-      title={`Cobro de Atención - Turno #${datosFormulario?.id_turno || ""}`}
-    >
-      <form onSubmit={procesarFormulario} className="flex flex-col gap-4">
-        {/* Panel Resumen de la Deuda */}
-        <div className="bg-slate-50 border border-slate-200 p-3.5 rounded-2xl flex items-center justify-between">
+    <form onSubmit={manejarSubmit}>
+      <Modal
+        isOpen={modalAbierto}
+        onClose={cerrarModal}
+        width="max-w-2xl"
+        title={editando ? "Editar Registro de Cobro" : "Registrar Cobro"}
+      >
+        <div className="text-xs text-gray-500 mb-4 -mt-2 font-medium">
+          Módulo administrativo y contable de cobros
+        </div>
+
+        <div className="flex flex-col gap-4 text-sm">
+          {/* 1. SELECCIÓN DE TURNO Y PACIENTE */}
+          <div className="bg-gray-50/70 p-3.5 rounded-2xl border border-gray-200/80">
+            <h4 className="text-xs font-bold uppercase tracking-wider text-gray-600 mb-2.5 flex items-center gap-1.5">
+              <User size={15} className="text-[#2eb086]" />
+              1. Selección de Turno y Datos del Paciente
+            </h4>
+
+            <div className="flex flex-col gap-3">
+              <div>
+                <label className="block text-xs font-semibold text-gray-700 mb-1">Seleccionar Turno *</label>
+
+                {!turnosAtendidos || turnosAtendidos.length === 0 ? (
+                  <div className="bg-amber-50 border border-amber-200/80 rounded-xl p-3 text-xs text-amber-800 font-medium flex items-center justify-between">
+                    <span>No hay turnos atendidos pendientes de cobrar.</span>
+                    <span className="text-[10px] bg-amber-100 text-amber-900 px-2 py-0.5 rounded-md font-bold">
+                      Al día
+                    </span>
+                  </div>
+                ) : (
+                  <InputFiltro
+                    datos={turnosAtendidos}
+                    camposFiltrado={["id_turno", "Paciente.nombre", "Paciente.apellido", "Paciente.dni"]}
+                    formatoVisual={(t) => {
+                      const deuda = t.saldo_pendiente !== undefined ? t.saldo_pendiente : (t.precio_final || 0);
+                      return `Turno #${t.id_turno} - ${t.Paciente?.nombre || ""} ${t.Paciente?.apellido || ""} (Pendiente: $${Number(deuda).toLocaleString("es-AR")})`;
+                    }}
+                    placeholder="Buscar por ID de turno o nombre de paciente..."
+                    valorInicial={datosFormulario?.id_turno || ""}
+                    alSeleccionar={(t) => {
+                      const monto = t.saldo_pendiente !== undefined ? t.saldo_pendiente : (t.precio_final || "");
+                      if (typeof actualizarDatos === "function") {
+                        actualizarDatos((prev) => ({
+                          ...prev,
+                          id_turno: String(t.id_turno),
+                          id_paciente: String(t.id_paciente || t.Paciente?.id_paciente || ""),
+                          monto_a_cobrar: String(monto),
+                          monto_abonado: String(monto),
+                          entrega_inicial: String(monto),
+                        }));
+                      }
+                    }}
+                  />
+                )}
+              </div>
+
+              {/* Tarjeta dinámica de información del paciente y prácticas */}
+              {(turnoSeleccionado || datosFormulario?.id_turno) && (
+                <div className="bg-white p-3 rounded-xl border border-gray-200 mt-1 space-y-2.5 text-xs">
+                  <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center border-b border-gray-100 pb-2 gap-1">
+                    <div>
+                      <span className="text-[10px] uppercase font-bold text-gray-400 block tracking-wider">
+                        Paciente Asociado
+                      </span>
+                      <span className="text-xs sm:text-sm font-bold text-gray-800">
+                        {turnoSeleccionado?.Paciente
+                          ? `${turnoSeleccionado.Paciente.nombre} ${turnoSeleccionado.Paciente.apellido}`
+                          : `Paciente #${datosFormulario?.id_paciente || ""}`}
+                      </span>
+                    </div>
+                    <div className="text-left sm:text-right">
+                      <span className="text-[10px] uppercase font-bold text-gray-400 block tracking-wider">
+                        DNI / Teléfono
+                      </span>
+                      <span className="text-xs font-medium text-gray-600">
+                        DNI: {turnoSeleccionado?.Paciente?.dni || "S/D"} | Tel:{" "}
+                        {turnoSeleccionado?.Paciente?.telefono || "S/D"}
+                      </span>
+                    </div>
+                  </div>
+
+                  <div>
+                    <span className="text-[10px] uppercase font-bold text-gray-400 tracking-wider mb-1 flex items-center gap-1">
+                      <ShieldCheck size={12} className="text-[#2eb086]" />
+                      Prácticas Realizadas (Desde el turno)
+                    </span>
+
+                    {practicasAMostrar.length > 0 ? (
+                      <div className="flex flex-col gap-1.5">
+                        {practicasAMostrar.map((pt, idx) => (
+                          <div
+                            key={idx}
+                            className="flex flex-col sm:flex-row sm:items-center justify-between bg-gray-50 p-2 rounded-lg gap-1"
+                          >
+                            <span className="font-semibold text-gray-700 text-xs">
+                              {pt.Practica?.nombre_referencia ||
+                                pt.Practica?.nombre_nomenclador ||
+                                `Práctica #${pt.id_practica}`}
+                            </span>
+                            <span
+                              className={`px-2 py-0.5 rounded-md text-[10px] font-bold w-fit ${
+                                pt.ObraSocial
+                                  ? "bg-blue-50 text-blue-600 border border-blue-200"
+                                  : "bg-emerald-50 text-emerald-600 border border-emerald-200"
+                              }`}
+                            >
+                              {pt.ObraSocial?.nombre || "Particular / Sin Obra Social"}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between bg-gray-50 p-2 rounded-lg gap-1">
+                        <span className="text-gray-500 font-medium text-xs">
+                          Consulta Odontológica General
+                        </span>
+                        <span className="px-2 py-0.5 rounded-md text-[10px] font-bold bg-emerald-50 text-emerald-600 border border-emerald-200 w-fit">
+                          Particular / Sin Obra Social
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* 2. MODALIDADES DE COBRO CON TARJETAS SELECCIONABLES */}
           <div>
-            <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">
-              Total Acordado
-            </span>
-            <span className="text-xl font-extrabold text-slate-800">
-              ${montoTotal.toLocaleString("es-AR", { minimumFractionDigits: 2 })}
-            </span>
+            <h4 className="text-xs font-bold uppercase tracking-wider text-gray-600 mb-2.5 flex items-center gap-1.5">
+              <Banknote size={15} className="text-[#2eb086]" />
+              2. Modalidad de Cobro
+            </h4>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <SelectorModalidad
+                titulo="Pago Único"
+                descripcion="Pago total en el acto por el monto pactado del turno para saldar la atención."
+                activa={datosFormulario?.modalidad === "inmediato"}
+                onClick={() => seleccionarModalidad("inmediato")}
+                Icono={CheckCircle2}
+              />
+              <SelectorModalidad
+                titulo="Acuerdo Informal"
+                descripcion="Costo pactado total y pagos parciales a cuenta sin vencimiento."
+                activa={datosFormulario?.modalidad === "informal"}
+                onClick={() => seleccionarModalidad("informal")}
+                Icono={FileText}
+                esAmber
+              />
+            </div>
+            {!datosFormulario?.modalidad && (
+              <p className="text-xs text-gray-500 italic mt-2.5 text-center bg-gray-50 p-2.5 rounded-xl border border-gray-100">
+                Selecciona una modalidad arriba para continuar con los detalles del cobro.
+              </p>
+            )}
           </div>
 
-          <div className="text-right">
-            <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">
-              Saldo Restante
-            </span>
-            <span
-              className={`text-xl font-extrabold ${
-                saldoRestante > 0 ? "text-amber-600" : "text-emerald-600"
-              }`}
-            >
-              ${saldoRestante.toLocaleString("es-AR", { minimumFractionDigits: 2 })}
-            </span>
-          </div>
+          {/* 3. VISTAS ESPECÍFICAS SEGÚN MODALIDAD */}
+          {datosFormulario?.modalidad === "inmediato" && (
+            <DetalleInmediato datosFormulario={datosFormulario} actualizarDatos={actualizarDatos} />
+          )}
+
+          {datosFormulario?.modalidad === "informal" && (
+            <DetalleInformal datosFormulario={datosFormulario} actualizarDatos={actualizarDatos} />
+          )}
         </div>
 
-        {/* Selector de Modalidad */}
-        <div>
-          <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-2">
-            Tipo de Pago *
-          </label>
-          <div className="grid grid-cols-2 gap-2.5">
-            <button
-              type="button"
-              onClick={() => seleccionarModalidad("inmediato")}
-              className={`flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl border text-xs font-bold transition-all cursor-pointer ${
-                modalidadActual === "inmediato"
-                  ? "border-[#2eb086] bg-[#2eb086]/10 text-[#2eb086] shadow-xs"
-                  : "border-gray-200 bg-white text-gray-600 hover:bg-gray-50"
-              }`}
-            >
-              <CheckCircle2 size={16} />
-              <span>Pago Total</span>
-            </button>
+        <div className="border-t border-gray-200 my-4" />
 
-            <button
-              type="button"
-              onClick={() => seleccionarModalidad("informal")}
-              className={`flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl border text-xs font-bold transition-all cursor-pointer ${
-                modalidadActual === "informal"
-                  ? "border-[#2eb086] bg-[#2eb086]/10 text-[#2eb086] shadow-xs"
-                  : "border-gray-200 bg-white text-gray-600 hover:bg-gray-50"
-              }`}
-            >
-              <Coins size={16} />
-              <span>Acuerdo Libre</span>
-            </button>
-          </div>
-        </div>
-
-        {/* Input de Monto */}
-        <div>
-          <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5">
-            {modalidadActual === "inmediato" ? "Monto a Cobrar" : "Monto de la Entrega Hoy"} *
-          </label>
-          <div className="relative flex items-center">
-            <span className="absolute left-3.5 text-gray-400 font-bold">$</span>
-            <input
-              type="text"
-              inputMode="decimal"
-              name="monto_abonado"
-              value={valorAbonadoRaw}
-              disabled={modalidadActual === "inmediato"}
-              onChange={(e) => {
-                const val = e.target.value;
-                if (val === "" || /^[0-9]*[.,]?[0-9]*$/.test(val)) {
-                  setMontoPago(val);
-                }
-              }}
-              placeholder="0.00"
-              required={modalidadActual === "inmediato"}
-              className={`w-full pl-8 pr-4 py-2.5 border rounded-xl font-bold text-base focus:outline-none transition-all ${
-                modalidadActual === "inmediato"
-                  ? "bg-gray-100 border-gray-200 text-gray-700 cursor-not-allowed"
-                  : "bg-white border-gray-300 text-gray-900 focus:ring-2 focus:ring-[#2eb086]/40 focus:border-[#2eb086]"
-              }`}
-            />
-          </div>
-          <span className="text-[11px] text-gray-500 mt-1 block">
-            {modalidadActual === "inmediato"
-              ? "Se registrará el pago completo del tratamiento."
-              : montoAbonado > 0
-              ? `Pago a cuenta: quedarán adeudados $${saldoRestante.toLocaleString("es-AR")}.`
-              : "Si no entrega dinero ahora, quedará pendiente por cobrar sin sumar ingresos en caja."}
-          </span>
-        </div>
-
-        {/* Selector de Método de Pago */}
-        <div>
-          <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5">
-            Método de Pago *
-          </label>
-          <div className="grid grid-cols-3 gap-2">
-            {[
-              { valor: "Efectivo", label: "Efectivo" },
-              { valor: "Transferencia", label: "Transferencia" },
-              { valor: "Tarjeta", label: "Tarjeta / Débito" },
-            ].map(({ valor, label }) => {
-              const seleccionado =
-                (metodoPagoActual || "").toLowerCase() === valor.toLowerCase() ||
-                (valor === "Tarjeta" && /debit|tarjeta/i.test(metodoPagoActual || ""));
-
-              return (
-                <button
-                  key={valor}
-                  type="button"
-                  onClick={() =>
-                    actualizarDatos({ target: { name: "metodo_pago", value: valor } })
-                  }
-                  className={`py-2 px-3 rounded-xl border text-xs font-bold transition-all cursor-pointer ${
-                    seleccionado
-                      ? "border-[#2eb086] bg-[#2eb086]/10 text-[#2eb086]"
-                      : "border-gray-200 bg-white text-gray-600 hover:bg-gray-50"
-                  }`}
-                >
-                  {label}
-                </button>
-              );
-            })}
-          </div>
-        </div>
-
-        <div className="border-t border-gray-100 my-2" />
-
-        <div className="flex justify-end gap-2.5">
+        <div className="flex justify-end gap-3">
           <button
             type="button"
             onClick={cerrarModal}
-            className="px-4 py-2 rounded-xl text-gray-600 bg-gray-100 hover:bg-gray-200 text-xs font-bold transition-colors cursor-pointer"
+            className="px-4 py-2.5 rounded-xl text-gray-600 bg-gray-100 hover:bg-gray-200 font-medium text-xs sm:text-sm transition-colors cursor-pointer"
           >
             Cancelar
           </button>
           <button
             type="submit"
-            className="px-5 py-2 rounded-xl text-white bg-[#2eb086] hover:bg-[#259370] text-xs font-bold transition-all shadow-sm cursor-pointer"
+            disabled={!datosFormulario?.modalidad}
+            className={`px-5 py-2.5 rounded-xl text-white font-semibold text-xs sm:text-sm transition-all shadow-sm ${
+              !datosFormulario?.modalidad
+                ? "bg-gray-300 cursor-not-allowed"
+                : "bg-[#2eb086] hover:bg-[#259370] cursor-pointer"
+            }`}
           >
-            {montoAbonado > 0 ? "Confirmar Ingreso" : "Guardar sin Cobro"}
+            {editando ? "Guardar Cambios" : "Confirmar Registro"}
           </button>
         </div>
-      </form>
-    </Modal>
+      </Modal>
+    </form>
   );
 }
 
@@ -221,16 +307,16 @@ function SelectorModalidad({ titulo, descripcion, activa, onClick, Icono, esAmbe
   return (
     <div
       onClick={onClick}
-      className={`cursor-pointer p-3 rounded-2xl border transition-all ${
+      className={`cursor-pointer p-3.5 rounded-2xl border transition-all ${
         activa
           ? esAmber
-            ? "border-amber-500 bg-amber-50/40 ring-1 ring-amber-500 shadow-sm"
-            : "border-[#2eb086] bg-[#e8f7f1]/40 ring-1 ring-[#2eb086] shadow-sm"
-          : "border-gray-200 bg-white hover:bg-gray-50"
+            ? "border-amber-500 bg-amber-50/50 ring-2 ring-amber-500/40 shadow-sm"
+            : "border-[#2eb086] bg-[#e8f7f1]/50 ring-2 ring-[#2eb086]/40 shadow-sm"
+          : "border-gray-200 bg-white hover:bg-gray-50/80 hover:border-gray-300"
       }`}
     >
-      <div className="flex items-center gap-1.5 font-bold text-xs text-gray-800 mb-1">
-        <Icono size={16} className={esAmber ? "text-amber-600" : "text-[#2eb086]"} />
+      <div className="flex items-center gap-2 font-bold text-xs sm:text-sm text-gray-800 mb-1">
+        <Icono size={18} className={esAmber ? "text-amber-600" : "text-[#2eb086]"} />
         <span>{titulo}</span>
       </div>
       <p className="text-[11px] text-gray-500 leading-snug">{descripcion}</p>
@@ -239,28 +325,28 @@ function SelectorModalidad({ titulo, descripcion, activa, onClick, Icono, esAmbe
 }
 
 function DetalleInmediato({ datosFormulario, actualizarDatos }) {
-  const costoTotal = Number(datosFormulario.monto_a_cobrar) || 0;
+  const costoTotal = Number(datosFormulario?.monto_a_cobrar) || 0;
 
   return (
     <div className="bg-gray-50/70 p-3.5 rounded-2xl border border-gray-200/80 space-y-3">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1">
         <h4 className="text-xs font-bold uppercase tracking-wider text-gray-600 flex items-center gap-1.5">
           <CreditCard size={15} className="text-[#2eb086]" />
-          3. Detalle del Pago Inmediato
+          3. Detalle de Pago Único
         </h4>
         <span className="text-xs font-bold bg-[#e8f7f1] text-[#2eb086] px-3 py-1 rounded-full border border-[#2eb086]/30 w-fit">
-          Monto Fijo: ${costoTotal.toLocaleString("es-AR", { minimumFractionDigits: 2 })}
+          Monto Total: ${costoTotal.toLocaleString("es-AR", { minimumFractionDigits: 2 })}
         </span>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
         <div>
-          <label className="block text-xs font-semibold text-gray-700 mb-1">Monto a Cobrar (Fijo) *</label>
+          <label className="block text-xs font-semibold text-gray-700 mb-1">Monto a Cobrar (Total) *</label>
           <input
             type="number"
             step="0.01"
             name="monto_a_cobrar"
-            value={datosFormulario.monto_a_cobrar}
+            value={datosFormulario?.monto_a_cobrar || ""}
             readOnly
             className="w-full border border-gray-200 p-2.5 rounded-xl text-xs sm:text-sm bg-gray-100 text-gray-700 font-bold cursor-not-allowed select-none"
             title="El monto corresponde a lo acordado para el turno y se cancela en un pago único"
@@ -268,34 +354,44 @@ function DetalleInmediato({ datosFormulario, actualizarDatos }) {
         </div>
 
         <div>
-          <label className="block text-xs font-semibold text-gray-700 mb-1">Forma de Pago *</label>
+          <label className="block text-xs font-semibold text-gray-700 mb-1">Método de Pago *</label>
           <select
             name="metodo_pago"
-            value={datosFormulario.metodo_pago || "Efectivo"}
+            value={datosFormulario?.metodo_pago || "Efectivo"}
             onChange={actualizarDatos}
             className="w-full border border-gray-300 p-2.5 rounded-xl text-xs sm:text-sm bg-white focus:ring-2 focus:ring-[#2eb086]/50 font-medium text-gray-800"
           >
             <option value="Efectivo">Efectivo</option>
             <option value="Transferencia">Transferencia</option>
-            <option value="Tarjeta">Tarjeta Débito/Crédito</option>
+            <option value="Tarjeta">Tarjeta Débito / Crédito</option>
             <option value="Otro">Otro</option>
           </select>
         </div>
       </div>
 
       <p className="text-xs text-gray-500 italic bg-white p-2.5 rounded-xl border border-gray-100">
-        ℹ️ Se cancelará la totalidad de la deuda pactada (<strong>${costoTotal.toLocaleString("es-AR", { minimumFractionDigits: 2 })}</strong>) en un único pago, dejando el turno al día.
+        ℹ️ Se cancelará la totalidad de la deuda pactada (
+        <strong>${costoTotal.toLocaleString("es-AR", { minimumFractionDigits: 2 })}</strong>) en un único pago, dejando el turno al día.
       </p>
     </div>
   );
 }
 
-
-
 function DetalleInformal({ datosFormulario, actualizarDatos }) {
-  const costoTotal = Number(datosFormulario.monto_a_cobrar) || 0;
-  const entregaInicial = Number(datosFormulario.entrega_inicial) || 0;
+  const costoTotal = Number(datosFormulario?.monto_a_cobrar) || 0;
+  const entregaInicial = Number(datosFormulario?.entrega_inicial) || 0;
   const saldoPendiente = Math.max(0, costoTotal - entregaInicial);
+
+  const manejarCambioEntrega = (e) => {
+    const val = e.target.value;
+    if (typeof actualizarDatos === "function") {
+      actualizarDatos((prev) => ({
+        ...prev,
+        entrega_inicial: val,
+        monto_abonado: val,
+      }));
+    }
+  };
 
   return (
     <div className="bg-gray-50/70 p-3.5 rounded-2xl border border-gray-200/80 space-y-3">
@@ -311,11 +407,11 @@ function DetalleInformal({ datosFormulario, actualizarDatos }) {
             type="number"
             step="0.01"
             name="monto_a_cobrar"
-            value={datosFormulario.monto_a_cobrar}
+            value={datosFormulario?.monto_a_cobrar || ""}
             onChange={actualizarDatos}
             placeholder="0.00"
             required
-            className="w-full border border-gray-300 p-2.5 rounded-xl text-xs sm:text-sm bg-white focus:ring-2 focus:ring-amber-500/50"
+            className="w-full border border-gray-300 p-2.5 rounded-xl text-xs sm:text-sm bg-white focus:ring-2 focus:ring-amber-500/50 font-medium text-gray-800"
           />
         </div>
 
@@ -327,10 +423,10 @@ function DetalleInformal({ datosFormulario, actualizarDatos }) {
             type="number"
             step="0.01"
             name="entrega_inicial"
-            value={datosFormulario.entrega_inicial}
-            onChange={actualizarDatos}
+            value={datosFormulario?.entrega_inicial || ""}
+            onChange={manejarCambioEntrega}
             placeholder="0.00"
-            className="w-full border border-gray-300 p-2.5 rounded-xl text-xs sm:text-sm bg-white focus:ring-2 focus:ring-amber-500/50"
+            className="w-full border border-gray-300 p-2.5 rounded-xl text-xs sm:text-sm bg-white focus:ring-2 focus:ring-amber-500/50 font-medium text-gray-800"
           />
         </div>
 
@@ -338,13 +434,13 @@ function DetalleInformal({ datosFormulario, actualizarDatos }) {
           <label className="block text-xs font-semibold text-gray-700 mb-1">Método de Pago *</label>
           <select
             name="metodo_pago"
-            value={datosFormulario.metodo_pago || "Efectivo"}
+            value={datosFormulario?.metodo_pago || "Efectivo"}
             onChange={actualizarDatos}
             className="w-full border border-gray-300 p-2.5 rounded-xl text-xs sm:text-sm bg-white focus:ring-2 focus:ring-amber-500/50 font-medium text-gray-800"
           >
             <option value="Efectivo">Efectivo</option>
             <option value="Transferencia">Transferencia</option>
-            <option value="Tarjeta">Tarjeta Débito/Crédito</option>
+            <option value="Tarjeta">Tarjeta Débito / Crédito</option>
             <option value="Otro">Otro</option>
           </select>
         </div>
@@ -353,15 +449,21 @@ function DetalleInformal({ datosFormulario, actualizarDatos }) {
       <div className="grid grid-cols-3 gap-2 bg-white p-3 rounded-xl border border-gray-200 text-center">
         <div>
           <span className="text-[10px] text-gray-400 font-bold uppercase block">Costo Total</span>
-          <span className="text-xs sm:text-sm font-bold text-gray-800">${costoTotal.toFixed(2)}</span>
+          <span className="text-xs sm:text-sm font-bold text-gray-800">
+            ${costoTotal.toLocaleString("es-AR", { minimumFractionDigits: 2 })}
+          </span>
         </div>
         <div>
           <span className="text-[10px] text-gray-400 font-bold uppercase block">Entrega Inicial</span>
-          <span className="text-xs sm:text-sm font-bold text-emerald-600">${entregaInicial.toFixed(2)}</span>
+          <span className="text-xs sm:text-sm font-bold text-emerald-600">
+            ${entregaInicial.toLocaleString("es-AR", { minimumFractionDigits: 2 })}
+          </span>
         </div>
         <div>
           <span className="text-[10px] text-gray-400 font-bold uppercase block">Saldo Pendiente</span>
-          <span className="text-xs sm:text-sm font-bold text-amber-600">${saldoPendiente.toFixed(2)}</span>
+          <span className="text-xs sm:text-sm font-bold text-amber-600">
+            ${saldoPendiente.toLocaleString("es-AR", { minimumFractionDigits: 2 })}
+          </span>
         </div>
       </div>
     </div>
@@ -390,14 +492,14 @@ export function FormularioEliminarCobro({
         <button
           type="button"
           onClick={cerrarModal}
-          className="px-4 py-2 rounded-xl text-gray-600 bg-gray-100 hover:bg-gray-200 font-medium text-xs sm:text-sm"
+          className="px-4 py-2 rounded-xl text-gray-600 bg-gray-100 hover:bg-gray-200 font-medium text-xs sm:text-sm cursor-pointer"
         >
           Cancelar
         </button>
         <button
           type="button"
           onClick={ejecutarEliminacion}
-          className="px-4 py-2 rounded-xl text-white bg-red-500 hover:bg-red-600 font-semibold text-xs sm:text-sm transition-colors shadow-sm"
+          className="px-4 py-2 rounded-xl text-white bg-red-500 hover:bg-red-600 font-semibold text-xs sm:text-sm transition-colors shadow-sm cursor-pointer"
         >
           Sí, Desactivar
         </button>

@@ -5,8 +5,15 @@ import { manejarErrorApi } from "../../../utils/errorHandler";
 import { formatDateTimeInput } from "../../../utils";
 import { formatearTurnoParaReprogramar } from "../utils/formatTurnoParaReprogramar";
 import { HORARIO_ATENCION_DEFAULT } from "../constants/turnosConstants";
+import { verificarSolapamientoConRestricciones } from "./useRestricciones";
+import {
+  verificarSolapamientoTurnos,
+  validarBloqueoConTurnos,
+} from "../utils/validacionesTurno";
 
-export function useTurnoActions(recargar, cerrarModal) {
+export { verificarSolapamientoTurnos, validarBloqueoConTurnos };
+
+export function useTurnoActions(recargar, cerrarModal, turnos = []) {
   const [cargandoAccion, setCargandoAccion] = useState(false);
 
   const guardarTurno = async (datosFormulario, editando, turnoSeleccionadoCRUD) => {
@@ -24,11 +31,40 @@ export function useTurnoActions(recargar, cerrarModal) {
       return;
     }
 
+    // Validar contra bloqueos de agenda (día completo o franja horaria)
+    const conflictoBloqueo = verificarSolapamientoConRestricciones(
+      datosFormulario.fecha_hora_inicio,
+      datosFormulario.duracion_minutos || 30
+    );
+    if (conflictoBloqueo) {
+      toast.error(conflictoBloqueo.mensaje, { icon: "🔒" });
+      return;
+    }
+
     setCargandoAccion(true);
     try {
       let payload;
 
       if (editando) {
+        if (datosFormulario.fecha_hora_inicio) {
+          const editInicio = new Date(datosFormulario.fecha_hora_inicio);
+          const editDur = Number(datosFormulario.duracion_minutos) || 30;
+          const editFin = datosFormulario.fecha_hora_fin
+            ? new Date(datosFormulario.fecha_hora_fin)
+            : new Date(editInicio.getTime() + editDur * 60000);
+          const conflictoEdit = verificarSolapamientoTurnos(
+            editInicio,
+            editFin,
+            turnoSeleccionadoCRUD?.id_turno,
+            turnos
+          );
+          if (conflictoEdit) {
+            toast.error(conflictoEdit.mensaje);
+            setCargandoAccion(false);
+            return;
+          }
+        }
+
         payload = {
           id_paciente: idPacienteNum,
           id_estado: Number(datosFormulario.id_estado),
@@ -60,6 +96,19 @@ export function useTurnoActions(recargar, cerrarModal) {
           return;
         }
 
+        // Validar solapamiento con otros turnos existentes
+        const conflictoTurno = verificarSolapamientoTurnos(
+          fechaInicioDate,
+          finDate,
+          null,
+          turnos
+        );
+        if (conflictoTurno) {
+          toast.error(conflictoTurno.mensaje);
+          setCargandoAccion(false);
+          return;
+        }
+
         const fechaFinIso = finDate.toISOString();
 
         payload = {
@@ -78,6 +127,10 @@ export function useTurnoActions(recargar, cerrarModal) {
       recargar();
       cerrarModal();
     } catch (error) {
+      if (error.response?.status === 409 && error.response?.data?.error) {
+        toast.error(error.response.data.error);
+        return;
+      }
       console.error("Error al guardar el turno:", error);
       manejarErrorApi(error, "No se pudo guardar el turno.");
     } finally {
@@ -175,6 +228,28 @@ export function useTurnoActions(recargar, cerrarModal) {
       return;
     }
 
+    // Validar contra bloqueos de agenda (día completo o franja horaria)
+    const conflictoBloqueoReprog = verificarSolapamientoConRestricciones(
+      datosReprogramacion.fecha_hora_inicio,
+      durMin
+    );
+    if (conflictoBloqueoReprog) {
+      toast.error(conflictoBloqueoReprog.mensaje, { icon: "🔒" });
+      return;
+    }
+
+    // Validar solapamiento con otros turnos existentes (excluyendo el turno actual)
+    const conflictoTurnoReprog = verificarSolapamientoTurnos(
+      fechaInicioDate,
+      finDate,
+      turnoSeleccionado.id_turno,
+      turnos
+    );
+    if (conflictoTurnoReprog) {
+      toast.error(conflictoTurnoReprog.mensaje);
+      return;
+    }
+
     try {
       await api.patch(`/turnos/${turnoSeleccionado.id_turno}/reprogramado`, {
         fecha_hora_inicio: new Date(datosReprogramacion.fecha_hora_inicio).toISOString(),
@@ -185,6 +260,10 @@ export function useTurnoActions(recargar, cerrarModal) {
       recargar();
       if (typeof cerrarModalReprogramar === "function") cerrarModalReprogramar();
     } catch (error) {
+      if (error.response?.status === 409 && error.response?.data?.error) {
+        toast.error(error.response.data.error);
+        return;
+      }
       console.error("Error al reprogramar el turno:", error);
       manejarErrorApi(error, "No se pudo reprogramar el turno.");
     }
@@ -230,6 +309,38 @@ export function useTurnoActions(recargar, cerrarModal) {
             d.setHours(HORARIO_ATENCION_DEFAULT.horaFin - 1, 30, 0, 0);
             nuevaFechaInicio = formatDateTimeInput(d);
           }
+        }
+      }
+
+      // Validar si la nueva fecha colisiona con alguna restricción
+      const conflicto = verificarSolapamientoConRestricciones(nuevaFechaInicio, 30);
+      if (conflicto) {
+        if (conflicto.tipo === "dia_completo") {
+          toast.error(conflicto.mensaje, { icon: "🔒" });
+          return;
+        }
+
+        // Si fue clickeado en allDay (fecha sin hora específica) y la hora 09:00 está en una franja, buscar el primer horario libre del día
+        if (selectInfo.allDay || selectInfo.startStr.length === 10) {
+          const fechaSolo = selectInfo.startStr.slice(0, 10);
+          let hLibre = null;
+          for (let h = HORARIO_ATENCION_DEFAULT.horaInicio; h < HORARIO_ATENCION_DEFAULT.horaFin; h++) {
+            const hStr = `${String(h).padStart(2, "0")}:00`;
+            const testIso = `${fechaSolo}T${hStr}`;
+            if (!verificarSolapamientoConRestricciones(testIso, 30)) {
+              hLibre = testIso;
+              break;
+            }
+          }
+          if (hLibre) {
+            nuevaFechaInicio = hLibre;
+          } else {
+            toast.error(conflicto.mensaje, { icon: "🔒" });
+            return;
+          }
+        } else {
+          toast.error(conflicto.mensaje, { icon: "🔒" });
+          return;
         }
       }
 

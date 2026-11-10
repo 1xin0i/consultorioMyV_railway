@@ -387,13 +387,22 @@ export const getKpisCaja = async (req, res) => {
 
     const balanceNeto = totalIngresos - totalEgresos;
 
+    const estadoAtendido = await EstadoTurno.findOne({
+      where: { estado: { [Op.in]: ["Atendido", "atendido"] } },
+    });
+
+    const whereTurnos = { activo: true };
+    if (estadoAtendido) {
+      whereTurnos.id_estado = estadoAtendido.id_estado;
+    }
+
     const turnosAtendidos = await Turno.findAll({
-      where: { activo: true },
-      attributes: ["id_turno", "precio_final"],
+      where: whereTurnos,
+      attributes: ["id_turno", "precio_final", "id_estado"],
       include: [
         {
           model: EstadoTurno,
-          where: { estado: "Atendido" },
+          where: { estado: { [Op.in]: ["Atendido", "atendido"] } },
           required: true,
         },
         {

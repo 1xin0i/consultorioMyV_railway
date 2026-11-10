@@ -5,6 +5,7 @@ import { Shield, Plus, Edit, Trash2, CheckCircle2, XCircle, RotateCcw, Ban } fro
 
 //* IMPORTACION DE COMPONENTES COMUNES REUTILIZABLES
 import Header from "../../components/common/Header";
+import BadgeInicial from "../../components/common/BadgeInicial";
 import Tabla from "../../components/common/Tabla/Tabla";
 import TablaHeader from "../../components/common/Tabla/TablaHeader";
 import TablaPaginacion from "../../components/common/Tabla/TablaPaginacion";
@@ -124,10 +125,11 @@ export default function GestionObrasSociales() {
 
                     {/* //* COLUMNAS: NOMBRE */}
                     <td className="px-3 md:px-6 py-4">
-                      <div className="flex items-center gap-3 min-w-0">
-                        <div className="hidden md:flex w-9 h-9 rounded-full bg-[#e8f7f1] text-[#2eb086] items-center justify-center font-bold text-sm shrink-0">
-                          {os.nombre?.charAt(0)}
-                        </div>
+                      <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
+                        <BadgeInicial
+                          inicial={(os.nombre || "O").charAt(0).toUpperCase()}
+                          className="hidden md:flex"
+                        />
                         <span className="font-semibold text-gray-800 text-sm break-words min-w-0">{os.nombre}</span>
                       </div>
                     </td>

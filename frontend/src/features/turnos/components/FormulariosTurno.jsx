@@ -17,11 +17,14 @@ import { formatDateTimeInput } from "../../../utils";
 import toast from "react-hot-toast";
 import { manejarErrorApi } from "../../../utils/errorHandler";
 import InputFiltro from "../../../components/common/InputFiltro";
+import { verificarSolapamientoConRestricciones } from "../hooks/useRestricciones";
+import { verificarSolapamientoTurnos } from "../utils/validacionesTurno";
 
 export function FormularioCrearEditar({
   modalAbierto,
   cerrarModal,
   editando,
+  turnos = [],
   pacientes = [],
   setPacientes,
   datosFormulario,
@@ -97,6 +100,25 @@ export function FormularioCrearEditar({
   const idEstadoActual = Number(datosFormulario?.id_estado);
   const esProgramado = idEstadoActual === 1 || !editando;
 
+  const conflictoRestriccion = !editando && datosFormulario?.fecha_hora_inicio
+    ? verificarSolapamientoConRestricciones(
+        datosFormulario.fecha_hora_inicio,
+        datosFormulario.duracion_minutos || 30
+      )
+    : null;
+
+  const conflictoTurnoSolapamiento = datosFormulario?.fecha_hora_inicio
+    ? verificarSolapamientoTurnos(
+        datosFormulario.fecha_hora_inicio,
+        new Date(
+          new Date(datosFormulario.fecha_hora_inicio).getTime() +
+            (Number(datosFormulario.duracion_minutos) || 30) * 60000
+        ),
+        editando ? datosFormulario?.id_turno : null,
+        turnos
+      )
+    : null;
+
   const onAtender = abrirParaAtender || abrirModalAtenderDesdeEdicion;
   const onCancelar = abrirParaCancelar || abrirModalCancelarDesdeEdicion;
   const onInasistente = abrirParaInasistente || abrirModalInasistenteDesdeEdicion;
@@ -104,6 +126,14 @@ export function FormularioCrearEditar({
 
   const handleSubmit = (e) => {
     if (e && e.preventDefault) e.preventDefault();
+    if (conflictoRestriccion) {
+      toast.error(conflictoRestriccion.mensaje, { icon: "🔒" });
+      return;
+    }
+    if (conflictoTurnoSolapamiento) {
+      toast.error(conflictoTurnoSolapamiento.mensaje);
+      return;
+    }
     const accion = guardarTurno || procesarFormulario;
     if (typeof accion === "function") {
       if (accion.length >= 2) {
@@ -205,6 +235,22 @@ export function FormularioCrearEditar({
               </div>
             )}
 
+            {/* Aviso de Conflicto con Restricción / Bloqueo */}
+            {conflictoRestriccion && (
+              <div className="col-span-1 md:col-span-2 p-3 bg-red-50 border border-red-200 rounded-xl text-red-700 text-xs flex items-center gap-2">
+                <span className="text-base flex-shrink-0">🔒</span>
+                <span className="font-semibold">{conflictoRestriccion.mensaje}</span>
+              </div>
+            )}
+
+            {/* Aviso de Conflicto por Solapamiento con otro turno */}
+            {conflictoTurnoSolapamiento && (
+              <div className="col-span-1 md:col-span-2 p-3 bg-amber-50 border border-amber-300 rounded-xl text-amber-900 text-xs flex items-center gap-2">
+                <span className="text-base flex-shrink-0">⚠️</span>
+                <span className="font-semibold">{conflictoTurnoSolapamiento.mensaje}</span>
+              </div>
+            )}
+
             {/* Notas / Observaciones */}
             <div className="col-span-1 md:col-span-2">
               <label className="block text-sm font-semibold text-gray-700 mb-1">Notas de la Consulta</label>
@@ -303,7 +349,12 @@ export function FormularioCrearEditar({
               </button>
               <button
                 type="submit"
-                className="px-5 py-2.5 rounded-xl text-white bg-[#2eb086] hover:bg-[#259370] transition-all shadow-sm font-semibold text-sm"
+                disabled={Boolean(conflictoRestriccion || conflictoTurnoSolapamiento)}
+                className={`px-5 py-2.5 rounded-xl font-semibold text-sm transition-all shadow-sm ${
+                  conflictoRestriccion || conflictoTurnoSolapamiento
+                    ? "bg-gray-300 text-gray-500 cursor-not-allowed"
+                    : "text-white bg-[#2eb086] hover:bg-[#259370]"
+                }`}
               >
                 {editando ? "Guardar Cambios" : "Confirmar Turno"}
               </button>
@@ -564,9 +615,44 @@ export function FormularioReprogramar({
   datosReprogramacion,
   actualizarDatosReprogramacion,
   procesarReprogramacionTurno,
+  turnos = [],
 }) {
+  const conflictoRestriccionReprog = datosReprogramacion?.fecha_hora_inicio
+    ? verificarSolapamientoConRestricciones(
+        datosReprogramacion.fecha_hora_inicio,
+        datosReprogramacion.duracion_minutos || 30
+      )
+    : null;
+
+  const conflictoTurnoReprog = datosReprogramacion?.fecha_hora_inicio
+    ? verificarSolapamientoTurnos(
+        datosReprogramacion.fecha_hora_inicio,
+        new Date(
+          new Date(datosReprogramacion.fecha_hora_inicio).getTime() +
+            (Number(datosReprogramacion.duracion_minutos) || 30) * 60000
+        ),
+        turnoSeleccionado?.id_turno,
+        turnos
+      )
+    : null;
+
+  const handleReprogramarSubmit = (e) => {
+    if (e && e.preventDefault) e.preventDefault();
+    if (conflictoRestriccionReprog) {
+      toast.error(conflictoRestriccionReprog.mensaje, { icon: "🔒" });
+      return;
+    }
+    if (conflictoTurnoReprog) {
+      toast.error(conflictoTurnoReprog.mensaje);
+      return;
+    }
+    if (typeof procesarReprogramacionTurno === "function") {
+      procesarReprogramacionTurno(e);
+    }
+  };
+
   return (
-    <form onSubmit={procesarReprogramacionTurno}>
+    <form onSubmit={handleReprogramarSubmit}>
       <Modal
         isOpen={modalReprogramarAbierto}
         onClose={cerrarModal}
@@ -617,6 +703,22 @@ export function FormularioReprogramar({
               className="w-full bg-gray-100 border border-gray-300 p-2 rounded-lg text-sm text-gray-600 cursor-not-allowed font-medium"
             />
           </div>
+
+          {/* Aviso de Conflicto con Restricción */}
+          {conflictoRestriccionReprog && (
+            <div className="p-3 bg-red-50 border border-red-200 rounded-xl text-red-700 text-xs flex items-center gap-2">
+              <span className="text-base flex-shrink-0">🔒</span>
+              <span className="font-semibold">{conflictoRestriccionReprog.mensaje}</span>
+            </div>
+          )}
+
+          {/* Aviso de Conflicto por Solapamiento con otro turno */}
+          {conflictoTurnoReprog && (
+            <div className="p-3 bg-amber-50 border border-amber-300 rounded-xl text-amber-900 text-xs flex items-center gap-2">
+              <span className="text-base flex-shrink-0">⚠️</span>
+              <span className="font-semibold">{conflictoTurnoReprog.mensaje}</span>
+            </div>
+          )}
         </div>
 
         <div className="border-t border-gray-200 my-4" />
@@ -631,7 +733,12 @@ export function FormularioReprogramar({
           </button>
           <button
             type="submit"
-            className="px-5 py-2.5 rounded-xl text-white bg-[#2eb086] hover:bg-[#259370] transition-all shadow-sm font-semibold text-sm"
+            disabled={Boolean(conflictoRestriccionReprog || conflictoTurnoReprog)}
+            className={`px-5 py-2.5 rounded-xl font-semibold text-sm transition-all shadow-sm ${
+              conflictoRestriccionReprog || conflictoTurnoReprog
+                ? "bg-gray-300 text-gray-500 cursor-not-allowed"
+                : "text-white bg-[#2eb086] hover:bg-[#259370]"
+            }`}
           >
             Confirmar Reprogramación
           </button>

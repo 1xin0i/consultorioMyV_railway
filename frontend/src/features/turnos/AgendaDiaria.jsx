@@ -23,6 +23,7 @@ import { useTurnoReprogramarModal } from "./hooks/useTurnoReprogramarModal";
 import { useTurnoActions } from "./hooks/useTurnoActions";
 import { usePacienteFaltante } from "./hooks/usePacienteFaltante";
 import { useTurnoVer } from "./hooks/useTurnoVer";
+import { useRestricciones } from "./hooks/useRestricciones";
 
 //* FUNCIONES PARA FORMATEAR FECHAS Y UTILIDADES
 import { formatFechaCortaTexto } from "../../utils/index";
@@ -106,11 +107,15 @@ export default function AgendaDiaria() {
     procesarReprogramacionTurno,
     manejarSeleccionFechaCalendario,
     procesarClickEnTurno,
-  } = useTurnoActions(recargar, cerrarModal);
+  } = useTurnoActions(recargar, cerrarModal, turnos);
 
   //* HOOK DE PACIENTE INCOMPLETO
   const { advertenciaVisible, pacientesIncompletos, obtenerCamposFaltantes, cerrarAdvertencia } =
     usePacienteFaltante(pacientes);
+
+  //* HOOK DE RESTRICCIONES DE AGENDA
+  const { obtenerRestriccionesDeFecha } = useRestricciones();
+  const restriccionesHoy = obtenerRestriccionesDeFecha(new Date());
 
   /* ─── RETORNO DE LA PAGINA ─────────────────────────────────── */
   return (
@@ -121,18 +126,39 @@ export default function AgendaDiaria() {
         titulo="Agenda de Turnos"
         subtitulo="Gestión horaria y turnos del consultorio odontológico"
         badge={formatFechaCortaTexto(new Date())}
-      />
-
-      {/* //* ADVERTENCIA PACIENTE INCOMPLETO */}
-      <AdvertenciaPacienteIncompleto
-        advertenciaVisible={advertenciaVisible}
-        pacientesIncompletos={pacientesIncompletos}
-        obtenerCamposFaltantes={obtenerCamposFaltantes}
-        cerrarAdvertencia={cerrarAdvertencia}
+        botonAccion={
+          advertenciaVisible && pacientesIncompletos.length > 0 ? (
+            <AdvertenciaPacienteIncompleto
+              advertenciaVisible={advertenciaVisible}
+              pacientesIncompletos={pacientesIncompletos}
+              obtenerCamposFaltantes={obtenerCamposFaltantes}
+              cerrarAdvertencia={cerrarAdvertencia}
+            />
+          ) : null
+        }
       />
 
       <div className="flex-1 w-full min-h-0 p-2 md:p-4 text-black flex flex-col">
         <div className="w-full h-full bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden p-2 md:p-4 flex flex-col">
+          {/* Banner de Restricciones Activas para Hoy */}
+          {restriccionesHoy.length > 0 && (
+            <div className="mb-3 flex flex-col gap-2">
+              {restriccionesHoy.map((r) => (
+                <div
+                  key={r.id}
+                  className="px-3.5 py-2.5 bg-gray-100 border border-gray-300 rounded-xl text-gray-700 text-xs sm:text-sm font-semibold flex items-center gap-2 shadow-sm"
+                >
+                  <span className="text-base flex-shrink-0">🔒</span>
+                  <span>
+                    {r.todoElDia
+                      ? `Día bloqueado hoy: ${r.motivo} (No se admiten turnos en esta jornada)`
+                      : `Franja bloqueada hoy: ${r.horaInicio} a ${r.horaFin} hs · ${r.motivo}`}
+                  </span>
+                </div>
+              ))}
+            </div>
+          )}
+
           {/* //* BODY: AGENDA */}
           <AgendaCalendario
             turnos={turnos}
@@ -157,6 +183,7 @@ export default function AgendaDiaria() {
           modalAbierto={modalAbierto}
           cerrarModal={cerrarModal}
           editando={editando}
+          turnos={turnos}
           pacientes={pacientes}
           setPacientes={setPacientes}
           datosFormulario={datosFormulario}
@@ -244,6 +271,7 @@ export default function AgendaDiaria() {
         <FormularioReprogramar
           modalReprogramarAbierto={modalReprogramar}
           cerrarModal={cerrarModalReprogramar}
+          turnos={turnos}
           turnoSeleccionado={turnoSeleccionadoReprogramar}
           datosReprogramacion={datosReprogramacion}
           actualizarDatosReprogramacion={actualizarDatosReprogramacion}
