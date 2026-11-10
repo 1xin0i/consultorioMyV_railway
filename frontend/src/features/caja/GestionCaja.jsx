@@ -164,7 +164,7 @@ export default function GestionCaja() {
           subtitulo="Consolidado de ingresos, egresos operativos y cuentas por cobrar"
           badge="En línea"
           botonAccion={
-            <div className="flex items-center gap-2">
+            <div className="hidden sm:flex items-center gap-2">
               <button
                 type="button"
                 onClick={() => abrirParaCrearGasto()}
@@ -347,6 +347,24 @@ export default function GestionCaja() {
           />
         )}
       </div>
+            {/* BOTONES FLOTANTES (SOLO MOBILE): "−" nuevo gasto y "+" registrar cobro */}
+      <button
+        type="button"
+        onClick={() => abrirParaCrearGasto()}
+        aria-label="Nuevo gasto"
+        className="fixed sm:hidden right-4 bottom-[8.25rem] z-40 bg-rose-500 hover:bg-rose-600 text-white w-13 h-13 rounded-full flex items-center justify-center shadow-lg transition-transform active:scale-95 focus:outline-none"
+      >
+        <Minus size={20} />
+      </button>
+
+      <button
+        type="button"
+        onClick={() => abrirParaCrearCobro()}
+        aria-label="Registrar cobro"
+        className="fixed sm:hidden right-4 bottom-18 z-40 bg-[#2eb086] hover:bg-[#259370] text-white w-13 h-13 rounded-full flex items-center justify-center shadow-lg transition-transform active:scale-95 focus:outline-none"
+      >
+        <Plus size={20} />
+      </button>
     </PageLayout>
   );
 }

@@ -75,7 +75,7 @@ export default function GestionTurnos() {
   } = usePaginationSearch("/turnos");
 
   //* HOOK DE DEPENDENCIAS
-  const { pacientes } = useTurnoDependencies();
+  const { pacientes, setPacientes } = useTurnoDependencies();
 
   //* Hook de menu de turno para vista mobile
   const [turnoMenu, setTurnoMenu] = useState(null);
@@ -155,7 +155,7 @@ export default function GestionTurnos() {
             <button
               type="button"
               onClick={abrirParaCrear}
-              className="sm:flex items-center justify-center gap-2 bg-[#2eb086] hover:bg-[#259370] text-white px-4 py-2.5 rounded-xl font-semibold text-sm transition-all duration-200 shadow-sm hover:shadow active:scale-95 shrink-0"
+              className="hidden sm:flex items-center justify-center gap-2 bg-[#2eb086] hover:bg-[#259370] text-white px-4 py-2.5 rounded-xl font-semibold text-sm transition-all duration-200 shadow-sm hover:shadow active:scale-95 shrink-0"
             >
               <Plus size={18} />
               <span>Agendar Turno</span>
@@ -437,6 +437,7 @@ export default function GestionTurnos() {
             editando={editando}
             turnos={turnos}
             pacientes={pacientes}
+            setPacientes={setPacientes}
             datosFormulario={datosFormulario}
             actualizarDatos={actualizarDatos}
             guardarTurno={(e) => {

@@ -15,6 +15,7 @@ import { Cobro } from "./Cobro.model.js";
 import { Cuota } from "./Cuota.model.js";
 import { Usuario } from "./Usuario.model.js";
 import { ObraSocialTurno } from "./ObraSocialTurno.model.js";
+import { Restriccion } from "./Restriccion.model.js";
 
 // ==========================================
 // DEFINICIÓN DE RELACIONES
@@ -162,5 +163,6 @@ export {
   Usuario,
   Gasto,
   CategoriaGasto,
+  Restriccion,
   sincronizarModelos,
 };

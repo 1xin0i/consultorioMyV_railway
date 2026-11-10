@@ -23,7 +23,7 @@ export function useTurnoReprogramarModal() {
   const cerrarModalReprogramar = useCallback(() => {
     setModalReprogramar(false);
     setTurnoSeleccionado(null);
-    setDatosReprogramacion(...ESTADO_INICIAL_REPROGRAMAR);
+    setDatosReprogramacion(ESTADO_INICIAL_REPROGRAMAR);
   }, []);
 
   const actualizarDatosReprogramacion = (e) => {

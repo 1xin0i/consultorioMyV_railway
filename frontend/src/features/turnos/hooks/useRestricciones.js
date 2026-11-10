@@ -2,8 +2,10 @@
 
 import { useState, useEffect, useCallback } from "react";
 import toast from "react-hot-toast";
+import api from "../../../services/api";
 import { validarBloqueoConTurnos } from "../utils/validacionesTurno";
 
+// Clave vieja: antes los bloqueos vivían solo en el navegador. Se migran una vez a la base de datos.
 const RESTRICCIONES_STORAGE_KEY = "myv_restricciones_agenda";
 
 /**
@@ -42,21 +44,76 @@ export const extraerFechaYHora = (fechaInput) => {
   return { fechaKey, horaHHMM };
 };
 
-/**
- * Deduplica un listado de restricciones por clave única (fechas, tipo, horas, motivo).
- */
-const deduplicarRestricciones = (lista) => {
-  if (!Array.isArray(lista)) return [];
-  const mapa = new Map();
-  lista.forEach((r) => {
-    if (!r || !r.fechaInicio) return;
-    const fFin = r.fechaFin || r.fechaInicio;
-    const clave = `${r.fechaInicio}_${fFin}_${Boolean(r.todoElDia)}_${r.horaInicio || ""}_${r.horaFin || ""}_${(r.motivo || "").trim().toLowerCase()}`;
-    if (!mapa.has(clave)) {
-      mapa.set(clave, r);
+/* ─── ALMACÉN COMPARTIDO (se carga desde el backend) ───────────────────
+   Un único listado en memoria para toda la app: así lo comparten el hook,
+   el calendario, los formularios y verificarSolapamientoConRestricciones. */
+let restriccionesCache = [];
+let cargaEnCurso = null;
+let migracionIntentada = false;
+const suscriptores = new Set();
+
+const publicar = (lista) => {
+  restriccionesCache = lista;
+  suscriptores.forEach((fn) => fn(lista));
+};
+
+const mensajeDeError = (err, porDefecto) => err?.response?.data?.message || porDefecto;
+
+// Sube una sola vez los bloqueos que quedaron guardados en este navegador
+const migrarRestriccionesLocales = async () => {
+  if (migracionIntentada) return false;
+  migracionIntentada = true;
+  try {
+    const raw = localStorage.getItem(RESTRICCIONES_STORAGE_KEY);
+    if (!raw) return false;
+    const locales = JSON.parse(raw);
+    if (Array.isArray(locales)) {
+      for (const r of locales) {
+        if (!r?.fechaInicio) continue;
+        try {
+          await api.post("/restricciones", {
+            motivo: r.motivo,
+            todoElDia: Boolean(r.todoElDia),
+            fechaInicio: r.fechaInicio,
+            fechaFin: r.fechaFin || r.fechaInicio,
+            horaInicio: r.horaInicio,
+            horaFin: r.horaFin,
+          });
+        } catch {
+          // Ya existe o se solapa con uno cargado: se ignora
+        }
+      }
     }
-  });
-  return Array.from(mapa.values());
+    localStorage.removeItem(RESTRICCIONES_STORAGE_KEY);
+    return true;
+  } catch {
+    return false;
+  }
+};
+
+export const recargarRestricciones = () => {
+  if (cargaEnCurso) return cargaEnCurso;
+  // No recargar mientras haya un bloqueo guardándose (evita que parpadee o desaparezca)
+  if (restriccionesCache.some((r) => String(r.id).startsWith("tmp_"))) return Promise.resolve();
+
+  cargaEnCurso = (async () => {
+    try {
+      let res = await api.get("/restricciones");
+      const recibidas = res.data.data || [];
+      if (JSON.stringify(recibidas) !== JSON.stringify(restriccionesCache)) publicar(recibidas);
+
+      if (await migrarRestriccionesLocales()) {
+        res = await api.get("/restricciones");
+        publicar(res.data.data || []);
+      }
+    } catch (err) {
+      console.error("No se pudieron cargar los bloqueos de agenda:", err);
+    } finally {
+      cargaEnCurso = null;
+    }
+  })();
+
+  return cargaEnCurso;
 };
 
 /**
@@ -64,27 +121,31 @@ const deduplicarRestricciones = (lista) => {
  * (ausencias, vacaciones, franjas horarias no disponibles).
  */
 export const useRestricciones = () => {
-  const [restricciones, setRestricciones] = useState(() => {
-    try {
-      const stored = localStorage.getItem(RESTRICCIONES_STORAGE_KEY);
-      if (!stored) return [];
-      const parsed = JSON.parse(stored);
-      return deduplicarRestricciones(parsed);
-    } catch {
-      return [];
-    }
-  });
+  const [restricciones, setRestricciones] = useState(restriccionesCache);
 
   useEffect(() => {
-    try {
-      localStorage.setItem(
-        RESTRICCIONES_STORAGE_KEY,
-        JSON.stringify(restricciones),
-      );
-    } catch (err) {
-      console.warn("No se pudo guardar restricciones en localStorage:", err);
-    }
-  }, [restricciones]);
+    suscriptores.add(setRestricciones);
+    setRestricciones(restriccionesCache);
+    recargarRestricciones();
+
+    // Mantener sincronizado con lo que se cargó desde otros dispositivos
+    const alVolver = () => {
+      if (document.visibilityState === "visible") recargarRestricciones();
+    };
+    const alEnfocar = () => recargarRestricciones();
+    window.addEventListener("focus", alEnfocar);
+    document.addEventListener("visibilitychange", alVolver);
+    const intervalo = setInterval(() => {
+      if (document.visibilityState === "visible") recargarRestricciones();
+    }, 10000);
+
+    return () => {
+      suscriptores.delete(setRestricciones);
+      window.removeEventListener("focus", alEnfocar);
+      document.removeEventListener("visibilitychange", alVolver);
+      clearInterval(intervalo);
+    };
+  }, []);
 
   // Formato "YYYY-MM-DD" en zona horaria local
   const formatearFechaStr = (f) => {
@@ -93,60 +154,84 @@ export const useRestricciones = () => {
   };
 
   /**
-   * Guarda una nueva restricción verificando estrictamente que no exista duplicación o solapamiento.
+   * Guarda una nueva restricción verificando que no exista duplicación o solapamiento.
+   * Se muestra enseguida y se guarda en el servidor; si falla, se deshace.
    */
-  const agregarRestriccion = useCallback(
-    (nueva, turnosList = []) => {
-      if (Array.isArray(turnosList) && turnosList.length > 0) {
-        const conflictoConTurnos = validarBloqueoConTurnos(nueva, turnosList);
-        if (conflictoConTurnos) {
-          toast.error(conflictoConTurnos.mensaje, { icon: "⚠️", duration: 5000 });
-          return null;
-        }
-      }
-      const fIniStr = nueva.fechaInicio;
-      const fFinStr = nueva.fechaFin || fIniStr;
-
-      // Control estricto de duplicados
-      const existeConflicto = restricciones.some((r) => {
-        // Si una de las dos es día completo y se solapan las fechas:
-        if (nueva.todoElDia || r.todoElDia) {
-          return r.fechaInicio <= fFinStr && r.fechaFin >= fIniStr;
-        }
-        // Si ambas son franjas horarias en fechas que se solapan:
-        if (r.fechaInicio <= fFinStr && r.fechaFin >= fIniStr) {
-          if (nueva.horaInicio && nueva.horaFin && r.horaInicio && r.horaFin) {
-            return nueva.horaInicio < r.horaFin && nueva.horaFin > r.horaInicio;
-          }
-          return true;
-        }
-        return false;
-      });
-
-      if (existeConflicto) {
-        toast.error("Ya existe un bloqueo activo para la fecha u horario seleccionado.", { icon: "🔒" });
+  const agregarRestriccion = useCallback((nueva, turnosList = []) => {
+    if (Array.isArray(turnosList) && turnosList.length > 0) {
+      const conflictoConTurnos = validarBloqueoConTurnos(nueva, turnosList);
+      if (conflictoConTurnos) {
+        toast.error(conflictoConTurnos.mensaje, { icon: "⚠️", duration: 5000 });
         return null;
       }
+    }
+    const fIniStr = nueva.fechaInicio;
+    const fFinStr = nueva.fechaFin || fIniStr;
 
-      const item = {
-        id: `rest_${Date.now()}_${Math.random().toString(36).substr(2, 6)}`,
-        motivo: nueva.motivo?.trim() || "Bloqueado",
-        todoElDia: Boolean(nueva.todoElDia),
-        fechaInicio: nueva.fechaInicio,
-        fechaFin: nueva.fechaFin || nueva.fechaInicio,
-        horaInicio: nueva.todoElDia ? null : nueva.horaInicio || "08:00",
-        horaFin: nueva.todoElDia ? null : nueva.horaFin || "10:00",
-        creadoEl: new Date().toISOString(),
-      };
+    // Control estricto de duplicados
+    const existeConflicto = restriccionesCache.some((r) => {
+      if (nueva.todoElDia || r.todoElDia) {
+        return r.fechaInicio <= fFinStr && r.fechaFin >= fIniStr;
+      }
+      if (r.fechaInicio <= fFinStr && r.fechaFin >= fIniStr) {
+        if (nueva.horaInicio && nueva.horaFin && r.horaInicio && r.horaFin) {
+          return nueva.horaInicio < r.horaFin && nueva.horaFin > r.horaInicio;
+        }
+        return true;
+      }
+      return false;
+    });
 
-      setRestricciones((prev) => [...prev, item]);
-      return item;
-    },
-    [restricciones]
-  );
+    if (existeConflicto) {
+      toast.error("Ya existe un bloqueo activo para la fecha u horario seleccionado.", { icon: "🔒" });
+      return null;
+    }
 
-  const eliminarRestriccion = useCallback((id) => {
-    setRestricciones((prev) => prev.filter((r) => r.id !== id));
+    const item = {
+      id: `tmp_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
+      motivo: nueva.motivo?.trim() || "Bloqueado",
+      todoElDia: Boolean(nueva.todoElDia),
+      fechaInicio: nueva.fechaInicio,
+      fechaFin: nueva.fechaFin || nueva.fechaInicio,
+      horaInicio: nueva.todoElDia ? null : nueva.horaInicio || "08:00",
+      horaFin: nueva.todoElDia ? null : nueva.horaFin || "10:00",
+      creadoEl: new Date().toISOString(),
+    };
+
+    publicar([...restriccionesCache, item]);
+
+    api
+      .post("/restricciones", {
+        motivo: item.motivo,
+        todoElDia: item.todoElDia,
+        fechaInicio: item.fechaInicio,
+        fechaFin: item.fechaFin,
+        horaInicio: item.horaInicio,
+        horaFin: item.horaFin,
+      })
+      .then((res) => {
+        publicar(restriccionesCache.map((r) => (r.id === item.id ? res.data.data : r)));
+      })
+      .catch((err) => {
+        publicar(restriccionesCache.filter((r) => r.id !== item.id));
+        toast.error(mensajeDeError(err, "No se pudo guardar el bloqueo."));
+      });
+
+    return item;
+  }, []);
+
+  const eliminarRestriccion = useCallback(async (id) => {
+    const anterior = restriccionesCache;
+    publicar(anterior.filter((r) => r.id !== id));
+
+    if (String(id).startsWith("tmp_")) return;
+
+    try {
+      await api.delete(`/restricciones/${id}`);
+    } catch (err) {
+      publicar(anterior);
+      toast.error(mensajeDeError(err, "No se pudo eliminar el bloqueo."));
+    }
   }, []);
 
   /**
@@ -272,7 +357,7 @@ export const useRestricciones = () => {
 };
 
 /**
- * Verifica si una fecha y horario propuestos colisionan con alguna restricción guardada.
+ * Verifica si una fecha y horario propuestos colisionan con alguna restricción cargada.
  * Retorna null si no hay conflicto, o un objeto con detalles del bloqueo.
  */
 export const verificarSolapamientoConRestricciones = (
@@ -280,10 +365,7 @@ export const verificarSolapamientoConRestricciones = (
   duracionMinutos = 30,
 ) => {
   try {
-    const raw = localStorage.getItem(RESTRICCIONES_STORAGE_KEY);
-    if (!raw) return null;
-    const parsed = JSON.parse(raw);
-    const restricciones = deduplicarRestricciones(parsed);
+    const restricciones = restriccionesCache;
     if (!Array.isArray(restricciones) || restricciones.length === 0) return null;
 
     const { fechaKey, horaHHMM } = extraerFechaYHora(fechaInicioInput);

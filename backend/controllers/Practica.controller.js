@@ -1,5 +1,6 @@
 /** @format */
 
+import { Op } from "sequelize";
 import { Practica } from "../models/Practica.model.js";
 
 // Obtener todas las prácticas

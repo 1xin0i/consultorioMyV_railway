@@ -33,7 +33,7 @@ export function useTurnoAtenderModal() {
 
   const abrirParaAtender = useCallback((item) => {
     setTurnoSeleccionado(item);
-    setDatosAtencion({ ...ESTADO_INICIAL_ATENCION, notas_consulta: item?.notas_consulta || "" });
+    setDatosAtencion({ESTADO_INICIAL_ATENCION, notas_consulta: item?.notas_consulta || "" });
     setModalAtender(true);
   }, []);
 

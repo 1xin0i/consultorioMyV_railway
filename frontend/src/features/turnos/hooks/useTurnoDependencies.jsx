@@ -2,6 +2,8 @@
 import { useState, useEffect } from "react";
 import api from "../../../services/api";
 
+import { recargarRestricciones } from "./useRestricciones";
+
 export function useTurnoDependencies() {
   const [pacientes, setPacientes] = useState([]);
   const [practicasLista, setPracticasLista] = useState([]);
@@ -37,10 +39,12 @@ export function useTurnoDependencies() {
   useEffect(() => {
     fetchPacientes();
     fetchPracticas();
+    recargarRestricciones();
   }, []);
 
   return {
     pacientes: pacientes,
+    setPacientes: setPacientes,
     practicasLista: practicasLista,
     obrasSocialesPaciente: obrasSocialesPaciente,
     buscarOSPaciente: fetchObrasSocialesPaciente,

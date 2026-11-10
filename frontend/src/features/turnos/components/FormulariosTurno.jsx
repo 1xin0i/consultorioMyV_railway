@@ -47,6 +47,8 @@ export function FormularioCrearEditar({
     telefono: "",
   });
 
+    const [pacienteNuevo, setPacienteNuevo] = useState(null);
+
   const [menuAccionesAbierto, setMenuAccionesAbierto] = useState(false);
 
   useEffect(() => {
@@ -77,6 +79,7 @@ export function FormularioCrearEditar({
 
       const nuevoPaciente = respuesta.data.data || respuesta.data;
       const nuevoId = nuevoPaciente.id_paciente;
+      setPacienteNuevo(nuevoPaciente);
 
       if (typeof setPacientes === "function") {
         setPacientes((prev) => [...prev, nuevoPaciente]);
@@ -175,10 +178,16 @@ export function FormularioCrearEditar({
                   `${p.nombre} ${p.apellido} (DNI: ${p.dni || "S/D"} - Tel: ${p.telefono || "S/D"})`
                 }
                 placeholder="Busca un paciente..."
-                alSeleccionar={(p) =>
-                  actualizarDatos({ target: { name: "id_paciente", value: p.id_paciente } })
+                                alSeleccionar={(p) => {
+                  setPacienteNuevo(null);
+                  actualizarDatos({ target: { name: "id_paciente", value: p.id_paciente } });
+                }}
+                valorInicial={
+                  pacienteNuevo &&
+                  String(pacienteNuevo.id_paciente) === String(datosFormulario.id_paciente)
+                    ? pacienteNuevo
+                    : datosFormulario.id_paciente || ""
                 }
-                valorInicial={datosFormulario.id_paciente || ""}
               />
             </div>
 

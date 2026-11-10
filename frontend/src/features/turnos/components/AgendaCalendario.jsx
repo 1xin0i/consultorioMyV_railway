@@ -60,6 +60,13 @@ const formatearMinutosTexto = (minutos) => {
   return `${m}m`;
 };
 
+// Quita el resaltado de selección de la grilla mensual (se maneja directo sobre el DOM)
+const limpiarResaltado = (container) => {
+  container
+    ?.querySelectorAll(".celda-drag-resaltada")
+    .forEach((el) => el.classList.remove("celda-drag-resaltada"));
+};
+
 export const AgendaCalendar = ({
   turnos = [],
   onDateSelect,
@@ -90,6 +97,7 @@ export const AgendaCalendar = ({
   const dragStartRef = useRef(null);
   const dragEndRef = useRef(null);
   const ultimoClickSlotRef = useRef(0);
+  const arrastreTactilRef = useRef(false);
   const onVistaChangeRef = useRef(onVistaChange);
   useEffect(() => {
     onVistaChangeRef.current = onVistaChange;
@@ -550,46 +558,40 @@ export const AgendaCalendar = ({
     }
   };
 
-  const handlers = useSwipeable({
-    onSwipedLeft: () => cambiarVista("LEFT"),
-    onSwipedRight: () => cambiarVista("RIGHT"),
-    preventScrollOnSwipe: true,
+    const handlers = useSwipeable({
+    onSwipedLeft: () => {
+      if (!arrastreTactilRef.current) cambiarVista("LEFT");
+    },
+    onSwipedRight: () => {
+      if (!arrastreTactilRef.current) cambiarVista("RIGHT");
+    },
+    preventScrollOnSwipe: vistaTipo !== "dayGridMonth",
     trackTouch: true,
     trackMouse: false,
   });
 
-  // Feedback visual interactivo: aplicar clase de resaltado a las celdas abarcadas por el arrastre
-  useEffect(() => {
-    if (!contenedorRef.current) return;
-    const celdas = contenedorRef.current.querySelectorAll(
-      '[role="cell"][data-date], td[data-date]'
-    );
-
-    if (!isDragging || !dragStart || !dragEnd) {
-      celdas.forEach((el) => {
-        el.classList.remove("celda-drag-resaltada");
-      });
-      return;
-    }
-
-    const minStr = dragStart <= dragEnd ? dragStart : dragEnd;
-    const maxStr = dragStart <= dragEnd ? dragEnd : dragStart;
-
-    celdas.forEach((el) => {
-      const fecha = el.getAttribute("data-date");
-      if (fecha && fecha >= minStr && fecha <= maxStr) {
-        el.classList.add("celda-drag-resaltada");
-      } else {
-        el.classList.remove("celda-drag-resaltada");
-      }
-    });
-  }, [isDragging, dragStart, dragEnd]);
-
-  // Manejadores de eventos de arrastre (Click & Drag) sobre la grilla mensual
+    // Selección en vista mensual:
+  //  - Mouse: clic = ir al día · arrastrar = rango · mantener 1,5 s = un solo día
+  //  - Táctil: toque = ir al día · deslizar = scroll normal · mantener 0,5 s = modo selección
+  //            (soltar = un día, arrastrar y soltar = rango)
+  // El resaltado va directo al DOM (sin estado de React) para evitar re-renders y parpadeo.
   useEffect(() => {
     const container = contenedorRef.current;
     if (!container) return;
     if (vistaTipo !== "dayGridMonth") return;
+
+    const HOLD_TACTIL_MS = 500;
+    const HOLD_MOUSE_MS = 1500;
+    const UMBRAL_MOVIMIENTO_PX = 10;
+
+    let timer = null;
+    let holdMouse = false;
+    let tocando = false;
+    let seleccionando = false;
+    let abortado = false;
+    let inicioX = 0;
+    let inicioY = 0;
+    let ultimoTouch = 0;
 
     const getCellDate = (elem) => {
       if (!elem) return null;
@@ -597,143 +599,243 @@ export const AgendaCalendar = ({
       return cell ? cell.getAttribute("data-date") : null;
     };
 
-    const handleMouseDown = (e) => {
-      if (vistaTipo !== "dayGridMonth" || e.button !== 0) return;
+    const cancelarTimer = () => {
+      if (timer) clearTimeout(timer);
+      timer = null;
+    };
 
+    const resaltar = (a, b) => {
+      const min = a <= b ? a : b;
+      const max = a <= b ? b : a;
+      container.querySelectorAll('[role="cell"][data-date], td[data-date]').forEach((el) => {
+        const f = el.getAttribute("data-date");
+        el.classList.toggle("celda-drag-resaltada", Boolean(f && f >= min && f <= max));
+      });
+    };
+
+    const bloqueoCompletoDe = (dateStr) =>
+      restricciones.find(
+        (r) =>
+          (r.todoElDia || r.tipo === "dia_completo") &&
+          dateStr >= r.fechaInicio &&
+          dateStr <= r.fechaFin
+      );
+
+    const abrirModalDia = (dateStr) => {
+      const bloqueo = bloqueoCompletoDe(dateStr);
+      if (bloqueo) {
+        setRangoFechasSeleccionadas({
+          inicio: new Date(bloqueo.fechaInicio + "T00:00:00"),
+          fin: new Date(bloqueo.fechaFin + "T00:00:00"),
+        });
+      } else {
+        setRangoFechasSeleccionadas({
+          inicio: new Date(dateStr + "T00:00:00"),
+          fin: new Date(dateStr + "T00:00:00"),
+        });
+      }
+      setModalRestriccionAbierto(true);
+    };
+
+    // Toque / clic simple: ir a la vista diaria (o abrir el modal si el día está bloqueado)
+    const irADia = (dateStr) => {
+      limpiarResaltado(container);
+      if (bloqueoCompletoDe(dateStr)) {
+        abrirModalDia(dateStr);
+        return;
+      }
+      const api = calendarRef.current?.getApi();
+      if (api) {
+        api.changeView("timeGridDay", dateStr);
+        setVistaTipo("timeGridDay");
+        setVistaActual(0);
+        if (onVistaChangeRef.current) onVistaChangeRef.current("timeGridDay");
+      }
+    };
+
+    // Un día o un rango: el resaltado queda hasta cerrar el modal
+    const abrirRango = (a, b) => {
+      const min = a <= b ? a : b;
+      const max = a <= b ? b : a;
+      if (min === max) {
+        abrirModalDia(min);
+        return;
+      }
+      setRangoFechasSeleccionadas({
+        inicio: new Date(min + "T00:00:00"),
+        fin: new Date(max + "T00:00:00"),
+      });
+      setModalRestriccionAbierto(true);
+    };
+
+    /* ── Mouse ── */
+    const handleMouseDown = (e) => {
+      if (e.button !== 0 || Date.now() - ultimoTouch < 800) return;
       const dateStr = getCellDate(e.target);
       if (!dateStr) return;
 
+      holdMouse = false;
       isDraggingRef.current = true;
       dragStartRef.current = dateStr;
       dragEndRef.current = dateStr;
+      resaltar(dateStr, dateStr);
 
-      setIsDragging(true);
-      setDragStart(dateStr);
-      setDragEnd(dateStr);
+      timer = setTimeout(() => {
+        holdMouse = true;
+        isDraggingRef.current = false;
+        abrirModalDia(dateStr);
+      }, HOLD_MOUSE_MS);
     };
 
     const handleMouseOver = (e) => {
-      if (!isDraggingRef.current || vistaTipo !== "dayGridMonth") return;
-
+      if (Date.now() - ultimoTouch < 800 || !isDraggingRef.current) return;
       const dateStr = getCellDate(e.target);
-      if (dateStr && dateStr !== dragEndRef.current) {
-        dragEndRef.current = dateStr;
-        setDragEnd(dateStr);
-      }
+      if (!dateStr || dateStr === dragEndRef.current) return;
+      cancelarTimer();
+      dragEndRef.current = dateStr;
+      resaltar(dragStartRef.current, dateStr);
     };
 
-    const handleGlobalMouseUp = (e) => {
+    const handleMouseUp = (e) => {
+      if (Date.now() - ultimoTouch < 800) return;
+      cancelarTimer();
+      if (holdMouse) {
+        holdMouse = false;
+        return;
+      }
       if (!isDraggingRef.current) return;
-
       isDraggingRef.current = false;
-      setIsDragging(false);
 
       const start = dragStartRef.current;
-      const elem =
-        e.clientX !== undefined
-          ? document.elementFromPoint(e.clientX, e.clientY)
-          : null;
-      const cellUnderCursor = elem ? getCellDate(elem) : null;
-      const end = cellUnderCursor || dragEndRef.current || start;
+      const end =
+        getCellDate(document.elementFromPoint(e.clientX, e.clientY)) ||
+        dragEndRef.current ||
+        start;
+      if (!start || !end) return;
 
-      if (start && end) {
-        const minStr = start <= end ? start : end;
-        const maxStr = start <= end ? end : start;
-
-        const esMismoDia = minStr === maxStr;
-
-        // Comprobar si el día clickeado tiene bloqueo de DÍA COMPLETO
-        if (esMismoDia) {
-          const bloqueoCompleto = restricciones.find(
-            (r) => (r.todoElDia || r.tipo === "dia_completo") && minStr >= r.fechaInicio && minStr <= r.fechaFin
-          );
-
-          if (bloqueoCompleto) {
-            // Es la celda gris bloqueada: abrir modal directamente para ver motivo y eliminar
-            setRangoFechasSeleccionadas({
-              inicio: new Date(bloqueoCompleto.fechaInicio + "T00:00:00"),
-              fin: new Date(bloqueoCompleto.fechaFin + "T00:00:00"),
-            });
-            setModalRestriccionAbierto(true);
-            return;
-          }
-
-          // Si el día está libre o solo tiene franja horaria:
-          // Navegar a la vista diaria de ese día para que el usuario pueda ingresar y dar turnos en los horarios habilitados
-          const api = calendarRef.current?.getApi();
-          if (api) {
-            api.changeView("timeGridDay", minStr);
-            setVistaTipo("timeGridDay");
-            setVistaActual(0);
-            if (onVistaChangeRef.current) onVistaChangeRef.current("timeGridDay");
-          }
-          return;
-        }
-
-        // Si fue arrastre entre varios días (drag selection de rango):
-        const inicio = new Date(minStr + "T00:00:00");
-        const fin = new Date(maxStr + "T00:00:00");
-        setRangoFechasSeleccionadas({ inicio, fin });
-        setModalRestriccionAbierto(true);
+      if (start === end) {
+        irADia(start);
+      } else {
+        abrirRango(start, end);
       }
     };
 
+    /* ── Táctil ── */
     const handleTouchStart = (e) => {
-      if (vistaTipo !== "dayGridMonth" || !e.touches || e.touches.length !== 1)
-        return;
-      const touch = e.touches[0];
-      const elem = document.elementFromPoint(touch.clientX, touch.clientY);
-      const dateStr = elem ? getCellDate(elem) : null;
+      ultimoTouch = Date.now();
+      if (!e.touches || e.touches.length !== 1) return;
+      const t = e.touches[0];
+      const dateStr = getCellDate(document.elementFromPoint(t.clientX, t.clientY));
       if (!dateStr) return;
 
-      isDraggingRef.current = true;
+      tocando = true;
+      abortado = false;
+      seleccionando = false;
+      inicioX = t.clientX;
+      inicioY = t.clientY;
       dragStartRef.current = dateStr;
       dragEndRef.current = dateStr;
 
-      setIsDragging(true);
-      setDragStart(dateStr);
-      setDragEnd(dateStr);
+      timer = setTimeout(() => {
+        seleccionando = true;
+        arrastreTactilRef.current = true;
+        isDraggingRef.current = true;
+        if (navigator.vibrate) navigator.vibrate(30);
+        resaltar(dateStr, dateStr);
+      }, HOLD_TACTIL_MS);
     };
 
     const handleTouchMove = (e) => {
-      if (!isDraggingRef.current || vistaTipo !== "dayGridMonth" || !e.touches)
+      ultimoTouch = Date.now();
+      const t = e.touches && e.touches[0];
+      if (!t) return;
+
+      if (seleccionando) {
+        // En modo selección el dedo no scrollea ni cambia de vista
+        if (e.cancelable) e.preventDefault();
+        const dateStr = getCellDate(document.elementFromPoint(t.clientX, t.clientY));
+        if (dateStr && dateStr !== dragEndRef.current) {
+          dragEndRef.current = dateStr;
+          resaltar(dragStartRef.current, dateStr);
+        }
         return;
-      const touch = e.touches[0];
-      const elem = document.elementFromPoint(touch.clientX, touch.clientY);
-      const dateStr = elem ? getCellDate(elem) : null;
-      if (dateStr && dateStr !== dragEndRef.current) {
-        dragEndRef.current = dateStr;
-        setDragEnd(dateStr);
+      }
+
+      // Se movió antes de completar el "mantener": es un scroll o deslizamiento, no una selección
+      if (tocando && !abortado) {
+        const dx = t.clientX - inicioX;
+        const dy = t.clientY - inicioY;
+        if (Math.hypot(dx, dy) > UMBRAL_MOVIMIENTO_PX) {
+          abortado = true;
+          cancelarTimer();
+        }
       }
     };
 
     const handleTouchEnd = (e) => {
-      if (!isDraggingRef.current) return;
-      handleGlobalMouseUp(e);
+      ultimoTouch = Date.now();
+      cancelarTimer();
+
+      const t = e.changedTouches && e.changedTouches[0];
+      const dateStr = t ? getCellDate(document.elementFromPoint(t.clientX, t.clientY)) : null;
+
+      if (seleccionando) {
+        const start = dragStartRef.current;
+        const end = dateStr || dragEndRef.current || start;
+        if (start && end) abrirRango(start, end);
+      } else if (tocando && !abortado && dragStartRef.current) {
+        irADia(dragStartRef.current);
+      }
+
+      tocando = false;
+      seleccionando = false;
+      abortado = false;
+      isDraggingRef.current = false;
+      setTimeout(() => {
+        arrastreTactilRef.current = false;
+      }, 400);
     };
+
+    const handleTouchCancel = () => {
+      cancelarTimer();
+      tocando = false;
+      seleccionando = false;
+      abortado = false;
+      isDraggingRef.current = false;
+      limpiarResaltado(container);
+      setTimeout(() => {
+        arrastreTactilRef.current = false;
+      }, 400);
+    };
+
+    // Evita el menú contextual del navegador al mantener pulsado
+    const handleContextMenu = (e) => e.preventDefault();
 
     container.addEventListener("mousedown", handleMouseDown);
     container.addEventListener("mouseover", handleMouseOver);
-    container.addEventListener("touchstart", handleTouchStart, {
-      passive: true,
-    });
-    container.addEventListener("touchmove", handleTouchMove, { passive: true });
+    container.addEventListener("touchstart", handleTouchStart, { passive: true });
+    container.addEventListener("touchmove", handleTouchMove, { passive: false });
     container.addEventListener("touchend", handleTouchEnd);
-    window.addEventListener("mouseup", handleGlobalMouseUp);
+    container.addEventListener("touchcancel", handleTouchCancel);
+    container.addEventListener("contextmenu", handleContextMenu);
+    window.addEventListener("mouseup", handleMouseUp);
 
     return () => {
+      cancelarTimer();
       container.removeEventListener("mousedown", handleMouseDown);
       container.removeEventListener("mouseover", handleMouseOver);
       container.removeEventListener("touchstart", handleTouchStart);
       container.removeEventListener("touchmove", handleTouchMove);
       container.removeEventListener("touchend", handleTouchEnd);
-      window.removeEventListener("mouseup", handleGlobalMouseUp);
+      container.removeEventListener("touchcancel", handleTouchCancel);
+      container.removeEventListener("contextmenu", handleContextMenu);
+      window.removeEventListener("mouseup", handleMouseUp);
     };
   }, [vistaTipo, restricciones]);
 
   const selectAllow = (selectInfo) => {
     // En vista mensual permitir la selección libre (handleDateSelect diferencia clic simple de arrastre)
-    if (selectInfo.view.type === "dayGridMonth") return true;
+    if ((selectInfo.view?.type ?? vistaTipo) === "dayGridMonth") return true;
 
     
     // Bloquear slots pasados en vistas de grilla
@@ -775,6 +877,7 @@ export const AgendaCalendar = ({
     isDraggingRef.current = false;
     dragStartRef.current = null;
     dragEndRef.current = null;
+    limpiarResaltado(contenedorRef.current);
     const api = calendarRef.current?.getApi();
     if (api) {
       api.unselect();
@@ -793,7 +896,7 @@ export const AgendaCalendar = ({
 
   // Clic directo en un slot en la Vista Diaria o Semanal
   const handleDateClick = (dateClickInfo) => {
-    if (dateClickInfo.view.type === "dayGridMonth") return;
+    if ((dateClickInfo.view?.type ?? vistaTipo) === "dayGridMonth") return;
 
     const fechaDate = dateClickInfo.date;
         // Bloquear clics en slots pasados
@@ -816,7 +919,7 @@ if (esDiaBloqueado(fechaDate)) return;
 
   // Selección de rango de slots en la Vista Diaria o Semanal
   const handleDateSelect = (selectInfo) => {
-    if (selectInfo.view.type === "dayGridMonth") return;
+    if ((selectInfo.view?.type ?? vistaTipo) === "dayGridMonth") return;
 
         // Bloquear selección de rangos pasados
     if (selectInfo.start < new Date()) return;
@@ -1023,9 +1126,47 @@ if (esDiaBloqueado(selectInfo.start)) return;
       textoEstado = "PROGRAMADO";
     }
 
+        // Vista semanal: columnas angostas → tarjeta reducida
+    if (esSemana) {
+      const COLOR_PUNTO = {
+        "✓ ATENDIDO": "bg-emerald-500",
+        "EN ESPERA": "bg-amber-500",
+        CANCELADO: "bg-rose-500",
+        AUSENTE: "bg-slate-500",
+        PROGRAMADO: "bg-blue-500",
+      };
+      const colorPunto = COLOR_PUNTO[textoEstado] || "bg-blue-500";
+
+      // Mobile: solo la franja de color (sin datos). Al tocarla, eventClick abre el detalle.
+      if (esMobile) {
+        return (
+          <div
+            className={`w-full h-full rounded-md cursor-pointer ${colorPunto}`}
+            title={`${nombrePaciente} (${horaInicio} - ${horaFin} hs) · ${textoEstado}`}
+          />
+        );
+      }
+
+      // Desktop: 2 renglones (nombre + punto de estado, horario)
+      return (
+        <div
+          className={`w-full h-full rounded-lg px-2 py-1 flex flex-col justify-center shadow-xs cursor-pointer select-none overflow-hidden ${estilosContenedor}`}
+          title={`${nombrePaciente} (${horaInicio} - ${horaFin} hs) · ${textoEstado}`}
+        >
+          <div className="flex items-center gap-1.5 min-w-0">
+            <span className="truncate flex-1 min-w-0 text-xs font-bold leading-4">{nombrePaciente}</span>
+            <span className={`w-2.5 h-2.5 rounded-full shrink-0 ${colorPunto}`} />
+          </div>
+          <div className="text-[11px] leading-4 opacity-85 truncate">
+            🕒 {horaInicio} - {horaFin}
+          </div>
+        </div>
+      );
+    }
+
     return (
       <div
-        className={`w-full h-full rounded-xl p-1.5 sm:p-2.5 flex ${
+        className={`w-full h-full rounded-xl px-2 py-1 sm:px-2.5 flex ${
           esSemana
             ? "flex-col items-start justify-between gap-1"
             : "flex-row items-center justify-between"
@@ -1033,13 +1174,13 @@ if (esDiaBloqueado(selectInfo.start)) return;
         title={`${nombrePaciente} (${horaInicio} - ${horaFin} hs) · ${textoEstado}`}
       >
         {/* Lado izquierdo: Datos del paciente y horario */}
-        <div className="flex flex-col justify-center gap-0.5 overflow-hidden min-w-0 w-full flex-1">
-          <div className="flex items-center gap-1.5 text-xs sm:text-sm font-bold truncate">
+        <div className="flex flex-col justify-center overflow-hidden min-w-0 w-full flex-1">
+          <div className="flex items-center gap-1.5 text-xs sm:text-sm font-bold truncate leading-4">
             <span className="text-xs sm:text-sm shrink-0">👤</span>
             <span className="truncate">{nombrePaciente}</span>
           </div>
 
-          <div className="flex items-center gap-1.5 sm:gap-2 text-[10px] sm:text-xs opacity-85 truncate">
+          <div className="flex items-center gap-1.5 sm:gap-2 text-[10px] sm:text-xs opacity-85 truncate leading-4">
             <span className="truncate">🕒 {horaInicio} - {horaFin} hs</span>
             {duracion && (
               <span className="px-1.5 py-0.2 rounded-md bg-white/80 border border-gray-200 font-semibold text-[9px] sm:text-[10px] shrink-0">
@@ -1084,10 +1225,26 @@ if (esDiaBloqueado(selectInfo.start)) return;
                 }
           }
           locale={esLocale}
+          buttons={{
+            today: { text: "Hoy" },
+            timeGridDay: { text: "Diaria" },
+            timeGridWeek: { text: "Semanal" },
+            dayGridMonth: { text: "Mensual" },
+          }}
+          views={
+            esMobile
+              ? {
+                  timeGridDay: {
+                    titleFormat: { day: "numeric", month: "short", year: "numeric" },
+                  },
+                }
+              : undefined
+          }
           firstDay={1}
           slotMinTime={slotMinTimeStr}
           slotMaxTime={slotMaxTimeStr}
           scrollTime={slotMinTimeStr}
+          slotMinHeight={100}
           businessHours={
             vistaTipo === "dayGridMonth"
               ? false
@@ -1098,7 +1255,7 @@ if (esDiaBloqueado(selectInfo.start)) return;
                 }
           }
           allDaySlot={false}
-          selectable={true}
+          selectable={vistaTipo !== "dayGridMonth"}
           selectAllow={selectAllow}
           editable={true}
           nowIndicator={true}
@@ -1152,6 +1309,14 @@ if (esDiaBloqueado(selectInfo.start)) return;
       />
 
       <style>{`
+        [class*="agenda-vista-"] [role="heading"],
+        [class*="agenda-vista-"] .fc-toolbar-title {
+          display: inline-block;
+        }
+        [class*="agenda-vista-"] [role="heading"]::first-letter,
+        [class*="agenda-vista-"] .fc-toolbar-title::first-letter {
+          text-transform: uppercase;
+        }
         .fc-bg-event {
           opacity: 1 !important;
           pointer-events: none !important;
@@ -1171,6 +1336,10 @@ if (esDiaBloqueado(selectInfo.start)) return;
         .agenda-vista-dayGridMonth [role="cell"][data-date]:hover,
         .agenda-vista-dayGridMonth td[data-date]:hover {
           filter: brightness(0.97);
+        }
+        .agenda-vista-dayGridMonth [role="cell"][data-date],
+        .agenda-vista-dayGridMonth td[data-date] {
+          -webkit-touch-callout: none;
         }
 
         /* Feedback visual interactivo al arrastrar (Click & Drag) */
@@ -1324,7 +1493,8 @@ if (esDiaBloqueado(selectInfo.start)) return;
         }
 
         ${estilosOcupacionPorFecha}
-      `}</style>
+      `
+      }</style>
     </div>
   );
 };

@@ -24,7 +24,7 @@ export function useTurnoCancelarModal() {
     setModalCancelar(false);
     setInasistente(false);
     setTurnoSeleccionado(null);
-    setDatosCancelacion(...ESTADO_INICIAL_CANCELAR);
+    setDatosCancelacion(ESTADO_INICIAL_CANCELAR);
   }, []);
 
   const actualizarDatosCancelacion = (campo, valor) => {

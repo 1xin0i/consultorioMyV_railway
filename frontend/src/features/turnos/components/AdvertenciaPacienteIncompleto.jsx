@@ -15,22 +15,29 @@ export const AdvertenciaPacienteIncompleto = ({
     return null;
   }
 
+  const tituloAdvertencia = `${pacientesIncompletos.length} ${
+    pacientesIncompletos.length === 1 ? "paciente con datos faltantes" : "pacientes con datos faltantes"
+  }`;
+
   return (
     <div className="relative inline-block text-left">
-      {/* Botón Píldora / Badge compacto */}
+      {/* Mobile: cuadradito de 40x40 solo con el ícono (igual que el ícono del título).
+          Desde sm: píldora con texto "X incompletos". */}
       <button
         type="button"
         onClick={() => setDesplegado((prev) => !prev)}
-        className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg border border-amber-300 bg-amber-50/90 hover:bg-amber-100/90 text-amber-900 text-xs sm:text-sm font-medium transition-colors shadow-sm cursor-pointer select-none"
+        title={tituloAdvertencia}
+        aria-label={tituloAdvertencia}
+        className="relative flex items-center justify-center w-10 h-10 rounded-xl sm:inline-flex sm:w-auto sm:h-auto sm:gap-1.5 sm:px-3 sm:py-1 sm:rounded-lg border border-amber-300 bg-amber-50/90 hover:bg-amber-100/90 text-amber-900 text-xs sm:text-sm font-medium transition-colors shadow-sm cursor-pointer select-none"
       >
-        {/* Punto naranja */}
-        <span className="w-2.5 h-2.5 rounded-full bg-amber-500 inline-block shrink-0" />
+        {/* Punto naranja: en desktop va al lado del ícono, en mobile como indicador en la esquina */}
+        <span className="absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-amber-500 border border-white sm:static sm:border-0 sm:inline-block shrink-0" />
 
         {/* Ícono de advertencia */}
-        <AlertTriangle size={14} className="text-amber-600 shrink-0" />
+        <AlertTriangle className="w-5 h-5 sm:w-3.5 sm:h-3.5 text-amber-600 shrink-0" />
 
-        {/* Texto dinámico */}
-        <span>
+        {/* Texto dinámico (solo desde sm) */}
+        <span className="hidden sm:inline">
           {pacientesIncompletos.length}{" "}
           {pacientesIncompletos.length === 1 ? "incompleto" : "incompletos"}
         </span>

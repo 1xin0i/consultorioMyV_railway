@@ -18,6 +18,7 @@ import GastoRoutes from "./Gasto.routes.js";
 import CategoriaGastoRoutes from "./CategoriaGasto.routes.js";
 import CajaRoutes from "./Caja.routes.js";
 import UsuarioRoutes from "./Usuario.routes.js";
+import RestriccionRoutes from "./Restriccion.routes.js";
 
 // Rutas para los diferentes recursos
 router.use("/api/auth", UsuarioRoutes);
@@ -35,5 +36,6 @@ router.use("/api/turnos", TurnoRoutes);
 router.use("/api/gastos", GastoRoutes);
 router.use("/api/categorias-gastos", CategoriaGastoRoutes);
 router.use("/api/caja", CajaRoutes);
+router.use("/api/restricciones", RestriccionRoutes);
 
 export default router;
