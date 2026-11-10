@@ -23,6 +23,7 @@ app.use(
 
       if (
         allowedOrigins.includes(origin) ||
+        (process.env.FRONTEND_URL && origin === process.env.FRONTEND_URL) ||
         /^http:\/\/localhost:\d+$/.test(origin) ||
         /^http:\/\/127\.0\.0\.1:\d+$/.test(origin) ||
         /^http:\/\/192\.168\.\d+\.\d+(:\d+)?$/.test(origin) ||
