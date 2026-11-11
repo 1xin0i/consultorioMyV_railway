@@ -162,6 +162,7 @@ export default function AgendaDiaria() {
           {/* //* BODY: AGENDA */}
           <AgendaCalendario
             turnos={turnos}
+            recargarTurnos={recargar}
             onDateSelect={(selectInfo) =>
               manejarSeleccionFechaCalendario(
                 selectInfo,

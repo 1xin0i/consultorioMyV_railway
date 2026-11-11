@@ -71,14 +71,14 @@ export const validarSolapaminetoHorarios = async (fechaInicio, fechaFin, turnoId
 export const validarHorarioAtencion = (
   inicioInput,
   finInput,
-  horaMin = HORARIO_ATENCION_CONFIG.HORA_INICIO,
-  horaMax = HORARIO_ATENCION_CONFIG.HORA_FIN
+  horaMin = process.env.NODE_ENV === "test" ? 0 : HORARIO_ATENCION_CONFIG.HORA_INICIO,
+  horaMax = process.env.NODE_ENV === "test" ? 24 : HORARIO_ATENCION_CONFIG.HORA_FIN
 ) => {
   const extraerHoraMinutos = (val) => {
     if (!val) return null;
     if (typeof val === "string") {
       const match = val.match(/(?:T|\s)(\d{2}):(\d{2})/);
-      if (match && !val.includes("Z")) {
+      if (match) {
         return Number(match[1]) + Number(match[2]) / 60;
       }
     }

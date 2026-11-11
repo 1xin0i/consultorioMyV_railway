@@ -37,5 +37,6 @@ router.patch("/:id/cancelar", validarExistencia(Turno, "id", "params"), validate
 router.patch("/:id/inasistente", validarExistencia(Turno, "id", "params"), validateSchema(updateTurnoSchema), TurnoController.turnoInasistido);
 router.patch("/:id/reprogramado", validarExistencia(Turno, "id", "params"), TurnoController.turnoReprogramado);
 router.patch("/:id/delete", validarExistencia(Turno, "id", "params"), TurnoController.deleteTurno);
+router.delete("/:id", validarExistencia(Turno, "id", "params"), TurnoController.deleteTurno);
 
 export default router;

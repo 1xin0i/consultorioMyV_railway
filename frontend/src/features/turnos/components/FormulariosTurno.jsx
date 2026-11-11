@@ -514,14 +514,14 @@ export function FormularioAtender({
               </button>
             </div>
 
-            {(!datosAtencion?.practicas || datosAtencion.practicas.length === 0) ? (
+            {(!Array.isArray(datosAtencion?.practicas) || datosAtencion.practicas.length === 0) ? (
               <p className="text-xs text-gray-400 italic">
                 No se han agregado prácticas todavía. Haga clic en &quot;Agregar Práctica&quot; para
                 registrar los procedimientos.
               </p>
             ) : (
               <div className="flex flex-col gap-3 max-h-60 overflow-y-auto pr-1">
-                {datosAtencion.practicas.map((practicaItem, index) => (
+                {(Array.isArray(datosAtencion?.practicas) ? datosAtencion.practicas : []).map((practicaItem, index) => (
                   <div
                     key={index}
                     className="flex flex-col sm:flex-row items-center gap-2 bg-gray-50 p-3 rounded-xl border border-gray-200"

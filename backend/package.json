@@ -9,6 +9,9 @@
     "db:init": "node scripts/init_db.js",
     "setup:auth": "node scripts/setup_auth_interactivo.js",
     "seed:auth": "node scripts/setup_auth_interactivo.js",
+    "seed:practicas": "node scripts/seed_practicas.js",
+    "seed:pacientes": "node scripts/seed_pacientes.js",
+    "seed:all": "node scripts/seed_practicas.js && node scripts/seed_pacientes.js",
     "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js --detectOpenHandles"
   },
   "keywords": [],
