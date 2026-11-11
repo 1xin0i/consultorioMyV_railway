@@ -41,7 +41,7 @@ export const getAllTurnosAgenda = async (req, res) => {
       data: turnos.map(formatearTurnoResponse),
     });
   } catch (error) {
-    console.error("Error al obtener los turnos:", error);
+    console.error("Error buscando turnos:", error);
     res.status(500).json({ error: "Error al obtener los turnos" });
   }
 };
@@ -51,7 +51,7 @@ export const getAllTurnos = async (req, res) => {
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 9;
     const offset = (page - 1) * limit;
-    const search = req.query.search || "";
+    const search = (req.query.search || req.query.buscar || "").trim();
     const sortField = req.query.sortField || "fecha_hora_inicio";
     const sortOrder = req.query.sortOrder || "ASC";
     const estadoFiltrado = req.query.estadoFiltrado;
@@ -61,16 +61,31 @@ export const getAllTurnos = async (req, res) => {
     if (estadoFiltrado) where.id_estado = estadoFiltrado;
     if (id_paciente) where.id_paciente = Number(id_paciente);
 
-    if (search.trim() !== "") {
-      where[Op.or] = [
-        { fecha_hora_inicio: { [Op.like]: `%${search}%` } },
-        { fecha_hora_fin: { [Op.like]: `%${search}%` } },
-        { "$Paciente.nombre$": { [Op.like]: `%${search}%` } },
-        { "$Paciente.apellido$": { [Op.like]: `%${search}%` } },
-        { "$Paciente.dni$": { [Op.like]: `%${search}%` } },
-        { "$Paciente.telefono$": { [Op.like]: `%${search}%` } },
-      ];
+    const hasPacienteSearch = Boolean(search !== "");
+    let wherePaciente = undefined;
+
+    if (hasPacienteSearch) {
+      const termino = `%${search}%`;
+      wherePaciente = {
+        [Op.or]: [
+          { nombre: { [Op.like]: termino } },
+          { apellido: { [Op.like]: termino } },
+          { dni: { [Op.like]: termino } },
+          { telefono: { [Op.like]: termino } },
+        ],
+      };
     }
+
+    const includes = defaultTurnoIncludes.map((inc) => {
+      if (inc.model?.name === "Paciente" || inc.model === Paciente) {
+        return {
+          ...inc,
+          where: hasPacienteSearch ? wherePaciente : undefined,
+          required: hasPacienteSearch,
+        };
+      }
+      return inc;
+    });
 
     const { count, rows: turnos } = await Turno.findAndCountAll({
       where,
@@ -78,7 +93,7 @@ export const getAllTurnos = async (req, res) => {
       offset,
       order: [[sortField, sortOrder]],
       distinct: true,
-      include: defaultTurnoIncludes,
+      include: includes,
     });
 
     res.status(200).json({
@@ -94,7 +109,7 @@ export const getAllTurnos = async (req, res) => {
       },
     });
   } catch (error) {
-    console.error("Error al obtener los turnos:", error);
+    console.error("Error buscando turnos:", error);
     res.status(500).json({ error: "Error al obtener los turnos" });
   }
 };
@@ -244,6 +259,15 @@ export const getTurnosByPacienteId = async (req, res) => {
             },
           ],
         },
+        {
+          model: PracticaTurno,
+          include: [
+            {
+              model: Practica,
+            },
+          ],
+        },
+        includePracticasTurno,
       ],
     });
 
@@ -343,6 +367,12 @@ export const updateTurno = async (req, res) => {
     if (fecha_hora_inicio) {
       nuevoInicio = formatearFechaHoraStr(fecha_hora_inicio);
       nuevoFin = fecha_hora_fin ? formatearFechaHoraStr(fecha_hora_fin) : calcularFechaHoraFinStr(nuevoInicio, duracion_minutos || 30);
+      
+      const dentroHorario = validarHorarioAtencion(nuevoInicio, nuevoFin);
+      if (!dentroHorario) {
+        return res.status(400).json({ error: "El horario de atención es de 09:00 a 19:00 hs. El turno debe comenzar a partir de las 09:00 y finalizar a más tardar a las 19:00 hs." });
+      }
+
       const conflicto = await validarSolapaminetoHorarios(nuevoInicio, nuevoFin, turno.id_turno);
       if (conflicto) {
         const nombrePac = conflicto.Paciente
@@ -365,8 +395,10 @@ export const updateTurno = async (req, res) => {
     const turnoActualizado = await sequelize.transaction(async (t) => {
       await turno.update({
         id_paciente: id_paciente || turno.id_paciente,
-        precio_final: precio_final || turno.precio_final,
-        notas_consulta: notas_consulta || null,
+        fecha_hora_inicio: nuevoInicio,
+        fecha_hora_fin: nuevoFin,
+        precio_final: precio_final !== undefined ? precio_final : turno.precio_final,
+        notas_consulta: notas_consulta !== undefined ? notas_consulta : turno.notas_consulta,
       }, { transaction: t });
 
       return await Turno.findByPk(turno.id_turno, { include: defaultTurnoIncludes, transaction: t });

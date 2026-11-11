@@ -17,8 +17,9 @@ import {
   COLORES_OCUPACION,
 } from "../constants/turnosConstants";
 import toast from "react-hot-toast";
+import api from "../../../services/api";
 import ModalRestriccion from "./ModalRestriccion";
-import { validarBloqueoConTurnos } from "../utils/validacionesTurno";
+import { validarBloqueoConTurnos, verificarSolapamientoTurnos } from "../utils/validacionesTurno";
 import {
   useRestricciones,
   verificarSolapamientoConRestricciones,
@@ -71,6 +72,8 @@ export const AgendaCalendar = ({
   turnos = [],
   onDateSelect,
   onEventClick,
+  onEventDrop,
+  recargarTurnos,
   horaInicio = HORARIO_ATENCION_DEFAULT.inicioStr,
   horaFin = HORARIO_ATENCION_DEFAULT.finStr,
   onVistaChange,
@@ -372,11 +375,17 @@ export const AgendaCalendar = ({
           ? `${turno.Paciente.nombre || ""} ${turno.Paciente.apellido || ""}`.trim()
           : (turno.paciente_nombre || turno.nombre_paciente || `Paciente #${turno.id_paciente || ""}`);
 
+        const estadoStr = (turno.estado || turno.EstadoTurno?.estado || "").toLowerCase();
+        const esMovable = !estadoStr.includes("cancel") && !estadoStr.includes("inasist") && !estadoStr.includes("atendid");
+
         return {
           id: `turno-${turno.id_turno}`,
           title: nombrePaciente,
           start: turno.fecha_hora_inicio,
           end: turno.fecha_hora_fin,
+          editable: esMovable,
+          startEditable: esMovable,
+          durationEditable: false,
           classNames: ["turno-card-event"],
           extendedProps: {
             ...turno,
@@ -414,6 +423,9 @@ export const AgendaCalendar = ({
               end: `${fechaStr}T23:59:59`,
               allDay: true,
               display: "block",
+              editable: false,
+              startEditable: false,
+              durationEditable: false,
               classNames: ["restriccion-dia-completo"],
               backgroundColor: "transparent",
               borderColor: "transparent",
@@ -436,6 +448,9 @@ export const AgendaCalendar = ({
             end: `${fechaStr}T${slotMaxTimeStr}`,
             allDay: false,
             display: "block",
+            editable: false,
+            startEditable: false,
+            durationEditable: false,
             classNames: ["restriccion-dia-grid"],
             backgroundColor: "#f1f5f9",
             borderColor: "#cbd5e1",
@@ -467,6 +482,9 @@ export const AgendaCalendar = ({
               end: `${fechaStr}T${horaFin}:00`,
               allDay: true,
               display: "block",
+              editable: false,
+              startEditable: false,
+              durationEditable: false,
               classNames: ["restriccion-franja-mes"],
               backgroundColor: "transparent",
               borderColor: "transparent",
@@ -491,6 +509,9 @@ export const AgendaCalendar = ({
             end: `${fechaStr}T${horaFin}:00`,
             allDay: false,
             display: "block",
+            editable: false,
+            startEditable: false,
+            durationEditable: false,
             classNames: ["restriccion-franja-grid"],
             backgroundColor: "#f1f5f9",
             borderColor: "#cbd5e1",
@@ -952,6 +973,179 @@ if (esDiaBloqueado(selectInfo.start)) return;
     }
   };
 
+  const handleEventDrop = async (dropInfo) => {
+    if (typeof onEventDrop === "function") {
+      return onEventDrop(dropInfo);
+    }
+
+    const { event, oldEvent, revert } = dropInfo;
+
+    // 1. Si no es un turno (es restricción u otro evento), revertir inmediatamente
+    if (!event.extendedProps?.esTurno && !event.id?.startsWith("turno-")) {
+      revert();
+      return;
+    }
+
+    const turnoId =
+      event.extendedProps?.id_turno ||
+      (event.id ? String(event.id).replace("turno-", "") : null);
+
+    if (!turnoId) {
+      revert();
+      return;
+    }
+
+    // 2. Comprobar estado del turno: no permitir mover turnos finalizados/cancelados
+    const estadoTurno = (
+      event.extendedProps?.estado ||
+      event.extendedProps?.EstadoTurno?.estado ||
+      ""
+    ).toLowerCase();
+
+    if (
+      estadoTurno.includes("cancel") ||
+      estadoTurno.includes("inasist") ||
+      estadoTurno.includes("atendid")
+    ) {
+      revert();
+      toast.error(
+        `No se puede mover un turno con estado "${event.extendedProps?.EstadoTurno?.estado || estadoTurno}".`,
+        { icon: "⚠️" }
+      );
+      return;
+    }
+
+    const nuevoInicioDate = event.start;
+    if (!nuevoInicioDate || isNaN(nuevoInicioDate.getTime())) {
+      revert();
+      return;
+    }
+
+    // Calcular duración original del turno para proyectar su hora de fin exacta
+    let duracionMinutos = Number(event.extendedProps?.duracion_minutos);
+    if (!duracionMinutos || isNaN(duracionMinutos) || duracionMinutos <= 0) {
+      if (oldEvent && oldEvent.start && oldEvent.end) {
+        duracionMinutos = Math.round(
+          (oldEvent.end.getTime() - oldEvent.start.getTime()) / 60000
+        );
+      } else if (event.end) {
+        duracionMinutos = Math.round(
+          (event.end.getTime() - nuevoInicioDate.getTime()) / 60000
+        );
+      } else {
+        duracionMinutos = 30;
+      }
+    }
+
+    const nuevoFinDate =
+      event.end || new Date(nuevoInicioDate.getTime() + duracionMinutos * 60000);
+
+    const pad = (n) => String(n).padStart(2, "0");
+    const nuevaFecha = `${nuevoInicioDate.getFullYear()}-${pad(nuevoInicioDate.getMonth() + 1)}-${pad(nuevoInicioDate.getDate())}`;
+    const nuevoInicioHHMM = `${pad(nuevoInicioDate.getHours())}:${pad(nuevoInicioDate.getMinutes())}`;
+    const nuevoFinHHMM = `${pad(nuevoFinDate.getHours())}:${pad(nuevoFinDate.getMinutes())}`;
+
+    // Validar horario comercial de atención
+    const horaInicioDecimal =
+      nuevoInicioDate.getHours() + nuevoInicioDate.getMinutes() / 60;
+    const horaFinDecimal =
+      nuevoFinDate.getHours() + nuevoFinDate.getMinutes() / 60;
+    if (
+      horaInicioDecimal < HORARIO_ATENCION_DEFAULT.horaInicio ||
+      horaFinDecimal > HORARIO_ATENCION_DEFAULT.horaFin ||
+      horaInicioDecimal >= horaFinDecimal
+    ) {
+      revert();
+      toast.error(
+        `El horario de atención es de ${HORARIO_ATENCION_DEFAULT.inicioStr} a ${HORARIO_ATENCION_DEFAULT.finStr} hs. El turno debe comenzar a partir de las ${HORARIO_ATENCION_DEFAULT.inicioStr} y finalizar a más tardar a las ${HORARIO_ATENCION_DEFAULT.finStr} hs.`,
+        { icon: "⚠️" }
+      );
+      return;
+    }
+
+    // Validar contra restricciones de agenda (días completos o franjas horarias bloqueadas)
+    const conflictoBloqueo = verificarSolapamientoConRestricciones(
+      toLocalISOString(nuevoInicioDate),
+      duracionMinutos
+    );
+    if (conflictoBloqueo) {
+      revert();
+      toast.error(conflictoBloqueo.mensaje, { icon: "🔒" });
+      return;
+    }
+
+    // A. Validación Anti-Solapamiento en el Drop:
+    // Comprobar si colisiona con algún turno activo existente en esa misma fecha
+    const turnosDelDia = turnos.filter((t) => {
+      const fIni = t.fecha_hora_inicio || t.start;
+      if (!fIni) return false;
+      const fStr =
+        typeof fIni === "string"
+          ? fIni.slice(0, 10)
+          : new Date(fIni).toISOString().slice(0, 10);
+      return fStr === nuevaFecha;
+    });
+
+    const hayConflicto = turnosDelDia.some((t) => {
+      // Ignorar el mismo turno que se está arrastrando y turnos cancelados
+      const tId = t.id_turno ?? t.id;
+      if (String(tId) === String(turnoId)) return false;
+
+      const estado = (t.estado || t.EstadoTurno?.estado || "").toLowerCase();
+      if (estado.includes("cancel") || Number(t.id_estado) === 2) return false;
+
+      const tInicioDate = new Date(t.fecha_hora_inicio || t.start);
+      const tDur = Number(t.duracion_minutos) || 30;
+      const tFinDate = t.fecha_hora_fin
+        ? new Date(t.fecha_hora_fin)
+        : new Date(tInicioDate.getTime() + tDur * 60000);
+
+      const inicioExistente = `${pad(tInicioDate.getHours())}:${pad(tInicioDate.getMinutes())}`;
+      const finExistente = `${pad(tFinDate.getHours())}:${pad(tFinDate.getMinutes())}`;
+
+      // Fórmula de solapamiento: A_inicio < B_fin && A_fin > B_inicio
+      return nuevoInicioHHMM < finExistente && nuevoFinHHMM > inicioExistente;
+    });
+
+    if (hayConflicto) {
+      revert();
+      toast.error(
+        "No se puede mover aquí: el horario ya está ocupado por otro turno.",
+        {
+          icon: "⚠️",
+        }
+      );
+      return;
+    }
+
+    // B. Persistencia en Backend (PATCH /turnos/:id/reprogramado)
+    try {
+      const inicioIso = nuevoInicioDate.toISOString();
+      const finIso = nuevoFinDate.toISOString();
+
+      await api.patch(`/turnos/${turnoId}/reprogramado`, {
+        fecha_hora_inicio: inicioIso,
+        fecha_hora_fin: finIso,
+      });
+
+      toast.success(`Turno reprogramado a las ${nuevoInicioHHMM} hs`, {
+        icon: "✅",
+      });
+
+      // Sincronizar grilla con MySQL
+      if (typeof recargarTurnos === "function") {
+        recargarTurnos();
+      }
+    } catch (error) {
+      revert();
+      console.error("Error al reprogramar turno arrastrado:", error);
+      const msgError =
+        error.response?.data?.error ||
+        "No se pudo guardar la nueva posición del turno. Se restableció su horario.";
+      toast.error(msgError);
+    }
+  };
+
   const handleEventDidMount = (info) => {
     if (info.event.display === "background") return;
 
@@ -1258,12 +1452,14 @@ if (esDiaBloqueado(selectInfo.start)) return;
           selectable={vistaTipo !== "dayGridMonth"}
           selectAllow={selectAllow}
           editable={true}
+          eventDurationEditable={false}
           nowIndicator={true}
           height="100%"
           events={listaEventos}
           select={handleDateSelect}
           dateClick={handleDateClick}
           eventClick={handleEventClick}
+          eventDrop={handleEventDrop}
           eventDidMount={handleEventDidMount}
           dayCellClassNames={getDayCellClassNames}
           eventContent={renderEventContent}

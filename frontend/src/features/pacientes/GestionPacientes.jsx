@@ -3,7 +3,7 @@
 //* useSearchParams E ICONOS
 import { useState, useEffect } from "react";
 import { useSearchParams } from "react-router-dom"; // * PARA PERMITIR COMPLETAR PACIENTE DESDE AGENDA
-import { Users, Plus, Edit, Phone, Ban, RotateCcw, Eye, Shield, CalendarClock } from "lucide-react";
+import { Users, Plus, Edit, Phone, Ban, RotateCcw, Eye, Shield } from "lucide-react";
 
 //* COMPONENTES COMUNES
 import Header from "../../components/common/Header";
@@ -31,23 +31,11 @@ import { ESTADO_INICIAL } from "./constants/pacienteConstants.js";
 
 // * FORMULARIOS
 import { FormularioCrearEditar, FormularioToggle } from "./components/FormulariosPaciente";
-import { ModalTurnosPaciente } from "./components/ModalTurnosPaciente";
 import { verificarCompletarPaciente } from "./utils/verificarCompletarPaciente.js";
 import { VistaPaciente } from "./components/VistaPaciente.jsx";
+
 export default function GestionPacientes() {
   const [searchParams, setSearchParams] = useSearchParams();
-  const [modalTurnosAbierto, setModalTurnosAbierto] = useState(false);
-  const [pacienteParaTurnos, setPacienteParaTurnos] = useState(null);
-
-  const abrirTurnosPaciente = (paciente) => {
-    setPacienteParaTurnos(paciente);
-    setModalTurnosAbierto(true);
-  };
-
-  const cerrarModalTurnos = () => {
-    setModalTurnosAbierto(false);
-    setPacienteParaTurnos(null);
-  };
 
   //* HOOK DE PAGINACIÓN
   const {
@@ -221,17 +209,9 @@ export default function GestionPacientes() {
                           type="button"
                           onClick={() => abrirParaVer(paciente)}
                           className="p-2 rounded-lg text-emerald-600 hover:bg-emerald-50 transition-colors"
-                          title="Ver Ficha y Cuenta Corriente"
+                          title="Ver Ficha / Historial"
                         >
                           <Eye size={18} />
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => abrirTurnosPaciente(paciente)}
-                          className="p-2 rounded-lg text-[#3B7A94] hover:bg-[#f0f6f9] transition-colors"
-                          title="Ver Turnos del Paciente"
-                        >
-                          <CalendarClock size={18} />
                         </button>
                         <button
                           type="button"
@@ -249,6 +229,7 @@ export default function GestionPacientes() {
                               ? "text-red-500 hover:bg-red-50"
                               : "text-emerald-600 hover:bg-emerald-50"
                           }`}
+                          title={paciente.activo ? "Dar de baja" : "Reactivar"}
                         >
                           {paciente.activo ? <Ban size={18} /> : <RotateCcw size={18} />}
                         </button>
@@ -280,7 +261,10 @@ export default function GestionPacientes() {
             obrasSocialesLista={obrasSocialesLista}
             actualizarObraSocialForm={actualizarObraSocialForm}
             eliminarObraSocialForm={eliminarObraSocialForm}
-            onVerTurnos={() => abrirTurnosPaciente(pacienteSeleccionado)}
+            onVerTurnos={() => {
+              cerrarModal();
+              abrirParaVer(pacienteSeleccionado);
+            }}
           />
         )}
 
@@ -311,17 +295,7 @@ export default function GestionPacientes() {
                 }}
                 className="flex items-center gap-3 p-3 rounded-xl text-emerald-700 bg-emerald-50 font-semibold text-sm cursor-pointer"
               >
-                <Eye size={18} /> Ver ficha y cuenta corriente
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  abrirTurnosPaciente(pacienteMenu);
-                  setPacienteMenu(null);
-                }}
-                className="flex items-center gap-3 p-3 rounded-xl text-[#3B7A94] bg-[#f0f6f9] font-semibold text-sm cursor-pointer"
-              >
-                <CalendarClock size={18} /> Ver Turnos del Paciente
+                <Eye size={18} /> Ver Ficha / Historial
               </button>
               <button
                 type="button"
@@ -348,15 +322,6 @@ export default function GestionPacientes() {
               </button>
             </div>
           </Modal>
-        )}
-
-        {/* //* MODALES: TURNOS DEL PACIENTE */}
-        {modalTurnosAbierto && (
-          <ModalTurnosPaciente
-            isOpen={modalTurnosAbierto}
-            onClose={cerrarModalTurnos}
-            paciente={pacienteParaTurnos}
-          />
         )}
 
         {/* //* MODALES: VER */}

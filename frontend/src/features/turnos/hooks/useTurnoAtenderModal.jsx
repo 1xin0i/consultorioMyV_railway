@@ -20,8 +20,9 @@ export function useTurnoAtenderModal() {
 
   // Función auxiliar para sumar precios de referencia de la lista
   const calcularSumaPracticas = (practicas) => {
+    if (!Array.isArray(practicas)) return 0;
     return practicas.reduce((total, item) => {
-      if (item.id_practica) {
+      if (item && item.id_practica) {
         const encontrada = practicasLista.find(
           (p) => Number(p.id_practica) === Number(item.id_practica)
         );
@@ -33,7 +34,18 @@ export function useTurnoAtenderModal() {
 
   const abrirParaAtender = useCallback((item) => {
     setTurnoSeleccionado(item);
-    setDatosAtencion({ESTADO_INICIAL_ATENCION, notas_consulta: item?.notas_consulta || "" });
+    const practicasIniciales = Array.isArray(item?.Practicas || item?.practicas)
+      ? [...(item.Practicas || item.practicas)]
+      : [];
+    setDatosAtencion({
+      ...ESTADO_INICIAL_ATENCION,
+      notas_consulta: item?.notas_consulta || "",
+      precio_final:
+        item?.precio_final !== undefined && item?.precio_final !== null
+          ? Number(item.precio_final)
+          : ESTADO_INICIAL_ATENCION.precio_final,
+      practicas: practicasIniciales,
+    });
     setModalAtender(true);
   }, []);
 
@@ -44,10 +56,13 @@ export function useTurnoAtenderModal() {
   }, []);
 
   const agregarPracticaAtencion = () => {
-    setDatosAtencion((prev) => ({
-      ...prev,
-      practicas: [...prev.practicas, { id_practica: "", id_obra_social: "" }],
-    }));
+    setDatosAtencion((prev) => {
+      const listaActual = Array.isArray(prev?.practicas) ? prev.practicas : [];
+      return {
+        ...prev,
+        practicas: [...listaActual, { id_practica: "", id_obra_social: "" }],
+      };
+    });
   };
 
   // Modificación manual del precio u otros campos: NO es pisado por ningún effect
@@ -57,7 +72,8 @@ export function useTurnoAtenderModal() {
 
   const actualizarPracticaAtencion = (index, campo, valor) => {
     setDatosAtencion((prev) => {
-      const practicasActualizadas = [...prev.practicas];
+      const listaActual = Array.isArray(prev?.practicas) ? prev.practicas : [];
+      const practicasActualizadas = [...listaActual];
       practicasActualizadas[index] = {
         ...practicasActualizadas[index],
         [campo]: valor,
@@ -82,7 +98,8 @@ export function useTurnoAtenderModal() {
 
   const eliminarPracticaAtencion = (index) => {
     setDatosAtencion((prev) => {
-      const practicasFiltradas = prev.practicas.filter((_, i) => i !== index);
+      const listaActual = Array.isArray(prev?.practicas) ? prev.practicas : [];
+      const practicasFiltradas = listaActual.filter((_, i) => i !== index);
       return {
         ...prev,
         practicas: practicasFiltradas,
