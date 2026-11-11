@@ -1,5 +1,5 @@
 /** @format */
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
 import {
   Calendar,
@@ -18,12 +18,19 @@ import {
   AlertCircle,
   SearchX,
   Wallet,
+  Banknote,
   ChevronLeft,
   ChevronRight,
 } from "lucide-react";
 import { estadosMap } from "../utils/estadosMap";
 import useInteractiveSwipe from "../../../hooks/useInteractiveSwipe";
-import { formatFechaTabla, formatDateTimeInput, formatSoloHora } from "../../../utils/index";
+import {
+  formatFechaTabla,
+  formatDateTimeInput,
+  formatSoloHora,
+  obtenerColorAvatar,
+  obtenerIniciales,
+} from "../../../utils/index";
 
 export function ListaTarjetasTurnos({
   turnos = [],
@@ -37,6 +44,7 @@ export function ListaTarjetasTurnos({
   abrirParaReprogramar,
   abrirParaCancelar,
   abrirParaInasistente,
+  abrirParaCobrar,
   page,
   setPage,
   totalPages,
@@ -61,6 +69,20 @@ export function ListaTarjetasTurnos({
     canSwipeRight: page > 1,
     disabled: !page || !setPage || totalPages <= 1,
   });
+
+  // Volver arriba suavemente al cambiar de página
+  const isFirstRender = useRef(true);
+  useEffect(() => {
+    if (isFirstRender.current) {
+      isFirstRender.current = false;
+      return;
+    }
+    try {
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    } catch {
+      window.scrollTo(0, 0);
+    }
+  }, [page]);
 
   // Bloquear scroll del body cuando el Bottom Sheet está abierto
   useEffect(() => {
@@ -165,6 +187,14 @@ export function ListaTarjetasTurnos({
             ? `${turno.Paciente.nombre} ${turno.Paciente.apellido}`
             : `Paciente #${turno.id_paciente}`;
 
+          const coloresAvatar = obtenerColorAvatar(
+            `${turno.Paciente?.nombre || ""} ${turno.Paciente?.apellido || ""}`
+          );
+          const iniciales = obtenerIniciales(
+            turno.Paciente?.nombre,
+            turno.Paciente?.apellido
+          );
+
           const precioFormateado = Number(turno.precio_final || 0).toLocaleString("es-AR", {
             minimumFractionDigits: 2,
           });
@@ -177,8 +207,10 @@ export function ListaTarjetasTurnos({
               {/* ─── CABECERA DE LA TARJETA: Paciente en negrita a la izq + Badge Estado a la der ─── */}
               <div className="px-4 pt-3.5 pb-2.5 flex items-start justify-between gap-2 border-b border-teal-100/70 bg-gradient-to-r from-teal-50/40 via-emerald-50/20 to-white">
                 <div className="flex items-center gap-2.5 min-w-0">
-                  <div className="w-9 h-9 rounded-full bg-emerald-100 text-emerald-700 border border-emerald-200/90 flex items-center justify-center font-bold text-sm shrink-0 shadow-2xs">
-                    {turno.Paciente?.nombre?.charAt(0) || "P"}
+                  <div
+                    className={`w-9 h-9 rounded-full ${coloresAvatar.bg} ${coloresAvatar.text} border ${coloresAvatar.border} flex items-center justify-center font-bold text-xs shrink-0 shadow-2xs`}
+                  >
+                    {iniciales}
                   </div>
                   <div className="min-w-0">
                     <h3 className="font-bold text-slate-900 text-[15px] leading-snug truncate tracking-tight">
@@ -350,19 +382,37 @@ export function ListaTarjetasTurnos({
 
               {/* Cabecera del Bottom Sheet */}
               <div className="flex items-center justify-between pb-3 mb-2 border-b border-gray-100">
-                <div className="min-w-0">
-                  <p className="text-xs font-bold uppercase tracking-wider text-gray-400">
-                    Opciones del Turno #{turnoMenuActivo.id_turno}
-                  </p>
-                  <h4 className="text-sm font-bold text-gray-900 truncate">
-                    {turnoMenuActivo.Paciente
-                      ? `${turnoMenuActivo.Paciente.nombre} ${turnoMenuActivo.Paciente.apellido}`
-                      : `Paciente #${turnoMenuActivo.id_paciente}`}
-                  </h4>
-                  <span className="text-xs text-gray-500">
-                    {formatFechaTabla(turnoMenuActivo.fecha_hora_inicio)} •{" "}
-                    {formatSoloHora(turnoMenuActivo.fecha_hora_inicio)} hs
-                  </span>
+                <div className="flex items-center gap-3 min-w-0">
+                  {(() => {
+                    const col = obtenerColorAvatar(
+                      `${turnoMenuActivo.Paciente?.nombre || ""} ${turnoMenuActivo.Paciente?.apellido || ""}`
+                    );
+                    const ini = obtenerIniciales(
+                      turnoMenuActivo.Paciente?.nombre,
+                      turnoMenuActivo.Paciente?.apellido
+                    );
+                    return (
+                      <div
+                        className={`w-10 h-10 rounded-full ${col.bg} ${col.text} border ${col.border} flex items-center justify-center font-bold text-xs shrink-0 shadow-2xs`}
+                      >
+                        {ini}
+                      </div>
+                    );
+                  })()}
+                  <div className="min-w-0">
+                    <p className="text-xs font-bold uppercase tracking-wider text-gray-400">
+                      Opciones del Turno #{turnoMenuActivo.id_turno}
+                    </p>
+                    <h4 className="text-sm font-bold text-gray-900 truncate">
+                      {turnoMenuActivo.Paciente
+                        ? `${turnoMenuActivo.Paciente.nombre} ${turnoMenuActivo.Paciente.apellido}`
+                        : `Paciente #${turnoMenuActivo.id_paciente}`}
+                    </h4>
+                    <span className="text-xs text-gray-500">
+                      {formatFechaTabla(turnoMenuActivo.fecha_hora_inicio)} •{" "}
+                      {formatSoloHora(turnoMenuActivo.fecha_hora_inicio)} hs
+                    </span>
+                  </div>
                 </div>
 
                 <button
@@ -386,19 +436,18 @@ export function ListaTarjetasTurnos({
                   <span>Ver detalle del turno</span>
                 </button>
 
-                {turnoMenuActivo.EstadoTurno?.estado === "Programado" && (
-                  <button
-                    type="button"
-                    onClick={() => ejecutarAccionSheet(handleEditar, turnoMenuActivo)}
-                    className="w-full min-h-[48px] px-4 rounded-xl flex items-center gap-3 text-sm font-semibold text-blue-600 hover:bg-blue-50/60 active:bg-blue-50 transition-colors text-left"
-                  >
-                    <Edit size={18} className="shrink-0" />
-                    <span>Editar turno</span>
-                  </button>
-                )}
-
+                {/* Si está PROGRAMADO: editar, atender, cancelar, inasistido y reprogramar */}
                 {turnoMenuActivo.EstadoTurno?.estado === "Programado" && (
                   <>
+                    <button
+                      type="button"
+                      onClick={() => ejecutarAccionSheet(handleEditar, turnoMenuActivo)}
+                      className="w-full min-h-[48px] px-4 rounded-xl flex items-center gap-3 text-sm font-semibold text-blue-600 hover:bg-blue-50/60 active:bg-blue-50 transition-colors text-left"
+                    >
+                      <Edit size={18} className="shrink-0" />
+                      <span>Editar turno</span>
+                    </button>
+
                     <div className="my-1 border-t border-gray-100" />
 
                     <button
@@ -412,36 +461,71 @@ export function ListaTarjetasTurnos({
 
                     <button
                       type="button"
+                      onClick={() => ejecutarAccionSheet(abrirParaCancelar, turnoMenuActivo)}
+                      className="w-full min-h-[48px] px-4 rounded-xl flex items-center gap-3 text-sm font-semibold text-rose-700 hover:bg-rose-50 active:bg-rose-100/60 transition-colors text-left"
+                    >
+                      <X size={18} className="shrink-0 text-rose-500" />
+                      <span>Cancelar turno</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => ejecutarAccionSheet(abrirParaInasistente, turnoMenuActivo)}
+                      className="w-full min-h-[48px] px-4 rounded-xl flex items-center gap-3 text-sm font-semibold text-amber-800 hover:bg-amber-50 active:bg-amber-100/60 transition-colors text-left"
+                    >
+                      <UserRoundX size={18} className="shrink-0 text-amber-600" />
+                      <span>Marcar como Inasistido</span>
+                    </button>
+
+                    <button
+                      type="button"
                       onClick={() =>
                         ejecutarAccionSheet(
                           abrirParaReprogramar,
                           turnoMenuActivo,
                         )
                       }
-                      className="w-full min-h-[48px] px-4 rounded-xl flex items-center gap-3 text-sm font-semibold text-[#3B7A94] hover:bg-[#f0f6f9] active:bg-[#e1eef4] transition-colors text-left"
+                      className="w-full min-h-[48px] px-4 rounded-xl flex items-center gap-3 text-sm font-semibold text-sky-800 hover:bg-sky-50 active:bg-sky-100 transition-colors text-left"
                     >
-                      <CalendarDays size={18} className="shrink-0" />
-                      <span>Reprogramar horario</span>
-                    </button>
-
-                    <button
-                      type="button"
-                      onClick={() => ejecutarAccionSheet(abrirParaInasistente, turnoMenuActivo)}
-                      className="w-full min-h-[48px] px-4 rounded-xl flex items-center gap-3 text-sm font-semibold text-[#2b5d73] hover:bg-[#f0f6f9] active:bg-[#e1eef4] transition-colors text-left"
-                    >
-                      <UserRoundX size={18} className="shrink-0" />
-                      <span>Marcar como Inasistido</span>
-                    </button>
-
-                    <button
-                      type="button"
-                      onClick={() => ejecutarAccionSheet(abrirParaCancelar, turnoMenuActivo)}
-                      className="w-full min-h-[48px] px-4 rounded-xl flex items-center gap-3 text-sm font-semibold text-amber-700 hover:bg-amber-50 active:bg-amber-100/60 transition-colors text-left"
-                    >
-                      <X size={18} className="shrink-0" />
-                      <span>Cancelar turno</span>
+                      <CalendarDays size={18} className="shrink-0 text-sky-600" />
+                      <span>Reprogramar turno</span>
                     </button>
                   </>
+                )}
+
+                {/* Si está ATENDIDO: cobrar */}
+                {(turnoMenuActivo.EstadoTurno?.estado === "Atendido" ||
+                  Number(turnoMenuActivo.id_estado) === 2) && (
+                  <button
+                    type="button"
+                    onClick={() =>
+                      ejecutarAccionSheet(abrirParaCobrar, turnoMenuActivo)
+                    }
+                    className="w-full min-h-[48px] px-4 rounded-xl flex items-center gap-3 text-sm font-semibold text-emerald-800 hover:bg-emerald-50 active:bg-emerald-100/60 transition-colors text-left"
+                  >
+                    <Banknote size={18} className="shrink-0 text-emerald-600" />
+                    <span>Cobrar atención</span>
+                  </button>
+                )}
+
+                {/* Si está CANCELADO o INASISTIDO: reprogramar */}
+                {(["Cancelado", "Inasistente", "Inasistido"].includes(
+                  turnoMenuActivo.EstadoTurno?.estado
+                ) ||
+                  [3, 4].includes(Number(turnoMenuActivo.id_estado))) && (
+                  <button
+                    type="button"
+                    onClick={() =>
+                      ejecutarAccionSheet(
+                        abrirParaReprogramar,
+                        turnoMenuActivo,
+                      )
+                    }
+                    className="w-full min-h-[48px] px-4 rounded-xl flex items-center gap-3 text-sm font-semibold text-sky-800 hover:bg-sky-50 active:bg-sky-100 transition-colors text-left"
+                  >
+                    <CalendarDays size={18} className="shrink-0 text-sky-600" />
+                    <span>Reprogramar turno</span>
+                  </button>
                 )}
 
                 <div className="my-1 border-t border-gray-100" />

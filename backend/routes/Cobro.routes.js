@@ -14,6 +14,8 @@ const router = express.Router();
 // Rutas para Cobro
 router.get("/", CobroController.getAllCobros);
 
+router.get("/:turnoId/cobros", CobroController.getCobroByTurnoId);
+
 router.get("/:id", validarExistencia(Cobro, "id", "params"), CobroController.getCobroById);
 
 router.post(
@@ -44,6 +46,8 @@ router.post(
   validarExistencia(Paciente, "id_paciente", "body"),
   CobroController.createCobroInformal,
 );
+
+router.post("/registrar-pago", CobroController.registrarPagoTurno);
 
 router.put(
   "/:id",

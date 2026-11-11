@@ -1,1 +1,2 @@
-export * from "./formatearFecha"
+export * from "./formatearFecha";
+export * from "./avatarColors";

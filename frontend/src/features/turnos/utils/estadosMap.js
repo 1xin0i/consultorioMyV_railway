@@ -5,29 +5,29 @@ import { CheckCircle2, Clock, XCircle, UserRoundX } from "lucide-react";
 export const estadosMap = {
   Programado: {
     id_estado: 1,
-    color: "bg-amber-50 text-amber-700 border-amber-200/80",
+    color: "bg-amber-50 text-amber-700 border-amber-200/80 dark:bg-amber-950/60 dark:text-amber-300 dark:border-amber-800/60",
     icon: Clock,
   },
   Atendido: {
     id_estado: 2,
-    color: "bg-emerald-50 text-[#1b7f5b] border-emerald-200/80",
+    color: "bg-emerald-50 text-[#1b7f5b] border-emerald-200/80 dark:bg-emerald-950/60 dark:text-emerald-300 dark:border-emerald-800/60",
     icon: CheckCircle2,
   },
   Cancelado: {
     id_estado: 3,
-    color: "bg-rose-50 text-rose-700 border-rose-200/80",
+    color: "bg-rose-50 text-rose-700 border-rose-200/80 dark:bg-rose-950/60 dark:text-rose-300 dark:border-rose-800/60",
     icon: XCircle,
   },
   Inasistente: {
     id_estado: 4,
     label: "Inasistido",
-    color: "bg-slate-100 text-slate-700 border-slate-200",
+    color: "bg-slate-100 text-slate-700 border-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700",
     icon: UserRoundX,
   },
   Inasistido: {
     id_estado: 4,
     label: "Inasistido",
-    color: "bg-slate-100 text-slate-700 border-slate-200",
+    color: "bg-slate-100 text-slate-700 border-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700",
     icon: UserRoundX,
   },
 };

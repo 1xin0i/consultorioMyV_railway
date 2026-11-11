@@ -1,6 +1,6 @@
 /** @format */
 
-import { useState, useRef } from "react";
+import { useState, useRef, useCallback } from "react";
 
 //* ICONOS Y TOAST
 import { Calendar } from "lucide-react";
@@ -65,13 +65,17 @@ export default function AgendaDiaria() {
   const [cancelarConfig, setCancelarConfig] = useState(null); // { turno, inasistente: boolean }
   const [turnoReprogramar, setTurnoReprogramar] = useState(null);
 
-  const abrirParaVer = (t) => setTurnoVer(t);
-  const abrirParaAtender = (t) => setTurnoAtender(t);
-  const abrirParaCancelar = (t) =>
-    setCancelarConfig({ turno: t, inasistente: false });
-  const abrirParaInasistente = (t) =>
-    setCancelarConfig({ turno: t, inasistente: true });
-  const abrirParaReprogramar = (t) => setTurnoReprogramar(t);
+  const abrirParaVer = useCallback((t) => setTurnoVer(t), []);
+  const abrirParaAtender = useCallback((t) => setTurnoAtender(t), []);
+  const abrirParaCancelar = useCallback(
+    (t) => setCancelarConfig({ turno: t, inasistente: false }),
+    [],
+  );
+  const abrirParaInasistente = useCallback(
+    (t) => setCancelarConfig({ turno: t, inasistente: true }),
+    [],
+  );
+  const abrirParaReprogramar = useCallback((t) => setTurnoReprogramar(t), []);
 
   //* HOOK DE PETICIONES API
   const {
@@ -83,21 +87,48 @@ export default function AgendaDiaria() {
     procesarClickEnTurno,
   } = useTurnoActions(recargar, cerrarModal);
 
+  const handleDateSelect = useCallback(
+    (selectInfo) =>
+      manejarSeleccionFechaCalendario(
+        selectInfo,
+        abrirParaCrear,
+        abrirParaReprogramar,
+        actualizarDatos,
+        turnoReprogramandoRef.current,
+        setTurnoReprogramando,
+      ),
+    [
+      manejarSeleccionFechaCalendario,
+      abrirParaCrear,
+      abrirParaReprogramar,
+      actualizarDatos,
+    ],
+  );
+
+  const handleEventClick = useCallback(
+    (clickInfo) =>
+      procesarClickEnTurno(clickInfo, abrirParaEditar, abrirParaVer),
+    [procesarClickEnTurno, abrirParaEditar, abrirParaVer],
+  );
+
   /* ─── RETORNO DE LA PAGINA ─────────────────────────────────── */
   return (
     <div className="w-full h-screen flex flex-col pb-20 md:pb-0">
       {/* //* HEADER PRINCIPAL CON ALERTA DE PACIENTES INTEGRADA */}
       <Header
-        icono={Calendar}
         titulo="Agenda de Turnos"
-        subtitulo="Gestión horaria y turnos del consultorio odontológico"
         badge={formatFechaCortaTexto(new Date())}
-        alerta={<AdvertenciaPacienteIncompleto pacientes={pacientes} />}
+        alerta={
+          <AdvertenciaPacienteIncompleto
+            pacientes={pacientes}
+            setPacientes={setPacientes}
+          />
+        }
       />
 
-      <div className="flex-1 w-full min-h-0 p-2 sm:p-3 md:p-3.5 text-black flex flex-col">
+      <div className="flex-1 w-full min-h-0 p-2 sm:p-3 md:p-3.5 text-slate-900 dark:text-slate-100 flex flex-col">
         {turnoReprogramando && (
-          <div className="bg-[#3B7A94] text-white px-4 py-2.5 rounded-xl mb-3 flex items-center justify-between text-xs sm:text-sm shadow-md animate-pulse">
+          <div className="bg-[#3B7A94] dark:bg-[#162a35] border border-transparent dark:border-slate-700 text-white px-4 py-2.5 rounded-xl mb-3 flex items-center justify-between text-xs sm:text-sm shadow-md animate-pulse">
             <span className="flex items-center gap-2">
               <Calendar size={18} className="shrink-0" />
               <span>
@@ -123,23 +154,12 @@ export default function AgendaDiaria() {
           </div>
         )}
 
-        <div className="w-full h-full bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden p-2 md:p-4 flex flex-col">
+        <div className="w-full h-full bg-white dark:bg-slate-900 rounded-2xl border border-gray-100 dark:border-slate-800 shadow-sm overflow-hidden p-2 md:p-4 flex flex-col">
           {/* //* BODY: AGENDA */}
           <AgendaCalendario
             turnos={turnos}
-            onDateSelect={(selectInfo) =>
-              manejarSeleccionFechaCalendario(
-                selectInfo,
-                abrirParaCrear,
-                abrirParaReprogramar,
-                actualizarDatos,
-                turnoReprogramandoRef.current ?? turnoReprogramando,
-                setTurnoReprogramando,
-              )
-            }
-            onEventClick={(clickInfo) =>
-              procesarClickEnTurno(clickInfo, abrirParaEditar, abrirParaVer)
-            }
+            onDateSelect={handleDateSelect}
+            onEventClick={handleEventClick}
           />
         </div>
       </div>
@@ -152,27 +172,12 @@ export default function AgendaDiaria() {
           editando={editando}
           pacientes={pacientes}
           setPacientes={setPacientes}
+          practicasLista={practicasLista}
           datosFormulario={datosFormulario}
           actualizarDatos={actualizarDatos}
           guardarTurno={(e) => {
             if (e && e.preventDefault) e.preventDefault();
             guardarTurno(datosFormulario, editando, turnoSeleccionado);
-          }}
-          abrirParaAtender={() => {
-            cerrarModal();
-            abrirParaAtender(turnoSeleccionado);
-          }}
-          abrirParaCancelar={() => {
-            cerrarModal();
-            abrirParaCancelar(turnoSeleccionado);
-          }}
-          abrirParaInasistente={() => {
-            cerrarModal();
-            abrirParaInasistente(turnoSeleccionado);
-          }}
-          abrirParaReprogramar={() => {
-            cerrarModal();
-            abrirParaReprogramar(turnoSeleccionado);
           }}
         />
       )}

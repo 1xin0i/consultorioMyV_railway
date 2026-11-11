@@ -1,8 +1,11 @@
 /** @format */
-import { useEffect, useState } from "react";
+import { useEffect, useState, forwardRef } from "react";
 import { createPortal } from "react-dom";
 
-export default function MenuFlotantePortal({ targetRef, isOpen, children }) {
+const MenuFlotantePortal = forwardRef(function MenuFlotantePortal(
+  { targetRef, isOpen, children, className = "" },
+  ref,
+) {
   const [coords, setCoords] = useState({ top: 0, left: 0 });
   const [listo, setListo] = useState(false);
 
@@ -27,16 +30,18 @@ export default function MenuFlotantePortal({ targetRef, isOpen, children }) {
 
   return createPortal(
     <div
+      ref={ref}
       style={{
         position: "absolute",
         top: `${coords.top}px`,
         left: `${coords.left}px`,
       }}
-      /* Agregamos menu-acciones-container para que handleClickOutside sepa que el clic fue DENTRO del menú */
-      className="menu-acciones-container w-48 bg-white rounded-xl shadow-2xl border border-gray-100 py-1.5 z-[9999] flex flex-col"
+      className={`menu-flotante-portal w-48 bg-white dark:bg-slate-800 rounded-xl shadow-2xl border border-gray-100 dark:border-slate-700 py-1.5 z-[9999] flex flex-col ${className}`}
     >
       {children}
     </div>,
     document.body,
   );
-}
+});
+
+export default MenuFlotantePortal;

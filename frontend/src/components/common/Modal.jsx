@@ -86,14 +86,14 @@ const Modal = ({
       }}
     >
       <div
-        className={`bg-white rounded-2xl shadow-2xl border border-gray-200/90 w-full ${width} 
+        className={`bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-gray-200/90 dark:border-slate-800 w-full ${width} 
               flex flex-col max-h-[90vh] overflow-hidden relative ${customClass}`}
       >
         {showCloseButton && (
           <button
             type="button"
             onClick={onClose}
-            className="absolute top-3.5 right-3.5 rounded-xl p-1.5 z-10 transition-all cursor-pointer text-slate-500 hover:text-rose-700 hover:bg-black/5 active:scale-95"
+            className="absolute top-3.5 right-3.5 rounded-xl p-1.5 z-10 transition-all cursor-pointer text-slate-500 hover:text-rose-700 hover:bg-black/5 dark:text-slate-400 dark:hover:text-rose-400 dark:hover:bg-white/10 active:scale-95"
             aria-label="Cerrar modal"
             title="Cerrar"
           >
@@ -107,20 +107,20 @@ const Modal = ({
           <div
             className={`px-5 py-4 border-b shrink-0 flex items-center justify-between ${
               effectiveVariant === "danger"
-                ? "bg-rose-50 border-rose-200 text-rose-950"
+                ? "bg-rose-50 border-rose-200 text-rose-950 dark:bg-rose-950/60 dark:border-rose-900/60 dark:text-rose-200"
                 : effectiveVariant === "warning"
-                ? "bg-amber-50 border-amber-200 text-amber-950"
-                : "bg-[#e8f7f1] border-[#c2e8d9] text-slate-800"
+                ? "bg-amber-50 border-amber-200 text-amber-950 dark:bg-amber-950/60 dark:border-amber-900/60 dark:text-amber-200"
+                : "bg-[#e8f7f1] border-[#c2e8d9] text-slate-800 dark:bg-[#12232b] dark:border-slate-800/80 dark:text-slate-100"
             }`}
           >
             <div className="flex items-center gap-2.5 min-w-0 pr-8">
               {/* Ícono de cabecera con color y borde */}
               {effectiveVariant === "danger" ? (
-                <div className="w-8 h-8 rounded-full bg-rose-100 text-rose-600 border border-rose-200 flex items-center justify-center shrink-0 shadow-2xs">
+                <div className="w-8 h-8 rounded-full bg-rose-100 text-rose-600 border border-rose-200 dark:bg-rose-900/50 dark:text-rose-300 dark:border-rose-800 flex items-center justify-center shrink-0 shadow-2xs">
                   <AlertTriangle size={17} />
                 </div>
               ) : effectiveVariant === "warning" ? (
-                <div className="w-8 h-8 rounded-full bg-amber-100 text-amber-700 border border-amber-200 flex items-center justify-center shrink-0 shadow-2xs">
+                <div className="w-8 h-8 rounded-full bg-amber-100 text-amber-700 border border-amber-200 dark:bg-amber-900/50 dark:text-amber-300 dark:border-amber-800 flex items-center justify-center shrink-0 shadow-2xs">
                   <AlertCircle size={17} />
                 </div>
               ) : PropIcon ? (
@@ -136,10 +136,10 @@ const Modal = ({
               <h2
                 className={`text-base sm:text-lg font-bold tracking-tight truncate ${
                   effectiveVariant === "danger"
-                    ? "text-rose-950"
+                    ? "text-rose-950 dark:text-rose-200"
                     : effectiveVariant === "warning"
-                    ? "text-amber-950"
-                    : "text-slate-900"
+                    ? "text-amber-950 dark:text-amber-200"
+                    : "text-slate-900 dark:text-slate-100"
                 }`}
               >
                 {modalTitle}
@@ -151,7 +151,7 @@ const Modal = ({
         {/* El contenedor con scroll interno */}
         <ContentWrapper
           onSubmit={onSubmit ? handleFormSubmit : undefined}
-          className="p-5 sm:p-6 bg-white overflow-y-auto grow flex flex-col"
+          className="p-5 sm:p-6 bg-white dark:bg-slate-900 dark:text-slate-200 overflow-y-auto grow flex flex-col"
         >
           {children}
         </ContentWrapper>

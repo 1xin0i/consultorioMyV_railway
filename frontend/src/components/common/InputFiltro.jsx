@@ -6,6 +6,7 @@ import { X } from "lucide-react";
 const InputFiltro = ({
   datos = [],
   camposFiltrado = [],
+  campoId,
   formatoVisual,
   alSeleccionar,
   placeholder,
@@ -20,7 +21,19 @@ const InputFiltro = ({
     }
     if (!lista || lista.length === 0) return "";
     const itemEncontrado = lista.find((d) => {
-      const idItem = d.id_paciente || d.id_obra_social || d.id_practica || d.id;
+      if (campoId && d[campoId] !== undefined) {
+        return String(d[campoId]) === String(val);
+      }
+      const idItem =
+        d.id_turno ||
+        d.id_paciente ||
+        d.id_obra_social ||
+        d.id_practica ||
+        d.id_categoria_gasto ||
+        d.id_gasto ||
+        d.id_cobro ||
+        d.id_cuota ||
+        d.id;
       return String(idItem) === String(val);
     });
     if (itemEncontrado) {
@@ -155,8 +168,8 @@ const InputFiltro = ({
               setMostrarLista(true);
             }
           }}
-          className={`border-gray-200 rounded-xl bg-gray-50 w-full border p-2 pr-9 text-sm focus:outline-none focus:ring-2 focus:ring-[#2eb086]/50 focus:border-[#2eb086] transition-all ${
-            disabled ? "opacity-60 cursor-not-allowed bg-gray-100" : ""
+          className={`border-gray-200 rounded-xl bg-gray-50 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-100 dark:placeholder-slate-400 w-full border p-2 pr-9 text-sm focus:outline-none focus:ring-2 focus:ring-[#2eb086]/50 focus:border-[#2eb086] transition-all ${
+            disabled ? "opacity-60 cursor-not-allowed bg-gray-100 dark:bg-slate-800/50" : ""
           }`}
         />
 
@@ -164,7 +177,7 @@ const InputFiltro = ({
           <button
             type="button"
             onClick={limpiarSeleccion}
-            className="absolute right-3 text-gray-400 hover:text-gray-600 focus:outline-none transition-colors cursor-pointer"
+            className="absolute right-3 text-gray-400 hover:text-gray-600 dark:text-slate-400 dark:hover:text-slate-200 focus:outline-none transition-colors cursor-pointer"
             title="Limpiar"
           >
             <X size={18} />
@@ -184,23 +197,23 @@ const InputFiltro = ({
               width: `${posicion.width}px`,
               zIndex: 99999,
             }}
-            className="bg-white border border-gray-200 rounded-xl shadow-2xl max-h-56 overflow-y-auto animate-in fade-in-50 duration-150"
+            className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl shadow-2xl max-h-56 overflow-y-auto animate-in fade-in-50 duration-150"
           >
             {resultados.length > 0 ? (
               resultados.map((item, index) => (
                 <li
-                  key={`${item.id || item.id_paciente || item.id_practica || index}-${index}`}
+                  key={`${item[campoId] || item.id_turno || item.id || item.id_paciente || item.id_practica || index}-${index}`}
                   onPointerDown={(e) => {
                     e.preventDefault();
                     manejarClickOpcion(item);
                   }}
-                  className="p-2.5 hover:bg-emerald-50/70 hover:text-emerald-950 cursor-pointer text-xs font-medium border-b border-gray-100 last:border-b-0 transition-colors"
+                  className="p-2.5 hover:bg-emerald-50/70 hover:text-emerald-950 dark:hover:bg-emerald-950/50 dark:hover:text-emerald-200 dark:text-slate-200 cursor-pointer text-xs font-medium border-b border-gray-100 dark:border-slate-700/60 last:border-b-0 transition-colors"
                 >
                   {formatoVisual ? formatoVisual(item) : item[camposFiltrado[0]]}
                 </li>
               ))
             ) : (
-              <li className="p-3 text-gray-400 italic text-xs text-center">
+              <li className="p-3 text-gray-400 dark:text-slate-500 italic text-xs text-center">
                 No se encontraron coincidencias
               </li>
             )}

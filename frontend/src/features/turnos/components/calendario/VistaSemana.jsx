@@ -1,6 +1,6 @@
 /** @format */
 
-import { useState, useEffect, useRef } from "react";
+import { useRef, useMemo, memo } from "react";
 import { Clock, Lock } from "lucide-react";
 import useTurnoTouchClick from "../../hooks/useTurnoTouchClick";
 import {
@@ -13,7 +13,14 @@ import {
   formatHoraSimple,
 } from "../../utils/agendaStyles";
 
-const ItemTurnoSemana = ({ turno, style, duracionMinutos, onEventClick }) => {
+const FMT_DIA_CORTO = new Intl.DateTimeFormat("es-AR", { weekday: "short" });
+
+const ItemTurnoSemana = memo(function ItemTurnoSemana({
+  turno,
+  style,
+  duracionMinutos,
+  onEventClick,
+}) {
   const touchProps = useTurnoTouchClick(turno, onEventClick);
   const estado = turno.EstadoTurno?.estado || "Programado";
   const estilos = OBTENER_ESTILOS_ESTADO(estado);
@@ -28,7 +35,7 @@ const ItemTurnoSemana = ({ turno, style, duracionMinutos, onEventClick }) => {
       style={style}
       {...touchProps}
       title={`${paciente} (${horaInicio} - ${horaFin} hs) - ${estado}`}
-      className={`absolute pointer-events-auto p-0.5 sm:p-1 md:p-1.5 text-[9px] sm:text-[10px] md:text-[11px] rounded sm:rounded-md shadow-2xs border truncate font-bold flex flex-col justify-between cursor-pointer hover:shadow-md transition-all z-10 overflow-hidden leading-tight ${estilos.bg} ${estilos.border} ${estilos.text}`}
+      className={`absolute pointer-events-auto p-0.5 sm:p-1 md:p-1.5 text-[9px] sm:text-[10px] md:text-[11px] rounded sm:rounded-md shadow-2xs border truncate font-bold flex flex-col justify-between cursor-pointer hover:shadow-md transition-shadow z-10 overflow-hidden leading-tight ${estilos.bg} ${estilos.border} ${estilos.text}`}
     >
       <div className="flex items-center gap-0.5 sm:gap-1 min-w-0">
         <span
@@ -47,14 +54,14 @@ const ItemTurnoSemana = ({ turno, style, duracionMinutos, onEventClick }) => {
       )}
     </div>
   );
-};
+});
 
-export const VistaSemana = ({
-  fechaActual,
+export const VistaSemana = memo(function VistaSemana({
   setFechaActual,
   setVista,
   dias,
   turnos,
+  ahora: ahoraProp,
   slotsHoras = DEFAULT_SLOTS,
   esSlotPasado,
   esSlotBloqueado,
@@ -69,15 +76,10 @@ export const VistaSemana = ({
   onTouchMove,
   onTouchEnd,
   onEventClick,
-}) => {
-  const [ahora, setAhora] = useState(new Date());
+}) {
+  const ahora = ahoraProp || new Date();
   const timerHeaderRef = useRef(null);
   const huboHoldingHeaderRef = useRef(false);
-
-  useEffect(() => {
-    const timer = setInterval(() => setAhora(new Date()), 60000);
-    return () => clearInterval(timer);
-  }, []);
 
   const horaInicioAgenda =
     slotsHoras && slotsHoras.length > 0
@@ -88,6 +90,44 @@ export const VistaSemana = ({
     (ahora.getHours() - horaInicioAgenda) * 60 + ahora.getMinutes();
   const topActual = (ahoraMinutos * SLOT_HEIGHT_SEMANA) / 30;
   const totalHeight = slotsHoras.length * SLOT_HEIGHT_SEMANA;
+
+  // Pre-calcular turnos posicionados y metadatos de cada día de la semana
+  const datosDiasSemana = useMemo(() => {
+    return dias.map((d) => {
+      const esHoy = esMismoDia(d, ahora);
+      const esDomingo = d.getDay() === 0;
+      const diaBloqueado = esDiaBloqueado ? esDiaBloqueado(d) : false;
+      const restriccionDia =
+        diaBloqueado && obtenerRestriccionDia ? obtenerRestriccionDia(d) : null;
+      const nombreDia = FMT_DIA_CORTO.format(d).replace(".", "").toUpperCase();
+      const turnosDelDia = turnos.filter((t) =>
+        esMismoDia(t.fecha_hora_inicio, d),
+      );
+      const turnosPosicionados = procesarTurnosColocacion(
+        turnosDelDia,
+        SLOT_HEIGHT_SEMANA,
+        horaInicioAgenda,
+      );
+
+      return {
+        dia: d,
+        isoKey: d.toISOString(),
+        esHoy,
+        esDomingo,
+        diaBloqueado,
+        restriccionDia,
+        nombreDia,
+        turnosPosicionados,
+      };
+    });
+  }, [
+    dias,
+    ahora,
+    turnos,
+    horaInicioAgenda,
+    esDiaBloqueado,
+    obtenerRestriccionDia,
+  ]);
 
   // Manejadores para el encabezado de días (clic rápido: ver día, mantener presionado: bloquear día)
   const handleHeaderMouseDown = (e, dia) => {
@@ -146,24 +186,23 @@ export const VistaSemana = ({
     <div className="w-full h-full flex flex-col overflow-y-auto overflow-x-auto">
       <div className="w-full min-w-full md:min-w-max flex flex-col">
         {/* Cabecera de días de la semana */}
-        <div className="flex border-b border-gray-200 bg-gray-100 sticky top-0 z-20 w-full min-w-full">
+        <div className="flex border-b border-gray-200 dark:border-slate-800 bg-gray-100 dark:bg-slate-900 sticky top-0 z-20 w-full min-w-full">
           {/* Espaciador de horas */}
-          <div className="w-8 sm:w-11 md:w-16 border-r border-gray-200 shrink-0 bg-gray-50 select-none" />
+          <div className="w-8 sm:w-11 md:w-16 border-r border-gray-200 dark:border-slate-800 shrink-0 bg-gray-50 dark:bg-slate-900 select-none" />
 
           {/* Días a mostrar (Semana completa - 7 días estilo Google Calendar) */}
-          {dias.map((d) => {
-            const esHoy = d.toDateString() === new Date().toDateString();
-            const esDomingo = d.getDay() === 0;
-            const diaBloqueado = esDiaBloqueado ? esDiaBloqueado(d) : false;
-            const restriccionDia = diaBloqueado && obtenerRestriccionDia ? obtenerRestriccionDia(d) : null;
-            const nombreDia = d
-              .toLocaleDateString("es-AR", { weekday: "short" })
-              .replace(".", "")
-              .toUpperCase();
-
-            return (
+          {datosDiasSemana.map(
+            ({
+              dia: d,
+              isoKey,
+              esHoy,
+              esDomingo,
+              diaBloqueado,
+              restriccionDia,
+              nombreDia,
+            }) => (
               <div
-                key={d.toISOString()}
+                key={isoKey}
                 onMouseDown={(e) => handleHeaderMouseDown(e, d)}
                 onMouseUp={handleHeaderMouseUp}
                 onClick={() => handleHeaderClick(d)}
@@ -178,30 +217,33 @@ export const VistaSemana = ({
                     ? `Día bloqueado: ${restriccionDia?.motivo || "Cerrado"} (Clic derecho o mantener presionado para gestionar)`
                     : "Clic: ver día | Mantener presionado o clic derecho: bloquear día"
                 }
-                className={`flex-1 min-w-[34px] md:min-w-[100px] text-center py-1 px-0.5 sm:py-1.5 sm:px-1 md:p-2 border-r border-gray-200 last:border-r-0 select-none cursor-pointer hover:bg-gray-200/70 transition-colors ${
+                className={`flex-1 min-w-[34px] md:min-w-[100px] text-center py-1 px-0.5 sm:py-1.5 sm:px-1 md:p-2 border-r border-gray-200 dark:border-slate-800 last:border-r-0 select-none cursor-pointer hover:bg-gray-200/70 dark:hover:bg-slate-800 transition-colors ${
                   diaBloqueado
-                    ? "bg-slate-200/90 text-slate-700"
+                    ? "bg-slate-200/90 dark:bg-slate-950/80 text-slate-700 dark:text-slate-400"
                     : esHoy
-                      ? "bg-emerald-50/70"
-                      : "bg-gray-50"
+                      ? "bg-emerald-50/70 dark:bg-emerald-950/40"
+                      : "bg-gray-50 dark:bg-slate-900"
                 }`}
               >
                 <div className="flex items-center justify-center gap-1">
                   <p
                     className={`text-[9px] sm:text-[10px] md:text-xs font-bold uppercase tracking-wider truncate ${
                       diaBloqueado
-                        ? "text-slate-600"
+                        ? "text-slate-600 dark:text-slate-400"
                         : esHoy
-                          ? "text-emerald-700 font-extrabold"
+                          ? "text-emerald-700 dark:text-emerald-400 font-extrabold"
                           : esDomingo
                             ? "text-rose-500 font-bold"
-                            : "text-gray-500"
+                            : "text-gray-500 dark:text-slate-400"
                     }`}
                   >
                     {nombreDia}
                   </p>
                   {diaBloqueado && (
-                    <Lock size={10} className="text-slate-600 shrink-0" />
+                    <Lock
+                      size={10}
+                      className="text-slate-600 dark:text-slate-400 shrink-0"
+                    />
                   )}
                 </div>
 
@@ -214,10 +256,10 @@ export const VistaSemana = ({
                     <span
                       className={`text-[11px] sm:text-xs md:text-sm font-extrabold ${
                         diaBloqueado
-                          ? "text-slate-600"
+                          ? "text-slate-600 dark:text-slate-400"
                           : esDomingo
                             ? "text-rose-600"
-                            : "text-gray-800"
+                            : "text-gray-800 dark:text-slate-200"
                       }`}
                     >
                       {d.getDate()}
@@ -226,24 +268,24 @@ export const VistaSemana = ({
                 </div>
 
                 {diaBloqueado && restriccionDia?.motivo && (
-                  <p className="hidden md:block text-[9px] font-semibold text-slate-500 truncate mt-0.5">
+                  <p className="hidden md:block text-[9px] font-semibold text-slate-500 dark:text-slate-400 truncate mt-0.5">
                     {restriccionDia.motivo}
                   </p>
                 )}
               </div>
-            );
-          })}
+            ),
+          )}
         </div>
 
         {/* Cuerpo de la grilla semanal */}
         <div className="flex relative w-full min-w-full">
           {/* Columna fija de horas */}
-          <div className="w-8 sm:w-11 md:w-16 shrink-0 border-r border-gray-200 bg-gray-50/80 select-none">
+          <div className="w-8 sm:w-11 md:w-16 shrink-0 border-r border-gray-200 dark:border-slate-800 bg-gray-50/80 dark:bg-slate-800/60 select-none">
             {slotsHoras.map((hora) => (
               <div
                 key={hora}
                 style={{ height: `${SLOT_HEIGHT_SEMANA}px` }}
-                className="text-[9px] sm:text-[10px] md:text-xs font-semibold md:font-bold text-gray-700 p-0.5 md:p-1 border-b border-gray-200 flex items-center justify-center"
+                className="text-[9px] sm:text-[10px] md:text-xs font-semibold md:font-bold text-gray-700 dark:text-slate-300 p-0.5 md:p-1 border-b border-gray-200 dark:border-slate-800 flex items-center justify-center"
               >
                 {hora}
               </div>
@@ -251,23 +293,12 @@ export const VistaSemana = ({
           </div>
 
           {/* Columnas para cada día */}
-          {dias.map((dia) => {
-            const esHoy = esMismoDia(dia, ahora);
-            const diaBloqueado = esDiaBloqueado ? esDiaBloqueado(dia) : false;
-            const turnosDelDia = turnos.filter((t) =>
-              esMismoDia(t.fecha_hora_inicio, dia),
-            );
-            const turnosPosicionados = procesarTurnosColocacion(
-              turnosDelDia,
-              SLOT_HEIGHT_SEMANA,
-              horaInicioAgenda,
-            );
-
-            return (
+          {datosDiasSemana.map(
+            ({ dia, isoKey, esHoy, diaBloqueado, turnosPosicionados }) => (
               <div
-                key={dia.toISOString()}
-                className={`flex-1 min-w-[34px] md:min-w-[100px] border-r border-gray-200 last:border-r-0 relative ${
-                  diaBloqueado ? "bg-slate-100/50" : ""
+                key={isoKey}
+                className={`flex-1 min-w-[34px] md:min-w-[100px] border-r border-gray-200 dark:border-slate-800 last:border-r-0 relative ${
+                  diaBloqueado ? "bg-slate-100/50 dark:bg-slate-950/50" : ""
                 }`}
               >
                 {/* Slots del día de fondo */}
@@ -292,12 +323,14 @@ export const VistaSemana = ({
                       onTouchStart={(e) => onTouchStart(e, dia, hora)}
                       onTouchMove={onTouchMove}
                       onTouchEnd={onTouchEnd}
-                      title={restriccion?.motivo || (bloqueado ? "Bloqueado" : "")}
-                      className={`border-b border-gray-200 transition-colors select-none flex items-center justify-center ${
+                      title={
+                        restriccion?.motivo || (bloqueado ? "Bloqueado" : "")
+                      }
+                      className={`border-b border-gray-200 dark:border-slate-800 transition-colors select-none flex items-center justify-center ${
                         bloqueado || pasado
-                          ? "bg-slate-100/90 cursor-not-allowed border-slate-200"
-                          : "bg-white hover:bg-emerald-50/30 cursor-pointer"
-                      } ${seleccion ? "!bg-emerald-100/90" : ""}`}
+                          ? "bg-slate-100/90 dark:bg-slate-950/70 cursor-not-allowed border-slate-200 dark:border-slate-800"
+                          : "bg-white dark:bg-slate-900 hover:bg-emerald-50/30 dark:hover:bg-emerald-950/30 cursor-pointer"
+                      } ${seleccion ? "!bg-emerald-100/90 dark:!bg-emerald-900/60" : ""}`}
                     />
                   );
                 })}
@@ -328,12 +361,12 @@ export const VistaSemana = ({
                   )}
                 </div>
               </div>
-            );
-          })}
+            ),
+          )}
         </div>
       </div>
     </div>
   );
-};
+});
 
 export default VistaSemana;

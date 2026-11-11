@@ -34,12 +34,34 @@
       rel="stylesheet"
     />
 
-    <!-- Estilos críticos para el Splash Screen inmediato sin parpadeos y 100% blanco -->
+    <!-- Inicialización inmediata de tema para evitar parpadeo blanco -->
+    <script>
+      (function () {
+        try {
+          var tema = localStorage.getItem("myv_theme");
+          if (
+            tema === "dark" ||
+            (!tema && window.matchMedia("(prefers-color-scheme: dark)").matches)
+          ) {
+            document.documentElement.classList.add("dark");
+            var metaTheme = document.querySelector('meta[name="theme-color"]');
+            if (metaTheme) metaTheme.setAttribute("content", "#162a35");
+          }
+        } catch (e) {}
+      })();
+    </script>
+
+    <!-- Estilos críticos para el Splash Screen inmediato sin parpadeos -->
     <style>
       body {
         margin: 0;
         padding: 0;
         background-color: #ffffff;
+      }
+
+      html.dark body {
+        background-color: #0b131e;
+        color: #f1f5f9;
       }
 
       #splash-screen,
@@ -64,6 +86,12 @@
         transition:
           opacity 0.4s ease,
           visibility 0.4s ease;
+      }
+
+      html.dark #splash-screen,
+      html.dark .splash-container,
+      html.dark .pantalla-carga {
+        background-color: #0b131e !important;
       }
 
       #splash-screen.oculto,

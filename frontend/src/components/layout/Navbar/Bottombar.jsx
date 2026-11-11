@@ -2,8 +2,9 @@
 
 import { useState, useRef, useEffect } from "react";
 import { NavLink, useLocation } from "react-router-dom";
-import { Settings, ChevronUp, LogOut, Download, KeyRound } from "lucide-react";
+import { Settings, ChevronUp, LogOut, Download, KeyRound, Sun, Moon } from "lucide-react";
 import { useAuth } from "../../../context/AuthContext";
+import { useTheme } from "../../../context/ThemeContext";
 import { NAV_ITEMS, CONFIG_ITEMS } from "../../../constants/navigation";
 import { usePWAInstall } from "../../../hooks/usePWAInstall";
 
@@ -11,6 +12,7 @@ export const Bottombar = () => {
   const location = useLocation();
   const { logout, usuario, solicitarLogout, abrirModalPassword } = useAuth();
   const { isInstallable, promptInstall } = usePWAInstall();
+  const { isDark, toggleTheme } = useTheme();
   const [dropdownAbierto, setDropdownAbierto] = useState(false);
   const configContainerRef = useRef(null);
 
@@ -54,11 +56,11 @@ export const Bottombar = () => {
   ].filter(Boolean);
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 z-50 md:hidden bg-[#3B7A94] border-t border-white/15 shadow-[0_-4px_20px_rgba(0,0,0,0.15)] min-h-16 safe-area-bottom">
+    <div className="fixed bottom-0 left-0 right-0 z-50 md:hidden bg-[#3B7A94] dark:bg-[#162a35] border-t border-white/15 dark:border-white/10 shadow-[0_-4px_20px_rgba(0,0,0,0.15)] min-h-16 safe-area-bottom">
       <div ref={configContainerRef} className="relative">
         {/* DROPDOWN CONFIGURACIÓN Y SESIÓN */}
         {dropdownAbierto && (
-          <div className="absolute bottom-full mb-2 right-2 z-60 w-56 bg-[#3B7A94] border border-white/20 rounded-2xl shadow-2xl p-2 flex flex-col gap-1 animate-in fade-in slide-in-from-bottom-2 duration-200">
+          <div className="absolute bottom-full mb-2 right-2 z-60 w-56 bg-[#3B7A94] dark:bg-[#162a35] border border-white/20 dark:border-slate-700/80 rounded-2xl shadow-2xl p-2 flex flex-col gap-1 animate-in fade-in slide-in-from-bottom-2 duration-200">
             {usuario && (
               <div className="px-3 py-2 text-xs border-b border-white/10 mb-1 flex items-center justify-between">
                 <span className="font-bold text-white truncate capitalize">
@@ -91,6 +93,27 @@ export const Bottombar = () => {
                 <span>{label}</span>
               </NavLink>
             ))}
+
+            {/* Alternador de Modo Oscuro / Claro en Móvil */}
+            <button
+              type="button"
+              onClick={() => {
+                toggleTheme();
+              }}
+              className="flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-semibold text-white/90 hover:bg-white/10 hover:text-white transition-colors w-full text-left cursor-pointer border-t border-white/10"
+            >
+              <div className="flex items-center gap-3">
+                {isDark ? (
+                  <Sun size={16} className="shrink-0 text-amber-300" />
+                ) : (
+                  <Moon size={16} className="shrink-0 text-sky-200" />
+                )}
+                <span>{isDark ? "Modo Claro" : "Modo Oscuro"}</span>
+              </div>
+              <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-white/10 text-white/80">
+                {isDark ? "Oscuro" : "Claro"}
+              </span>
+            </button>
 
             {isInstallable && (
               <button

@@ -49,7 +49,7 @@ export const createCuota = async (req, res) => {
       nro_cuota: cantCuotas + 1,
       monto_cuota: monto_cuota,
       monto_cobrado: monto_cobrado || 0,
-      fecha_vencimiento: fecha_vencimiento,
+      fecha_vencimiento: fecha_vencimiento || new Date().toISOString().split("T")[0],
       fecha_cobro: fecha_cobro || null,
       metodo_pago: metodo_pago || null,
       estado: estado || "Pendiente",
@@ -128,22 +128,37 @@ export const cobrarCuota = async (req, res) => {
     let estado;
 
     const monto_cuota = parseFloat(cuota.monto_cuota);
-    const montoCobrado = Number(monto_cobrado);
+    const yaCobrado = Number(cuota.monto_cobrado) || 0;
+    const montoRecibido = Number(monto_cobrado);
 
-    if (montoCobrado === monto_cuota) {
+    // Permitir tanto monto acumulado como monto incremental del saldo restante
+    let nuevoTotalCobrado = montoRecibido;
+    if (
+      montoRecibido < monto_cuota &&
+      yaCobrado > 0 &&
+      Math.abs(yaCobrado + montoRecibido - monto_cuota) < 0.01
+    ) {
+      nuevoTotalCobrado = monto_cuota;
+    } else if (
+      montoRecibido <= monto_cuota - yaCobrado &&
+      yaCobrado > 0 &&
+      !req.body.esTotalAcumulado
+    ) {
+      nuevoTotalCobrado = yaCobrado + montoRecibido;
+    }
+
+    if (nuevoTotalCobrado >= monto_cuota) {
       estado = "Pagada";
-    } else if (montoCobrado < monto_cuota) {
+      nuevoTotalCobrado = monto_cuota;
+    } else if (nuevoTotalCobrado > 0) {
       estado = "Parcialmente pagada";
     } else {
-      return res.status(400).json({
-        status: "error",
-        message: "El monto cobrado es mayor al monto de la cuota.",
-      });
+      estado = "Pendiente";
     }
 
     await cuota.update({
-      monto_cobrado: monto_cobrado,
-      fecha_cobro: fecha_cobro,
+      monto_cobrado: nuevoTotalCobrado,
+      fecha_cobro: fecha_cobro || new Date(),
       metodo_pago: metodo_pago,
       estado: estado,
     });

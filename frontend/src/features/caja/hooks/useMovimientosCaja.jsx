@@ -62,34 +62,64 @@ export function useMovimientosCaja(
 
   // ─── UNIFICACIÓN Y FILTRADO DE MOVIMIENTOS ───
   const movimientosUnificados = useMemo(() => {
-    const listaIngresos = cobros.map((c) => ({
-      id: `ingreso-${c.id_cobro}`,
-      tipo: "ingreso",
-      concepto: `Cobro a ${
-        c.Paciente
-          ? `${c.Paciente.apellido}, ${c.Paciente.nombre}`
-          : "Paciente"
-      }`,
-      categoria: "Cobro de Atención",
-      monto: (c.Cuotas || c.Cuota || []).reduce(
-        (acc, q) => acc + (Number(q.monto_cobrado) || 0),
-        0,
-      ),
-      fecha: c.fecha_emision || c.createdAt,
-      metodo_pago: c.modalidad || "Efectivo",
-      comprobante: `Cobro #${c.id_cobro}`,
-    }));
+    const listaIngresos = cobros
+      .map((c) => {
+        const cuotas = c.Cuotas || c.Cuota || [];
+        const montoCobrado = cuotas.reduce(
+          (acc, q) => acc + (Number(q.monto_cobrado) || 0),
+          0,
+        ) || Number(c.monto_a_cobrar) || 0;
 
-    const listaEgresos = gastos.map((g) => ({
-      id: `egreso-${g.id_gasto}`,
-      tipo: "egreso",
-      concepto: g.concepto,
-      categoria: g.CategoriaGasto?.nombre || "Gasto General",
-      monto: Number(g.monto) || 0,
-      fecha: g.fecha_gasto,
-      metodo_pago: g.metodo_pago,
-      comprobante: g.comprobante || `Gasto #${g.id_gasto}`,
-    }));
+        const pacienteNombre = c.Paciente
+          ? `${c.Paciente.nombre} ${c.Paciente.apellido}`
+          : "Paciente";
+
+        const conceptoDetalle =
+          c.concepto ||
+          (c.Turno?.PracticaTurnos?.[0]?.Practica?.nombre_referencia ||
+            "Limpieza dental");
+
+        const dniTexto = c.Paciente?.dni
+          ? `DNI ${c.Paciente.dni.toLocaleString ? c.Paciente.dni.toLocaleString("es-AR") : c.Paciente.dni}`
+          : null;
+
+        const subtitulo = dniTexto
+          ? `${dniTexto} · ${conceptoDetalle}`
+          : conceptoDetalle;
+
+        return {
+          id: `ingreso-${c.id_cobro}`,
+          id_cobro: c.id_cobro,
+          tipo: "ingreso",
+          concepto: `Cobro a ${pacienteNombre}`,
+          subtitulo,
+          categoria: "Cobro de Atención",
+          monto: montoCobrado,
+          fecha: c.fecha_emision || c.createdAt,
+          metodo_pago: c.modalidad || "Efectivo",
+          comprobante: `Recibo #${c.id_cobro}`,
+        };
+      })
+      .filter((m) => m.monto > 0);
+
+    const listaEgresos = gastos.map((g) => {
+      const proveedor = g.destinatario || g.proveedor || "Proveedor Dental";
+      const detalle = g.detalle || g.concepto || "Resinas y anestesia";
+      const subtitulo = `${proveedor} · ${detalle}`;
+
+      return {
+        id: `egreso-${g.id_gasto}`,
+        id_gasto: g.id_gasto,
+        tipo: "egreso",
+        concepto: g.concepto || "Compra de insumos odontológicos",
+        subtitulo,
+        categoria: g.CategoriaGasto?.nombre || "Insumos",
+        monto: Number(g.monto) || 0,
+        fecha: g.fecha_gasto || g.createdAt,
+        metodo_pago: g.metodo_pago || "Efectivo",
+        comprobante: g.comprobante || `Factura #${g.id_gasto}`,
+      };
+    });
 
     const unificados = [...listaIngresos, ...listaEgresos].sort(
       (a, b) => new Date(b.fecha) - new Date(a.fecha),
@@ -101,6 +131,7 @@ export function useMovimientosCaja(
     return unificados.filter(
       (m) =>
         m.concepto.toLowerCase().includes(query) ||
+        (m.subtitulo && m.subtitulo.toLowerCase().includes(query)) ||
         m.categoria.toLowerCase().includes(query) ||
         m.comprobante.toLowerCase().includes(query),
     );

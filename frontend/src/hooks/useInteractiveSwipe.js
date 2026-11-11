@@ -14,6 +14,7 @@ export function useInteractiveSwipe({
   canSwipeRight = true,
   threshold = 55,
   disabled = false,
+  scrollToTopOnSwipe = true,
 }) {
   const [dragOffset, setDragOffset] = useState(0);
   const [isTransitioning, setIsTransitioning] = useState(false);
@@ -91,16 +92,41 @@ export function useInteractiveSwipe({
     const offset = stateRef.current.currentOffset;
     stateRef.current.isSwiping = false;
 
+    const realizarScrollArriba = () => {
+      if (!scrollToTopOnSwipe) return;
+      try {
+        window.scrollTo({ top: 0, behavior: "smooth" });
+      } catch {
+        window.scrollTo(0, 0);
+      }
+      if (document.documentElement && document.documentElement.scrollTop > 0) {
+        try {
+          document.documentElement.scrollTo({ top: 0, behavior: "smooth" });
+        } catch {
+          document.documentElement.scrollTop = 0;
+        }
+      }
+      if (document.body && document.body.scrollTop > 0) {
+        try {
+          document.body.scrollTo({ top: 0, behavior: "smooth" });
+        } catch {
+          document.body.scrollTop = 0;
+        }
+      }
+    };
+
     // Verificar si superó el umbral para cambiar de página / fecha
     if (offset < -threshold && canSwipeLeft && onSwipeLeft) {
       stateRef.current.isAnimating = true;
       setIsTransitioning(true);
+      realizarScrollArriba();
       setTransitionStyle("transform 180ms cubic-bezier(0.16, 1, 0.3, 1), opacity 180ms ease-out");
       setDragOffset(-Math.min(window.innerWidth * 0.65, 300));
 
       setTimeout(() => {
         if (window.navigator?.vibrate) window.navigator.vibrate(25);
         onSwipeLeft();
+        realizarScrollArriba();
         // Colocar nuevo contenido entrando desde la derecha
         setTransitionStyle("none");
         setDragOffset(Math.min(window.innerWidth * 0.45, 200));
@@ -120,12 +146,14 @@ export function useInteractiveSwipe({
     } else if (offset > threshold && canSwipeRight && onSwipeRight) {
       stateRef.current.isAnimating = true;
       setIsTransitioning(true);
+      realizarScrollArriba();
       setTransitionStyle("transform 180ms cubic-bezier(0.16, 1, 0.3, 1), opacity 180ms ease-out");
       setDragOffset(Math.min(window.innerWidth * 0.65, 300));
 
       setTimeout(() => {
         if (window.navigator?.vibrate) window.navigator.vibrate(25);
         onSwipeRight();
+        realizarScrollArriba();
         // Colocar nuevo contenido entrando desde la izquierda
         setTransitionStyle("none");
         setDragOffset(-Math.min(window.innerWidth * 0.45, 200));

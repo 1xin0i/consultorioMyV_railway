@@ -2,35 +2,32 @@
 //* useState y useMemo
 import { useState, useMemo, useEffect, useCallback } from "react";
 import { useLocation } from "react-router-dom";
+import toast from "react-hot-toast";
 
-//* ICONOS
+// * ICONOS
 import {
-  Wallet,
   Plus,
-  Minus,
   Search,
-  ChevronLeft,
-  ChevronRight,
-  Calendar,
-  X,
+  ArrowDownRight,
+  ChevronDown,
   Banknote,
   Receipt,
-  CheckCircle2,
 } from "lucide-react";
 
 //* COMPONENTES COMUNES
 import Header from "../../components/common/Header";
 import PageLayout from "../../components/layout/PageLayout";
 import TablaPaginacion from "../../components/common/Tabla/TablaPaginacion";
-import Modal from "../../components/common/Modal";
-import api from "../../services/api";
 
 //* COMPONENTES DE VISTA
 import {
   VistaCronologica,
+  VistaDetalleIngresos,
   VistaLibroMayor,
   VistaPendientes,
 } from "./components/Vistas";
+import { SelectorPeriodoCaja } from "./components/SelectorPeriodoCaja";
+import { Kpis } from "./components/Kpis";
 
 //* HOOKS
 import { useMovimientosCaja } from "./hooks/useMovimientosCaja";
@@ -43,6 +40,7 @@ import { FormularioCrearEditar as FormularioGasto } from "../gastos/components/F
 
 //* HOOKS Y FORMULARIOS COBROS
 import { FormularioCrearEditarCobro as FormularioCobro } from "../cobros/components/FormulariosCobro";
+import ModalRegistrarPago from "../cobros/components/ModalRegistrarPago";
 import { useCobroActions } from "../cobros/hooks/useCobroActions";
 import { useCajaSearchPagination } from "./hooks/useCajaSearchPagination";
 
@@ -51,7 +49,6 @@ import {
   ESTADO_INICIAL_COBRO,
   ESTADO_INICIAL_GASTO,
 } from "./constants/cajaConstants";
-import { Kpis } from "./components/Kpis";
 
 const MESES = [
   "Enero",
@@ -70,12 +67,12 @@ const MESES = [
 
 export default function GestionCaja() {
   //* VARIABLES GENERALES
-  const [vistaActiva, setVistaActiva] = useState("cronologico"); // 'cronologico' | 'mayor' | 'pendientes'
+  const [vistaActiva, setVistaActiva] = useState("cronologico"); // 'cronologico' | 'ingresos' | 'mayor' | 'pendientes'
+  const [filtroMetodo, setFiltroMetodo] = useState("todos");
   const [categoriaAbierta, setCategoriaAbierta] = useState(null);
+  const [metodoIngresoAbierto, setMetodoIngresoAbierto] = useState(null);
   const [menuFlotanteAbierto, setMenuFlotanteAbierto] = useState(false);
-  const [cuotaParaCobrar, setCuotaParaCobrar] = useState(null);
-  const [metodoPagoCuota, setMetodoPagoCuota] = useState("Efectivo");
-  const [procesandoCobroCuota, setProcesandoCobroCuota] = useState(false);
+  const [itemParaCobrar, setItemParaCobrar] = useState(null);
 
   const location = useLocation();
 
@@ -100,13 +97,20 @@ export default function GestionCaja() {
 
     pageCobro,
     setPageCobro,
+    totalCobro,
     totalPagesCobro,
     pageGasto,
     setPageGasto,
+    totalGasto,
     totalPagesGasto,
 
     search,
     setSearch,
+
+    inicioRegistroCobro,
+    finRegistroCobro,
+    inicioRegistroGasto,
+    finRegistroGasto,
 
     recargar,
   } = useCajaSearchPagination();
@@ -144,21 +148,93 @@ export default function GestionCaja() {
 
   //* HOOK DE PETICIONES API
   const { guardarGasto } = useGastoActions(recargar, () => cerrarModalGasto());
-  const { guardarCobro } = useCobroActions(recargar, () => cerrarModalCobro());
-
-  //* ABRIR MODAL PARA COBRAR UN TURNO
-  const abrirCobroParaTurno = useCallback(
-    (turno) => {
-      actualizarDatosCobro({
-        ...ESTADO_INICIAL_COBRO,
-        id_paciente: turno.id_paciente,
-        id_turno: turno.id_turno,
-        monto_a_cobrar: turno.precio_final || "",
-      });
-      abrirParaCrearCobro(turno);
-    },
-    [actualizarDatosCobro, abrirParaCrearCobro],
+  const { guardarCobro, cargandoAccion: cargandoCobro } = useCobroActions(
+    recargar,
+    () => cerrarModalCobro(),
   );
+
+  //* FILTRADOS POR MÉTODO DE PAGO
+  const movimientosFiltrados = useMemo(() => {
+    if (filtroMetodo === "todos") return movimientosUnificados;
+    return (movimientosUnificados || []).filter((m) =>
+      (m.metodo_pago || "").toLowerCase().includes(filtroMetodo.toLowerCase())
+    );
+  }, [movimientosUnificados, filtroMetodo]);
+
+  const cobrosFiltrados = useMemo(() => {
+    if (filtroMetodo === "todos") return cobros;
+    return (cobros || []).filter((c) => {
+      const cuotas = c.Cuotas || c.Cuota || [];
+      if (cuotas.length > 0) {
+        return cuotas.some((q) =>
+          (q.metodo_pago || "Efectivo")
+            .toLowerCase()
+            .includes(filtroMetodo.toLowerCase())
+        );
+      }
+      return (c.modalidad || "")
+        .toLowerCase()
+        .includes(filtroMetodo.toLowerCase());
+    });
+  }, [cobros, filtroMetodo]);
+
+  const gastosFiltrados = useMemo(() => {
+    if (filtroMetodo === "todos") return gastos;
+    return (gastos || []).filter((g) =>
+      (g.metodo_pago || "").toLowerCase().includes(filtroMetodo.toLowerCase())
+    );
+  }, [gastos, filtroMetodo]);
+
+  //* EXPORTAR A CSV
+  const exportarCSV = () => {
+    if (!movimientosUnificados || movimientosUnificados.length === 0) {
+      toast.error("No hay movimientos para exportar en este período.");
+      return;
+    }
+    const encabezados = [
+      "Tipo",
+      "Concepto",
+      "Fecha",
+      "Metodo de Pago",
+      "Comprobante",
+      "Importe",
+    ];
+    const filas = movimientosUnificados.map((m) => [
+      m.tipo,
+      `"${(m.concepto || "").replace(/"/g, '""')}"`,
+      `"${m.fecha ? new Date(m.fecha).toLocaleString("es-AR") : ""}"`,
+      `"${m.metodo_pago || "Efectivo"}"`,
+      `"${m.comprobante || ""}"`,
+      m.monto,
+    ]);
+    const csvContent =
+      "data:text/csv;charset=utf-8,\uFEFF" +
+      [encabezados.join(","), ...filas.map((e) => e.join(","))].join("\n");
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement("a");
+    link.setAttribute("href", encodedUri);
+    link.setAttribute(
+      "download",
+      `balance_${modoAnual ? anio : `${mes}_${anio}`}.csv`
+    );
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    toast.success("Balance exportado a CSV correctamente");
+  };
+
+  //* ABRIR MODAL PARA COBRAR UN TURNO O ITEM PENDIENTE
+  const abrirCobroParaTurno = useCallback((turno) => {
+    setItemParaCobrar({
+      id_turno: turno.id_turno,
+      paciente: turno.Paciente,
+      monto_total: Number(turno.precio_final) || 0,
+      ya_cobrado: 0,
+      saldo_pendiente: Number(turno.precio_final) || 0,
+      tipo: "turno",
+      raw: turno,
+    });
+  }, []);
 
   useEffect(() => {
     if (location.state?.turnoParaCobrar) {
@@ -166,32 +242,46 @@ export default function GestionCaja() {
     }
   }, [location.state, abrirCobroParaTurno]);
 
-  //* CONFIRMAR COBRO DE UNA CUOTA PENDIENTE
-  const confirmarCobroCuota = async (e) => {
-    e.preventDefault();
-    if (!cuotaParaCobrar) return;
-    setProcesandoCobroCuota(true);
-    try {
-      const montoACobrar =
-        Number(cuotaParaCobrar.monto_cuota) -
-        (Number(cuotaParaCobrar.monto_cobrado) || 0);
+  //* MAPEA LOS INGRESOS POR METODO DE PAGO
+  const ingresosPorMetodo = useMemo(() => {
+    const mapa = {};
+    (cobros || []).forEach((c) => {
+      const cuotas = c.Cuotas || c.Cuota || [];
+      const pacienteNombre = c.Paciente
+        ? `${c.Paciente.apellido}, ${c.Paciente.nombre}`
+        : "Paciente";
 
-      await api.patch(`/cuotas/${cuotaParaCobrar.id_cuota}/cobrar`, {
-        monto_cobrado: montoACobrar,
-        metodo_pago: metodoPagoCuota,
-        estado: "Pagada",
-        fecha_cobro: new Date().toISOString(),
-      });
-
-      setCuotaParaCobrar(null);
-      recargar();
-    } catch (error) {
-      console.error("Error al cobrar cuota:", error);
-      alert("No se pudo registrar el cobro de la cuota.");
-    } finally {
-      setProcesandoCobroCuota(false);
-    }
-  };
+      if (cuotas.length > 0) {
+        cuotas.forEach((q) => {
+          const cobradoCuota = Number(q.monto_cobrado) || 0;
+          if (cobradoCuota > 0) {
+            const metodo = q.metodo_pago || "Efectivo";
+            if (!mapa[metodo]) {
+              mapa[metodo] = { nombre: metodo, total: 0, items: [] };
+            }
+            mapa[metodo].total += cobradoCuota;
+            mapa[metodo].items.push({
+              id: `cuota-${q.id_cuota}`,
+              id_cobro: c.id_cobro,
+              nro_cuota: q.nro_cuota,
+              cant_cuotas: c.cant_cuotas,
+              concepto: `Cobro a ${pacienteNombre}${
+                c.cant_cuotas > 1 ? ` (Cuota #${q.nro_cuota}/${c.cant_cuotas})` : ""
+              }`,
+              paciente: pacienteNombre,
+              dni: c.Paciente?.dni,
+              fecha: q.fecha_cobro || c.fecha_emision || c.createdAt,
+              metodo_pago: metodo,
+              monto: cobradoCuota,
+              monto_total_cobro: Number(c.monto_a_cobrar) || 0,
+              comprobante: `Cobro #${c.id_cobro}`,
+            });
+          }
+        });
+      }
+    });
+    return Object.values(mapa);
+  }, [cobros]);
 
   //* MAPEA LOS EGRESOS POR CATEGORIAS
   const egresosPorCategoria = useMemo(() => {
@@ -207,13 +297,6 @@ export default function GestionCaja() {
     return Object.values(mapa);
   }, [gastos]);
 
-  // Verificar si estamos viendo el mes corriente
-  const fechaHoy = new Date();
-  const esMesActual =
-    !modoAnual &&
-    mes === fechaHoy.getMonth() + 1 &&
-    anio === fechaHoy.getFullYear();
-
   const labelPeriodo = modoAnual ? `Año ${anio}` : `${MESES[mes - 1]} ${anio}`;
 
   const totalPendientesCount =
@@ -221,257 +304,209 @@ export default function GestionCaja() {
 
   return (
     <PageLayout>
-      <div className="w-full flex-1 flex flex-col gap-4">
-        {/* //* HEADER PRINCIPAL */}
+      <div className="w-full flex-1 flex flex-col gap-5">
+        {/* //* HEADER PRINCIPAL: Con selector integrado y acciones */}
         <Header
-          icono={Wallet}
-          titulo="Balance del Periodo"
-          subtitulo="Consolidado de ingresos, egresos operativos y cuentas por cobrar"
+          titulo="Balance del Período"
+          subtitulo="Control de ingresos, egresos de consultorio y deudas"
+          alerta={
+            <SelectorPeriodoCaja
+              mes={mes}
+              cambiarMes={cambiarMes}
+              anio={anio}
+              cambiarAnio={cambiarAnio}
+              modoAnual={modoAnual}
+              setModoAnual={setModoAnual}
+              mesAnterior={mesAnterior}
+              mesSiguiente={mesSiguiente}
+            />
+          }
           botonAccion={
             <div className="hidden sm:flex items-center gap-2">
               <button
                 type="button"
                 onClick={abrirParaCrearGasto}
-                className="flex items-center gap-1.5 bg-rose-500 hover:bg-rose-600 text-white px-3.5 py-2 rounded-xl font-bold text-xs transition-all shadow-sm cursor-pointer"
+                className="flex items-center gap-1.5 px-3 py-2 rounded-xl border border-rose-200 dark:border-rose-800 bg-rose-50/50 dark:bg-rose-950/40 hover:bg-rose-100/60 text-rose-700 dark:text-rose-300 font-semibold text-xs transition-all shadow-2xs cursor-pointer"
               >
-                <Plus size={16} />
-                <span>Nuevo Gasto</span>
+                <ArrowDownRight size={14} className="text-rose-500" />
+                <span>Registrar Gasto</span>
               </button>
-
               <button
                 type="button"
                 onClick={abrirParaCrearCobro}
-                className="flex items-center gap-1.5 bg-[#2eb086] hover:bg-[#259370] text-white px-3.5 py-2 rounded-xl font-bold text-xs transition-all shadow-sm cursor-pointer"
+                className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-[#0d8266] hover:bg-[#0b6f57] text-white font-bold text-xs transition-all shadow-xs cursor-pointer"
               >
-                <Plus size={16} />
+                <Plus size={15} />
                 <span>Registrar Cobro</span>
               </button>
             </div>
           }
         />
 
-        <div className="w-full px-4 flex flex-col gap-4">
-          {/* //* BARRA DE SELECTOR DE PERÍODO (MES O AÑO) */}
-          <div className="bg-white rounded-2xl border border-gray-100 p-3 shadow-2xs flex flex-wrap items-center justify-between gap-3">
-            <div className="flex items-center gap-2">
-              <Calendar size={18} className="text-[#2eb086]" />
-              <span className="text-xs font-bold text-gray-700 uppercase tracking-wider">
-                Período:
-              </span>
+        <div className="w-full px-4 sm:px-6 flex flex-col gap-5">
+          {/* //* KPIS (4 TARJETAS CON MÉTRICAS DEL PERÍODO) */}
+          <Kpis
+            kpis={kpis}
+            periodoLabel={labelPeriodo}
+            totalCobrosCount={cobros?.length || 0}
+            totalGastosCount={gastos?.length || 0}
+            totalPorCobrarCount={totalPendientesCount}
+          />
 
-              {modoAnual ? (
-                <div className="flex items-center gap-1.5 bg-gray-50 border border-gray-200 rounded-xl px-2.5 py-1">
-                  <span className="text-xs font-bold text-gray-500">Año:</span>
+          {/* //* CONTENEDOR PRINCIPAL: PESTAÑAS, BUSCADOR Y TABLA */}
+          <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-2xs p-4 sm:p-5 flex flex-col gap-4">
+            {/* Barra de pestañas y herramientas como en la imagen */}
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
+              {/* Pestañas de Vista en Cápsula */}
+              <div className="bg-[#f0f4f8] dark:bg-slate-800/90 p-1 rounded-2xl inline-flex items-center gap-1 overflow-x-auto">
+                <button
+                  type="button"
+                  onClick={() => setVistaActiva("cronologico")}
+                  className={`px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${
+                    vistaActiva === "cronologico"
+                      ? "bg-white dark:bg-slate-700 text-slate-800 dark:text-white shadow-xs"
+                      : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
+                  }`}
+                >
+                  Todos los Movimientos
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setVistaActiva("ingresos")}
+                  className={`px-4 py-2 rounded-xl text-xs font-semibold transition-all cursor-pointer whitespace-nowrap ${
+                    vistaActiva === "ingresos"
+                      ? "bg-white dark:bg-slate-700 text-slate-800 dark:text-white font-bold shadow-xs"
+                      : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
+                  }`}
+                >
+                  Ingresos ({cobros?.length || 0})
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setVistaActiva("mayor")}
+                  className={`px-4 py-2 rounded-xl text-xs font-semibold transition-all cursor-pointer whitespace-nowrap ${
+                    vistaActiva === "mayor"
+                      ? "bg-white dark:bg-slate-700 text-slate-800 dark:text-white font-bold shadow-xs"
+                      : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
+                  }`}
+                >
+                  Egresos ({gastos?.length || 0})
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setVistaActiva("pendientes")}
+                  className={`flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-semibold transition-all cursor-pointer whitespace-nowrap ${
+                    vistaActiva === "pendientes"
+                      ? "bg-white dark:bg-slate-700 text-slate-800 dark:text-white font-bold shadow-xs"
+                      : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
+                  }`}
+                >
+                  <span>Por Cobrar</span>
+                  {totalPendientesCount > 0 && (
+                    <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300">
+                      {totalPendientesCount}
+                    </span>
+                  )}
+                </button>
+              </div>
+
+              {/* Filtros: Métodos de Pago y Búsqueda */}
+              <div className="flex items-center gap-2.5 flex-wrap sm:flex-nowrap">
+                <div className="relative">
                   <select
-                    value={anio}
-                    onChange={(e) => cambiarAnio(e.target.value)}
-                    className="bg-transparent font-black text-xs text-gray-800 focus:outline-none cursor-pointer"
+                    value={filtroMetodo}
+                    onChange={(e) => setFiltroMetodo(e.target.value)}
+                    className="appearance-none bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 text-xs font-medium rounded-xl pl-3.5 pr-8 py-2 focus:outline-none focus:ring-1 focus:ring-emerald-500 cursor-pointer shadow-2xs"
                   >
-                    {[2024, 2025, 2026, 2027, 2028].map((y) => (
-                      <option key={y} value={y}>
-                        {y}
-                      </option>
-                    ))}
+                    <option value="todos">Todos los métodos</option>
+                    <option value="efectivo">Efectivo</option>
+                    <option value="transferencia">Transferencia</option>
+                    <option value="tarjeta">Tarjeta / Posnet</option>
                   </select>
-                  <span className="text-[10px] font-bold bg-[#e8f7f1] text-[#2eb086] px-2 py-0.5 rounded-md ml-1">
-                    Año Completo
-                  </span>
+                  <ChevronDown
+                    size={14}
+                    className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400"
+                  />
                 </div>
-              ) : (
-                <div className="flex items-center gap-2">
-                  {/* Selector de Mes con Flechas */}
-                  <div className="flex items-center gap-1 bg-gray-50 border border-gray-200 rounded-xl px-1.5 py-1">
-                    <button
-                      type="button"
-                      onClick={mesAnterior}
-                      aria-label="Mes anterior"
-                      className="p-1 hover:bg-white rounded-lg transition-colors text-gray-600 hover:text-gray-900 cursor-pointer"
-                    >
-                      <ChevronLeft size={16} />
-                    </button>
 
-                    <select
-                      value={mes}
-                      onChange={(e) => cambiarMes(e.target.value)}
-                      className="bg-transparent font-bold text-xs text-gray-800 focus:outline-none cursor-pointer px-1"
-                    >
-                      {MESES.map((m, idx) => (
-                        <option key={m} value={idx + 1}>
-                          {m}
-                        </option>
-                      ))}
-                    </select>
-
-                    <button
-                      type="button"
-                      onClick={mesSiguiente}
-                      aria-label="Mes siguiente"
-                      className="p-1 hover:bg-white rounded-lg transition-colors text-gray-600 hover:text-gray-900 cursor-pointer"
-                    >
-                      <ChevronRight size={16} />
-                    </button>
-                  </div>
-
-                  {/* Selector de Año Separado */}
-                  <div className="flex items-center bg-gray-50 border border-gray-200 rounded-xl px-2.5 py-1">
-                    <select
-                      value={anio}
-                      onChange={(e) => cambiarAnio(e.target.value)}
-                      className="bg-transparent font-bold text-xs text-gray-800 focus:outline-none cursor-pointer"
-                    >
-                      {[2024, 2025, 2026, 2027, 2028].map((y) => (
-                        <option key={y} value={y}>
-                          {y}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
+                <div className="relative min-w-[200px] sm:min-w-[240px]">
+                  <Search
+                    size={14}
+                    className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
+                  />
+                  <input
+                    type="text"
+                    placeholder="Buscar por paciente, concepto..."
+                    value={search}
+                    onChange={(e) => setSearch(e.target.value)}
+                    className="w-full pl-9 pr-3.5 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 placeholder-slate-400 rounded-xl text-xs focus:ring-1 focus:ring-emerald-500 focus:outline-none shadow-2xs"
+                  />
                 </div>
-              )}
-
-              {modoAnual ? (
-                anio !== fechaHoy.getFullYear() && (
-                  <button
-                    type="button"
-                    onClick={() => cambiarAnio(fechaHoy.getFullYear())}
-                    className="text-xs font-bold text-emerald-800 bg-emerald-50 hover:bg-emerald-100 border border-emerald-300/80 px-3 py-1.5 rounded-xl shadow-2xs transition-all active:scale-95 cursor-pointer flex items-center gap-1"
-                  >
-                    Volver a este año
-                  </button>
-                )
-              ) : (
-                !esMesActual && (
-                  <button
-                    type="button"
-                    onClick={irAMesActual}
-                    className="text-xs font-bold text-emerald-800 bg-emerald-50 hover:bg-emerald-100 border border-emerald-300/80 px-3 py-1.5 rounded-xl shadow-2xs transition-all active:scale-95 cursor-pointer flex items-center gap-1"
-                  >
-                    Volver a este mes
-                  </button>
-                )
-              )}
+              </div>
             </div>
 
-            <div className="flex items-center gap-2">
-              <button
-                type="button"
-                onClick={toggleModoAnual}
-                className={`text-xs font-bold px-3 py-1.5 rounded-xl transition-all cursor-pointer ${
-                  modoAnual
-                    ? "bg-[#2eb086] text-white shadow-2xs"
-                    : "bg-gray-100 text-gray-600 hover:bg-gray-200"
-                }`}
-              >
-                {modoAnual ? "Ver por Mes" : "Ver Todo el Año"}
-              </button>
-            </div>
-          </div>
+            {/* VISTA ACTIVA */}
+            {vistaActiva === "cronologico" && (
+              <VistaCronologica movimientosUnificados={movimientosFiltrados} />
+            )}
 
-          {/* //* BODY: KPIS (METRICAS PARA VER EL RENDIMINETO) */}
-          <Kpis kpis={kpis} periodoLabel={labelPeriodo} />
-
-          {/* //* VISTAS: BARRA DE VISTAS */}
-          <div className="bg-white rounded-2xl border border-gray-100 p-3 shadow-2xs flex flex-col md:flex-row justify-between items-center gap-3">
-            <div className="flex bg-gray-100 p-1 rounded-xl w-full md:w-auto overflow-x-auto">
-              <button
-                type="button"
-                onClick={() => setVistaActiva("cronologico")}
-                className={`flex-1 md:flex-none px-4 py-1.5 rounded-lg text-xs font-bold transition-all whitespace-nowrap cursor-pointer ${
-                  vistaActiva === "cronologico"
-                    ? "bg-white text-gray-800 shadow-2xs"
-                    : "text-gray-500"
-                }`}
-              >
-                Detalle de Operaciones
-              </button>
-              <button
-                type="button"
-                onClick={() => setVistaActiva("mayor")}
-                className={`flex-1 md:flex-none px-4 py-1.5 rounded-lg text-xs font-bold transition-all whitespace-nowrap cursor-pointer ${
-                  vistaActiva === "mayor"
-                    ? "bg-white text-gray-800 shadow-2xs"
-                    : "text-gray-500"
-                }`}
-              >
-                Detalle de Egresos
-              </button>
-              <button
-                type="button"
-                onClick={() => setVistaActiva("pendientes")}
-                className={`flex-1 md:flex-none px-4 py-1.5 rounded-lg text-xs font-bold transition-all whitespace-nowrap cursor-pointer ${
-                  vistaActiva === "pendientes"
-                    ? "bg-white text-gray-800 shadow-2xs"
-                    : "text-gray-500"
-                }`}
-              >
-                Por Cobrar ({totalPendientesCount})
-              </button>
-            </div>
-
-            <div className="relative w-full md:w-64">
-              <Search
-                size={16}
-                className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
+            {vistaActiva === "ingresos" && (
+              <VistaDetalleIngresos
+                cobros={cobrosFiltrados}
+                ingresosPorMetodo={ingresosPorMetodo}
+                metodoAbierto={metodoIngresoAbierto}
+                setMetodoAbierto={setMetodoIngresoAbierto}
               />
-              <input
-                type="text"
-                placeholder="Buscar movimiento..."
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                className="w-full pl-9 pr-3 py-1.5 bg-gray-50 border border-gray-200 rounded-xl text-xs focus:ring-2 focus:ring-[#2eb086]/40 focus:outline-none"
-              />
-            </div>
-          </div>
+            )}
 
-          {/* //* VISTAS: CRONOLOGICA */}
-          {vistaActiva === "cronologico" && (
-            <div className="flex flex-col gap-4">
-              <VistaCronologica movimientosUnificados={movimientosUnificados} />
-
-              <TablaPaginacion
-                page={pageCobro}
-                setPage={setPageCobro}
-                totalPages={totalPagesCobro}
-              />
-            </div>
-          )}
-
-          {/* //* VISTA: LIBRO MAYOR (EGRESOS POR CATEGORÍA) */}
-          {vistaActiva === "mayor" && (
-            <div className="flex flex-col gap-4">
+            {vistaActiva === "mayor" && (
               <VistaLibroMayor
+                gastos={gastosFiltrados}
                 egresosPorCategoria={egresosPorCategoria}
                 categoriaAbierta={categoriaAbierta}
                 setCategoriaAbierta={setCategoriaAbierta}
               />
+            )}
 
-              <TablaPaginacion
-                page={pageGasto}
-                setPage={setPageGasto}
-                totalPages={totalPagesGasto}
-              />
-            </div>
-          )}
-
-          {/* //* VISTAS: PENDIENTES (Turnos sin cobrar + Cuotas adeudadas hasta hoy) */}
-          {vistaActiva === "pendientes" && (
-            <div className="flex flex-col gap-4">
+            {vistaActiva === "pendientes" && (
               <VistaPendientes
                 turnosPendientes={turnosPendientes}
                 cuotasPendientes={cuotasPendientes}
+                onCobrarItem={(item) => setItemParaCobrar(item)}
                 abrirCobroParaTurno={abrirCobroParaTurno}
-                abrirCobroParaCuota={(cuota) => {
-                  setCuotaParaCobrar(cuota);
-                  setMetodoPagoCuota("Efectivo");
-                }}
               />
+            )}
+
+            {/* PAGINACIÓN INFERIOR */}
+            <div className="pt-2">
+              {vistaActiva === "mayor" ? (
+                <TablaPaginacion
+                  page={pageGasto}
+                  setPage={setPageGasto}
+                  totalPages={totalPagesGasto}
+                  total={totalGasto}
+                  inicioRegistro={inicioRegistroGasto}
+                  finRegistro={finRegistroGasto}
+                />
+              ) : (
+                <TablaPaginacion
+                  page={pageCobro}
+                  setPage={setPageCobro}
+                  totalPages={totalPagesCobro}
+                  total={totalCobro}
+                  inicioRegistro={inicioRegistroCobro}
+                  finRegistro={finRegistroCobro}
+                />
+              )}
             </div>
-          )}
+          </div>
         </div>
 
         {/* //* BOTÓN FLOTANTE (FAB) PARA TELÉFONO CON MENÚ DE COBRO / GASTO */}
         <div className="fixed sm:hidden right-4 bottom-20 z-40 flex flex-col items-end gap-2">
-          {/* Overlay oscuro suave al abrir el menú flotante */}
           {menuFlotanteAbierto && (
             <div
               className="fixed inset-0 bg-black/30 backdrop-blur-xs -z-10 animate-fade-in"
@@ -479,7 +514,6 @@ export default function GestionCaja() {
             />
           )}
 
-          {/* Opciones del Speed Dial */}
           {menuFlotanteAbierto && (
             <div className="flex flex-col items-end gap-2.5 mb-1 animate-in fade-in slide-in-from-bottom-3 duration-200">
               <button
@@ -488,7 +522,7 @@ export default function GestionCaja() {
                   setMenuFlotanteAbierto(false);
                   abrirParaCrearCobro();
                 }}
-                className="flex items-center gap-2 bg-[#2eb086] text-white px-3.5 py-2 rounded-full shadow-lg text-xs font-bold transition-transform active:scale-95 cursor-pointer"
+                className="flex items-center gap-2 bg-[#0d8266] text-white px-3.5 py-2 rounded-full shadow-lg text-xs font-bold transition-transform active:scale-95 cursor-pointer"
               >
                 <span>Registrar Cobro</span>
                 <span className="bg-white/20 p-1 rounded-full">
@@ -504,7 +538,7 @@ export default function GestionCaja() {
                 }}
                 className="flex items-center gap-2 bg-rose-500 text-white px-3.5 py-2 rounded-full shadow-lg text-xs font-bold transition-transform active:scale-95 cursor-pointer"
               >
-                <span>Nuevo Gasto</span>
+                <span>Registrar Gasto</span>
                 <span className="bg-white/20 p-1 rounded-full">
                   <Receipt size={15} />
                 </span>
@@ -512,7 +546,6 @@ export default function GestionCaja() {
             </div>
           )}
 
-          {/* Botón Principal Flotante (+) */}
           <button
             type="button"
             onClick={() => setMenuFlotanteAbierto((prev) => !prev)}
@@ -520,79 +553,21 @@ export default function GestionCaja() {
             className={`w-12 h-12 rounded-full flex items-center justify-center shadow-xl text-white transition-all transform active:scale-95 cursor-pointer ${
               menuFlotanteAbierto
                 ? "bg-gray-800 rotate-45"
-                : "bg-[#2eb086] hover:bg-[#259370]"
+                : "bg-[#0d8266] hover:bg-[#0b6f57]"
             }`}
           >
-            {menuFlotanteAbierto ? <Plus size={24} /> : <Plus size={24} />}
+            <Plus size={24} />
           </button>
         </div>
 
-        {/* //* MODAL RÁPIDO PARA COBRAR CUOTA PENDIENTE */}
-        {cuotaParaCobrar && (
-          <Modal
-            isOpen={Boolean(cuotaParaCobrar)}
-            onClose={() => setCuotaParaCobrar(null)}
-            title="Registrar Cobro de Cuota"
-            subtitle={`Cuota #${cuotaParaCobrar.nro_cuota} de ${
-              cuotaParaCobrar.Cobro?.Paciente
-                ? `${cuotaParaCobrar.Cobro.Paciente.apellido}, ${cuotaParaCobrar.Cobro.Paciente.nombre}`
-                : "Paciente"
-            }`}
-          >
-            <form onSubmit={confirmarCobroCuota} className="space-y-4">
-              <div className="bg-emerald-50 border border-emerald-100 rounded-xl p-3 flex justify-between items-center">
-                <span className="text-xs font-bold text-emerald-800">
-                  Monto a cobrar:
-                </span>
-                <span className="text-lg font-black text-emerald-700">
-                  $
-                  {(
-                    Number(cuotaParaCobrar.monto_cuota) -
-                    (Number(cuotaParaCobrar.monto_cobrado) || 0)
-                  ).toLocaleString("es-AR", { minimumFractionDigits: 2 })}
-                </span>
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold text-gray-700 mb-1">
-                  Método de Pago
-                </label>
-                <select
-                  value={metodoPagoCuota}
-                  onChange={(e) => setMetodoPagoCuota(e.target.value)}
-                  className="w-full bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-[#2eb086]/30 cursor-pointer"
-                >
-                  <option value="Efectivo">Efectivo</option>
-                  <option value="Transferencia">Transferencia</option>
-                  <option value="Tarjeta">Tarjeta</option>
-                  <option value="Otro">Otro</option>
-                </select>
-              </div>
-
-              <div className="flex justify-end gap-2 pt-2">
-                <button
-                  type="button"
-                  onClick={() => setCuotaParaCobrar(null)}
-                  disabled={procesandoCobroCuota}
-                  className="px-4 py-2 rounded-xl text-xs font-bold text-gray-500 hover:bg-gray-100 transition-colors cursor-pointer"
-                >
-                  Cancelar
-                </button>
-                <button
-                  type="submit"
-                  disabled={procesandoCobroCuota}
-                  className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-[#2eb086] hover:bg-[#259370] text-white text-xs font-bold shadow-sm transition-all cursor-pointer"
-                >
-                  <CheckCircle2 size={16} />
-                  <span>
-                    {procesandoCobroCuota
-                      ? "Registrando..."
-                      : "Confirmar Cobro"}
-                  </span>
-                </button>
-              </div>
-            </form>
-          </Modal>
+        {/* //* MODAL RÁPIDO PARA COBRAR TURNO / SALDO PENDIENTE */}
+        {itemParaCobrar && (
+          <ModalRegistrarPago
+            isOpen={Boolean(itemParaCobrar)}
+            onClose={() => setItemParaCobrar(null)}
+            item={itemParaCobrar}
+            onSuccess={recargar}
+          />
         )}
 
         {/* //* MODALES: CREAR GASTO */}
@@ -619,10 +594,10 @@ export default function GestionCaja() {
             datosFormulario={datosCobro}
             actualizarDatos={actualizarDatosCobro}
             turnosAtendidos={turnosPendientes}
-            guardarCobro={(e) => {
-              e.preventDefault();
-              guardarCobro(datosCobro, false, null);
+            guardarCobro={(datos) => {
+              guardarCobro(datos || datosCobro, false, null);
             }}
+            cargando={cargandoCobro}
           />
         )}
       </div>

@@ -84,11 +84,6 @@ export const getCajaConsolidada = async (req, res) => {
       ];
     }
 
-    // ─── FECHA TOPE PARA "PENDIENTE HASTA HOY" ───
-    // Hasta hoy (DATEONLY: YYYY-MM-DD en fecha local)
-    const hoyDate = new Date();
-    const hoyStr = `${hoyDate.getFullYear()}-${String(hoyDate.getMonth() + 1).padStart(2, "0")}-${String(hoyDate.getDate()).padStart(2, "0")}`;
-
     // ─── EJECUCIÓN EN PARALELO DE CONSULTAS ───
     const [
       resultadoCobros,
@@ -187,12 +182,11 @@ export const getCajaConsolidada = async (req, res) => {
         });
       })(),
 
-      // 6. Cuotas pendientes adeudadas HASTA HOY (fecha_vencimiento <= hoy y estado != 'Pagada') - NO depende del filtro de período
+      // 6. Cuotas pendientes de pago (estado != 'Pagada') - NO depende de fecha de vencimiento
       Cuota.findAll({
         where: {
           activo: true,
           estado: { [Op.in]: ["Pendiente", "Parcialmente pagada"] },
-          fecha_vencimiento: { [Op.lte]: hoyStr },
         },
         include: [
           {
@@ -207,7 +201,7 @@ export const getCajaConsolidada = async (req, res) => {
             ],
           },
         ],
-        order: [["fecha_vencimiento", "ASC"]],
+        order: [["id_cuota", "ASC"]],
       }),
     ]);
 

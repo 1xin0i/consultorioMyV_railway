@@ -4,7 +4,7 @@ import { z } from "zod";
 
 // Fecha de hoy
 const hoyString = new Date().toLocaleDateString("sv-SE");
-const metodosPagoValidos = ["Efectivo", "Transferencia", "Tarjeta"];
+const metodosPagoValidos = ["Efectivo", "Transferencia", "Tarjeta", "Otro"];
 const estadosValidos = ["Pendiente", "Pagada", "Parcialmente pagada"];
 
 export const createCuotaSchema = z.object({
@@ -40,12 +40,13 @@ export const createCuotaSchema = z.object({
 
   fecha_vencimiento: z
     .string({
-      required_error: "La fecha de vencimiento es requerida",
       invalid_type_error: "Formato de fecha inválido",
     })
     .regex(/^\d{4}-\d{2}-\d{2}$/, {
       message: "Formato de fecha inválido (debe ser YYYY-MM-DD)",
-    }),
+    })
+    .optional()
+    .nullable(),
 
   fecha_cobro: z.coerce
     .date({
@@ -101,24 +102,26 @@ export const updateCuotaSchema = z.object({
 
   fecha_vencimiento: z
     .string({
-      required_error: "La fecha de vencimiento es requerida",
       invalid_type_error: "Formato de fecha inválido",
     })
-    // Valida que cumpla estrictamente el formato YYYY-MM-DD
     .regex(/^\d{4}-\d{2}-\d{2}$/, {
       message: "Formato de fecha inválido (debe ser YYYY-MM-DD)",
     })
-    // Compara directamente strings en formato ISO (ej: "2026-11-15" >= "2026-11-01")
-    .refine((fecha) => fecha >= hoyString, {
-      message: "La fecha de vencimiento debe ser mayor o igual a hoy",
-    })
-    .optional(),
+    .optional()
+    .nullable(),
 
   fecha_cobro: z.coerce
     .date({
       invalid_type_error: "Formato de fecha inválido",
     })
     .optional(),
+
+  metodo_pago: z
+    .enum(metodosPagoValidos, {
+      errorMap: () => ({ message: "Método de pago no válido" }),
+    })
+    .optional()
+    .nullable(),
 
   estado: z
     .enum(estadosValidos, {

@@ -2,6 +2,8 @@
 
 @import "tailwindcss";
 
+@custom-variant dark (&:where(.dark, .dark *));
+
 /* ─── PWA & Native Look & Feel ─── */
 body {
   padding-top: env(safe-area-inset-top);
@@ -54,4 +56,64 @@ a {
 
 .anim-slide-left {
   animation: slideInFromLeft 260ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* ─── Soporte Global de Modo Oscuro para Controles y Elementos Nativos ─── */
+.dark {
+  color-scheme: dark;
+}
+
+.dark input[type="text"],
+.dark input[type="password"],
+.dark input[type="email"],
+.dark input[type="number"],
+.dark input[type="date"],
+.dark input[type="datetime-local"],
+.dark input[type="time"],
+.dark textarea,
+.dark select {
+  background-color: #1e293b;
+  border-color: #334155;
+  color: #f1f5f9;
+}
+
+.dark input::placeholder,
+.dark textarea::placeholder {
+  color: #94a3b8;
+}
+
+.dark select option {
+  background-color: #1e293b;
+  color: #f1f5f9;
+}
+
+.dark input:disabled,
+.dark textarea:disabled,
+.dark select:disabled {
+  background-color: #0f172a;
+  border-color: #1e293b;
+  color: #64748b;
+}
+
+.dark label {
+  color: #cbd5e1;
+}
+
+/* Scrollbars estilizados para modo oscuro */
+.dark ::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.dark ::-webkit-scrollbar-track {
+  background: #0f172a;
+}
+
+.dark ::-webkit-scrollbar-thumb {
+  background: #334155;
+  border-radius: 9999px;
+}
+
+.dark ::-webkit-scrollbar-thumb:hover {
+  background: #475569;
 }

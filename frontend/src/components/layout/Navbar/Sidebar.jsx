@@ -2,9 +2,19 @@
 
 import { useState, useRef, useEffect } from "react";
 import { NavLink } from "react-router-dom";
-import { PanelLeftClose, Settings, ChevronDown, LogOut, Download, KeyRound } from "lucide-react";
+import {
+  PanelLeftClose,
+  Settings,
+  ChevronDown,
+  LogOut,
+  Download,
+  KeyRound,
+  Sun,
+  Moon,
+} from "lucide-react";
 import { useSidebar } from "../../../context/SidebarProvider";
 import { useAuth } from "../../../context/AuthContext";
+import { useTheme } from "../../../context/ThemeContext";
 import ToothLogo from "../ToothLogo";
 import { NAV_ITEMS, CONFIG_ITEMS } from "../../../constants/navigation";
 import { usePWAInstall } from "../../../hooks/usePWAInstall";
@@ -13,6 +23,7 @@ export const Sidebar = () => {
   const { isOpen, toggleSidebar } = useSidebar();
   const { usuario, solicitarLogout, abrirModalPassword } = useAuth();
   const { isInstallable, promptInstall } = usePWAInstall();
+  const { isDark, toggleTheme } = useTheme();
 
   const [dropdownAbierto, setDropdownAbierto] = useState(false);
   const dropdownRef = useRef(null);
@@ -29,7 +40,7 @@ export const Sidebar = () => {
 
   return (
     <aside
-      className={`fixed top-0 left-0 h-screen z-50 bg-[#3B7A94] text-white shadow-xl flex flex-col transition-all duration-300 ease-in-out overflow-hidden ${
+      className={`fixed top-0 left-0 h-screen z-50 bg-[#3B7A94] dark:bg-[#162a35] dark:border-r dark:border-slate-800/80 text-white shadow-xl flex flex-col transition-all duration-300 ease-in-out overflow-hidden ${
         !isOpen ? "w-20" : "w-72"
       }`}
       aria-label="Menú de navegación principal"
@@ -163,8 +174,8 @@ export const Sidebar = () => {
         )}
       </nav>
 
-      {/* Footer con Usuario y Cerrar Sesión */}
-      <div className="p-3 border-t border-white/15 bg-[#2c6177] flex items-center justify-between">
+      {/* Footer con Usuario, Tema y Cerrar Sesión */}
+      <div className="p-3 border-t border-white/15 dark:border-white/10 bg-[#2c6177] dark:bg-[#11232d] flex items-center justify-between">
         {isOpen ? (
           <>
             <div className="flex items-center gap-2.5 min-w-0">
@@ -185,6 +196,15 @@ export const Sidebar = () => {
             <div className="flex items-center gap-1 shrink-0">
               <button
                 type="button"
+                onClick={toggleTheme}
+                title={isDark ? "Cambiar a modo claro" : "Cambiar a modo oscuro"}
+                className="p-1.5 rounded-lg text-white/70 hover:text-white hover:bg-white/10 transition-colors cursor-pointer shrink-0"
+                aria-label={isDark ? "Modo claro" : "Modo oscuro"}
+              >
+                {isDark ? <Sun size={16} className="text-amber-300" /> : <Moon size={16} />}
+              </button>
+              <button
+                type="button"
                 onClick={abrirModalPassword}
                 title="Cambiar contraseña"
                 className="p-1.5 rounded-lg text-white/70 hover:text-white hover:bg-white/10 transition-colors cursor-pointer shrink-0"
@@ -196,7 +216,7 @@ export const Sidebar = () => {
                 type="button"
                 onClick={solicitarLogout}
                 title="Cerrar sesión"
-                className="p-1.5 rounded-lg text-white/70 hover:text-rose-200 hover:bg-rose-500/20 transition-colors cursor-pointer shrink-0"
+                className="p-1.5 rounded-lg text-red-400 hover:text-rose-200 hover:bg-rose-500/20 transition-colors cursor-pointer shrink-0"
                 aria-label="Cerrar sesión"
               >
                 <LogOut size={16} />
@@ -205,6 +225,15 @@ export const Sidebar = () => {
           </>
         ) : (
           <div className="w-full flex flex-col items-center gap-2">
+            <button
+              type="button"
+              onClick={toggleTheme}
+              title={isDark ? "Modo claro" : "Modo oscuro"}
+              className="w-full flex justify-center py-1 text-white/70 hover:text-white transition-colors cursor-pointer"
+              aria-label={isDark ? "Modo claro" : "Modo oscuro"}
+            >
+              {isDark ? <Sun size={18} className="text-amber-300" /> : <Moon size={18} />}
+            </button>
             <button
               type="button"
               onClick={abrirModalPassword}

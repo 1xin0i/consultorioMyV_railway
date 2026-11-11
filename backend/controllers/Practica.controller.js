@@ -15,7 +15,14 @@ export const getAllPracticas = async (req, res) => {
     });
     const where = {};
 
-    // Busqueda por nombre apellido dni telefono
+    const estadoFiltrado = req.query.estadoFiltrado;
+    if (estadoFiltrado === "inactivas" || estadoFiltrado === "false" || estadoFiltrado === "0") {
+      where.activo = false;
+    } else if (estadoFiltrado === "activas" || estadoFiltrado === "true" || estadoFiltrado === "1") {
+      where.activo = true;
+    }
+
+    // Busqueda por codigo, nombre, referencia, especialidad
     if (search !== "") {
       where[Op.or] = [
         { codigo_nomenclador: { [Op.like]: `%${search}%` } },

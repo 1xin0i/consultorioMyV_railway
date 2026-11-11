@@ -2,9 +2,9 @@ import { Plus } from "lucide-react";
 
 export default function PageLayout({ children, onAdd }) {
   return (
-    <div className="w-full min-h-screen flex flex-col">
+    <div className="w-full min-h-screen flex flex-col bg-slate-50 dark:bg-slate-950">
       {/* Contenido principal de la página con padding inferior adaptado al bottombar móvil (h-16) y al botón FAB */}
-      <main className="flex-1 w-full pb-28 md:pb-8">{children}</main>
+      <main className="flex-1 w-full pb-28 md:pb-8 bg-slate-50 dark:bg-slate-950">{children}</main>
 
       {/* Botón flotante condicional (FAB) posicionado holgadamente arriba del bottom bar y sin solapar la paginación */}
       {onAdd && (

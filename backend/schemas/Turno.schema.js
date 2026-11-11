@@ -31,12 +31,24 @@ export const createTurnoSchema = z.object({
     .nonnegative("El precio final debe ser mayor o igual a 0")
     .refine((val) => Number.isInteger(val * 100), {
       message: "El precio no puede tener más de 2 decimales",
-    }),
+    })
+    .optional(),
 
   notas_consulta: z
     .string({ invalid_type_error: "Las notas de consulta deben ser un texto" })
     .trim()
     .nullish(),
+
+  practicas: z
+    .array(
+      z.union([
+        z.number(),
+        z.object({
+          id_practica: z.number(),
+        }),
+      ])
+    )
+    .optional(),
 });
 
 export const updateTurnoSchema = z.object({
@@ -64,6 +76,17 @@ export const updateTurnoSchema = z.object({
     .string({ invalid_type_error: "Las notas de consulta deben ser un texto" })
     .trim()
     .nullish(),
+
+  practicas: z
+    .array(
+      z.union([
+        z.number(),
+        z.object({
+          id_practica: z.number(),
+        }),
+      ])
+    )
+    .optional(),
 });
 
 export const atenderTurnoSchema = z.object({
@@ -117,4 +140,38 @@ export const atenderTurnoSchema = z.object({
       invalid_type_error: "Las obras sociales deben venir en un array",
     })
     .nullish(),
+
+  dientes_por_practica: z
+    .array(
+      z.array(
+        z.union([
+          z.number(),
+          z.object({
+            numero_fdi: z.number(),
+            cara: z.string().nullish(),
+          }),
+        ])
+      )
+    )
+    .optional(),
+
+  practicas: z
+    .array(
+      z.object({
+        id_practica: z.number(),
+        id_obra_social: z.number().nullable().optional(),
+        dientes: z
+          .array(
+            z.union([
+              z.number(),
+              z.object({
+                numero_fdi: z.number(),
+                cara: z.string().nullish(),
+              }),
+            ])
+          )
+          .optional(),
+      })
+    )
+    .optional(),
 });

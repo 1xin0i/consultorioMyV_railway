@@ -16,6 +16,7 @@ import {
   CalendarCheck,
   CalendarClock,
 } from "lucide-react";
+import { formatearResumenDientes } from "../../turnos/constants/odontogramaConstants";
 
 export function VistaPaciente({ isOpen, onClose, paciente }) {
   const [turnos, setTurnos] = useState([]);
@@ -148,18 +149,18 @@ export function VistaPaciente({ isOpen, onClose, paciente }) {
     >
       <div className="flex flex-col gap-4 text-sm">
         {/* ─── TARJETA PRINCIPAL DEL PACIENTE ─── */}
-        <div className="bg-gradient-to-br from-gray-50 to-[#e8f7f1]/30 p-4 rounded-2xl border border-gray-200/80 space-y-3 shrink-0">
-          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 border-b border-gray-200/60 pb-3">
+        <div className="bg-gradient-to-br from-gray-50 to-[#e8f7f1]/30 dark:from-slate-900 dark:to-teal-950/20 p-4 rounded-2xl border border-gray-200/80 dark:border-slate-800 space-y-3 shrink-0">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 border-b border-gray-200/60 dark:border-slate-800 pb-3">
             <div className="flex items-center gap-3">
               <div className="w-12 h-12 rounded-2xl bg-[#2eb086] text-white flex items-center justify-center font-black text-lg shrink-0 shadow-sm">
                 {paciente.nombre?.charAt(0)}
                 {paciente.apellido?.charAt(0)}
               </div>
               <div>
-                <h2 className="text-base sm:text-lg font-black text-gray-800 leading-tight">
+                <h2 className="text-base sm:text-lg font-black text-gray-800 dark:text-slate-100 leading-tight">
                   {paciente.apellido}, {paciente.nombre}
                 </h2>
-                <div className="flex items-center gap-2 text-xs text-gray-500 font-medium mt-0.5">
+                <div className="flex items-center gap-2 text-xs text-gray-500 dark:text-slate-400 font-medium mt-0.5">
                   <span>DNI: {paciente.dni || "S/D"}</span>
                   <span>•</span>
                   <span>Tel: {paciente.telefono || "S/D"}</span>
@@ -168,8 +169,8 @@ export function VistaPaciente({ isOpen, onClose, paciente }) {
             </div>
 
             {/* EDAD DESTACADA Y FECHA DE NACIMIENTO */}
-            <div className="text-left sm:text-right bg-white px-3 py-1.5 rounded-xl border border-gray-200 shadow-2xs">
-              <span className="text-[10px] uppercase font-bold text-gray-400 block tracking-wider">
+            <div className="text-left sm:text-right bg-white dark:bg-slate-900 px-3 py-1.5 rounded-xl border border-gray-200 dark:border-slate-800 shadow-2xs">
+              <span className="text-[10px] uppercase font-bold text-gray-400 dark:text-slate-500 block tracking-wider">
                 Edad del Paciente
               </span>
               <div className="flex items-baseline gap-1">
@@ -177,7 +178,7 @@ export function VistaPaciente({ isOpen, onClose, paciente }) {
                   {edadCalculada !== null ? `${edadCalculada} años` : "S/D"}
                 </span>
                 {paciente.fecha_nacimiento && (
-                  <span className="text-[11px] font-medium text-gray-400">
+                  <span className="text-[11px] font-medium text-gray-400 dark:text-slate-500">
                     ({formatFechaTabla(paciente.fecha_nacimiento)})
                   </span>
                 )}
@@ -187,24 +188,24 @@ export function VistaPaciente({ isOpen, onClose, paciente }) {
 
           {/* INDICADORES FINANCIEROS (RESUMEN DE CUENTA) */}
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5 pt-1">
-            <div className="bg-white p-2.5 rounded-xl border border-gray-100">
-              <span className="text-[10px] font-bold text-gray-400 uppercase block">
+            <div className="bg-white dark:bg-slate-900 p-2.5 rounded-xl border border-gray-100 dark:border-slate-800">
+              <span className="text-[10px] font-bold text-gray-400 dark:text-slate-500 uppercase block">
                 Total Turnos
               </span>
-              <span className="text-sm font-black text-gray-800">
+              <span className="text-sm font-black text-gray-800 dark:text-slate-200">
                 {turnos.length} registrados
               </span>
             </div>
 
-            <div className="bg-white p-2.5 rounded-xl border border-gray-100">
-              <span className="text-[10px] font-bold text-gray-400 uppercase block">
+            <div className="bg-white dark:bg-slate-900 p-2.5 rounded-xl border border-gray-100 dark:border-slate-800">
+              <span className="text-[10px] font-bold text-gray-400 dark:text-slate-500 uppercase block">
                 Saldo Pendiente
               </span>
               <span
                 className={`text-sm font-black ${
                   resumenFinanciero.saldoPendienteTotal > 0
-                    ? "text-rose-600"
-                    : "text-emerald-600"
+                    ? "text-rose-600 dark:text-rose-400"
+                    : "text-emerald-600 dark:text-emerald-400"
                 }`}
               >
                 $
@@ -214,16 +215,16 @@ export function VistaPaciente({ isOpen, onClose, paciente }) {
               </span>
             </div>
 
-            <div className="col-span-2 sm:col-span-1 bg-white p-2.5 rounded-xl border border-gray-100 flex items-center justify-between">
+            <div className="col-span-2 sm:col-span-1 bg-white dark:bg-slate-900 p-2.5 rounded-xl border border-gray-100 dark:border-slate-800 flex items-center justify-between">
               <div>
-                <span className="text-[10px] font-bold text-gray-400 uppercase block">
+                <span className="text-[10px] font-bold text-gray-400 dark:text-slate-500 uppercase block">
                   Estado Cuenta
                 </span>
                 <span
                   className={`text-xs font-bold ${
                     resumenFinanciero.alDia
-                      ? "text-emerald-700"
-                      : "text-amber-700"
+                      ? "text-emerald-700 dark:text-emerald-400"
+                      : "text-amber-700 dark:text-amber-400"
                   }`}
                 >
                   {resumenFinanciero.alDia ? "Al Día" : "Con Deuda"}
@@ -232,8 +233,8 @@ export function VistaPaciente({ isOpen, onClose, paciente }) {
               <span
                 className={`p-1.5 rounded-lg text-xs font-bold ${
                   resumenFinanciero.alDia
-                    ? "bg-emerald-100 text-emerald-800"
-                    : "bg-amber-100 text-amber-800"
+                    ? "bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300"
+                    : "bg-amber-100 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300"
                 }`}
               >
                 {resumenFinanciero.alDia ? (
@@ -257,7 +258,7 @@ export function VistaPaciente({ isOpen, onClose, paciente }) {
             className={`px-3.5 py-1.5 min-h-[32px] rounded-xl text-xs font-bold transition-all cursor-pointer shrink-0 inline-flex items-center justify-center ${
               filtroEstado === "todos"
                 ? "bg-[#2eb086] text-white shadow-2xs"
-                : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                : "bg-gray-100 dark:bg-slate-800 text-gray-600 dark:text-slate-300 hover:bg-gray-200 dark:hover:bg-slate-700"
             }`}
           >
             Todos ({turnos.length})
@@ -271,7 +272,7 @@ export function VistaPaciente({ isOpen, onClose, paciente }) {
             className={`px-3.5 py-1.5 min-h-[32px] rounded-xl text-xs font-bold transition-all cursor-pointer inline-flex items-center justify-center gap-1.5 shrink-0 ${
               filtroEstado === "atendidos"
                 ? "bg-emerald-600 text-white shadow-2xs"
-                : "bg-emerald-50 text-emerald-800 hover:bg-emerald-100 border border-emerald-200/60"
+                : "bg-emerald-50 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-300 hover:bg-emerald-100 dark:hover:bg-emerald-900/60 border border-emerald-200/60 dark:border-emerald-800/60"
             }`}
           >
             <CalendarCheck size={14} />
@@ -286,7 +287,7 @@ export function VistaPaciente({ isOpen, onClose, paciente }) {
             className={`px-3.5 py-1.5 min-h-[32px] rounded-xl text-xs font-bold transition-all cursor-pointer inline-flex items-center justify-center gap-1.5 shrink-0 ${
               filtroEstado === "programados"
                 ? "bg-sky-600 text-white shadow-2xs"
-                : "bg-sky-50 text-sky-800 hover:bg-sky-100 border border-sky-200/60"
+                : "bg-sky-50 dark:bg-sky-950/40 text-sky-800 dark:text-sky-300 hover:bg-sky-100 dark:hover:bg-sky-900/60 border border-sky-200/60 dark:border-sky-800/60"
             }`}
           >
             <CalendarClock size={14} />
@@ -295,7 +296,7 @@ export function VistaPaciente({ isOpen, onClose, paciente }) {
         </div>
 
         {/* ─── BARRA DE BÚSQUEDA Y FILTROS DE TURNOS ─── */}
-        <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 bg-gray-50 p-3 rounded-2xl border border-gray-200 shrink-0">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 bg-gray-50 dark:bg-slate-900 p-3 rounded-2xl border border-gray-200 dark:border-slate-800 shrink-0">
           <div className="relative flex-1">
             <Search
               size={16}
@@ -309,12 +310,12 @@ export function VistaPaciente({ isOpen, onClose, paciente }) {
                 setBusqueda(e.target.value);
                 setPaginaActual(1);
               }}
-              className="w-full pl-9 pr-3 py-2 bg-white border border-gray-200 rounded-xl text-xs focus:ring-2 focus:ring-[#2eb086]/40 focus:outline-none"
+              className="w-full pl-9 pr-3 py-2 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 text-slate-800 dark:text-slate-100 rounded-xl text-xs focus:ring-2 focus:ring-[#2eb086]/40 focus:outline-none"
             />
           </div>
 
           {/* CHECKBOX MOSTRAR SOLO PENDIENTES */}
-          <label className="flex items-center gap-2 cursor-pointer select-none bg-white px-3 py-2 rounded-xl border border-gray-200 text-xs font-semibold text-gray-700">
+          <label className="flex items-center gap-2 cursor-pointer select-none bg-white dark:bg-slate-800 px-3 py-2 rounded-xl border border-gray-200 dark:border-slate-700 text-xs font-semibold text-gray-700 dark:text-slate-200">
             <input
               type="checkbox"
               checked={soloPendientes}
@@ -337,12 +338,12 @@ export function VistaPaciente({ isOpen, onClose, paciente }) {
           </div>
 
           {cargando ? (
-            <p className="text-xs text-gray-400 italic py-6 text-center">
+            <p className="text-xs text-gray-400 dark:text-slate-500 italic py-6 text-center">
               Cargando turnos e historial del paciente...
             </p>
           ) : turnosPaginados.length === 0 ? (
-            <div className="bg-gray-50 p-6 rounded-2xl border border-dashed border-gray-200 text-center">
-              <p className="text-xs text-gray-400 italic">
+            <div className="bg-gray-50 dark:bg-slate-900 p-6 rounded-2xl border border-dashed border-gray-200 dark:border-slate-800 text-center">
+              <p className="text-xs text-gray-400 dark:text-slate-500 italic">
                 {soloPendientes || busqueda
                   ? "No se encontraron turnos que coincidan con el filtro aplicado."
                   : "El paciente aún no registra turnos ni atenciones."}
@@ -365,48 +366,48 @@ export function VistaPaciente({ isOpen, onClose, paciente }) {
 
                 // Estado de pago
                 let estadoCobroLabel = "Sin Cobro";
-                let estadoCobroColor = "bg-gray-100 text-gray-600";
+                let estadoCobroColor = "bg-gray-100 dark:bg-slate-800 text-gray-600 dark:text-slate-400 border-gray-200 dark:border-slate-700";
 
                 if (cobro) {
                   if (saldoRestante === 0 && totalAcordado > 0) {
                     estadoCobroLabel = "Pagado";
                     estadoCobroColor =
-                      "bg-emerald-100 text-emerald-800 border-emerald-200";
+                      "bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800/60";
                   } else if (totalPagado > 0) {
                     estadoCobroLabel = `Falta $${saldoRestante.toLocaleString("es-AR")}`;
                     estadoCobroColor =
-                      "bg-amber-100 text-amber-800 border-amber-200";
+                      "bg-amber-100 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300 border-amber-200 dark:border-amber-800/60";
                   } else {
                     estadoCobroLabel = `Pendiente $${saldoRestante.toLocaleString("es-AR")}`;
                     estadoCobroColor =
-                      "bg-rose-100 text-rose-800 border-rose-200";
+                      "bg-rose-100 dark:bg-rose-950/60 text-rose-800 dark:text-rose-300 border-rose-200 dark:border-rose-800/60";
                   }
                 }
 
                 return (
                   <div
                     key={t.id_turno}
-                    className="bg-white rounded-2xl border border-gray-200 overflow-hidden shadow-2xs transition-all"
+                    className="bg-white dark:bg-slate-900 rounded-2xl border border-gray-200 dark:border-slate-800 overflow-hidden shadow-2xs transition-all"
                   >
                     {/* CABECERA DEL ACORDEÓN */}
                     <div
                       onClick={() => toggleAcordeon(t.id_turno)}
-                      className="p-3 sm:p-3.5 flex items-center justify-between gap-2 cursor-pointer hover:bg-gray-50/80 transition-colors"
+                      className="p-3 sm:p-3.5 flex items-center justify-between gap-2 cursor-pointer hover:bg-gray-50/80 dark:hover:bg-slate-800/50 transition-colors"
                     >
                       <div className="flex items-center gap-3">
-                        <div className="p-2 rounded-xl bg-gray-50 border border-gray-100 text-[#2eb086] shrink-0">
+                        <div className="p-2 rounded-xl bg-gray-50 dark:bg-slate-800 border border-gray-100 dark:border-slate-700 text-[#2eb086] shrink-0">
                           <Clock size={16} />
                         </div>
                         <div>
                           <div className="flex items-center gap-2">
-                            <span className="font-bold text-gray-800 text-xs sm:text-sm">
+                            <span className="font-bold text-gray-800 dark:text-slate-100 text-xs sm:text-sm">
                               {formatFechaTabla(t.fecha_hora_inicio)}
                             </span>
-                            <span className="text-[11px] font-medium text-gray-400">
+                            <span className="text-[11px] font-medium text-gray-400 dark:text-slate-500">
                               {formatSoloHora(t.fecha_hora_inicio)} hs
                             </span>
                           </div>
-                          <span className="text-[11px] text-gray-500 font-medium block">
+                          <span className="text-[11px] text-gray-500 dark:text-slate-400 font-medium block">
                             Estado Turno:{" "}
                             <strong>
                               {t.EstadoTurno?.estado || "Programado"}
@@ -424,7 +425,7 @@ export function VistaPaciente({ isOpen, onClose, paciente }) {
 
                         <button
                           type="button"
-                          className="p-1 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100"
+                          className="p-1 rounded-lg text-gray-400 hover:text-gray-600 dark:hover:text-slate-200 hover:bg-gray-100 dark:hover:bg-slate-800"
                         >
                           {esDesplegado ? (
                             <ChevronUp size={18} />
@@ -437,44 +438,44 @@ export function VistaPaciente({ isOpen, onClose, paciente }) {
 
                     {/* CONTENIDO DESPLEGABLE DEL ACORDEÓN */}
                     {esDesplegado && (
-                      <div className="p-3.5 bg-gray-50/60 border-t border-gray-100 text-xs space-y-3 animate-in fade-in duration-150">
+                      <div className="p-3.5 bg-gray-50/60 dark:bg-slate-950/40 border-t border-gray-100 dark:border-slate-800 text-xs space-y-3 animate-in fade-in duration-150">
                         {/* NOTAS Y PRÁCTICAS */}
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                           <div>
-                            <span className="text-[10px] font-bold text-gray-400 uppercase block mb-1">
+                            <span className="text-[10px] font-bold text-gray-400 dark:text-slate-500 uppercase block mb-1">
                               Notas del Turno
                             </span>
-                            <p className="bg-white p-2 rounded-xl border border-gray-200 text-gray-700 italic">
+                            <p className="bg-white dark:bg-slate-900 p-2 rounded-xl border border-gray-200 dark:border-slate-800 text-gray-700 dark:text-slate-300 italic">
                               {t.notas_consulta ||
                                 "Sin observaciones registradas."}
                             </p>
                           </div>
 
                           <div>
-                            <span className="text-[10px] font-bold text-gray-400 uppercase block mb-1">
+                            <span className="text-[10px] font-bold text-gray-400 dark:text-slate-500 uppercase block mb-1">
                               Resumen de Cobro
                             </span>
-                            <div className="bg-white p-2 rounded-xl border border-gray-200 space-y-1">
+                            <div className="bg-white dark:bg-slate-900 p-2 rounded-xl border border-gray-200 dark:border-slate-800 space-y-1">
                               <div className="flex justify-between">
-                                <span className="text-gray-500">
+                                <span className="text-gray-500 dark:text-slate-400">
                                   Monto Total:
                                 </span>
-                                <span className="font-bold text-gray-800">
+                                <span className="font-bold text-gray-800 dark:text-slate-100">
                                   ${totalAcordado.toFixed(2)}
                                 </span>
                               </div>
                               <div className="flex justify-between">
-                                <span className="text-gray-500">Abonado:</span>
-                                <span className="font-bold text-emerald-600">
+                                <span className="text-gray-500 dark:text-slate-400">Abonado:</span>
+                                <span className="font-bold text-emerald-600 dark:text-emerald-400">
                                   ${totalPagado.toFixed(2)}
                                 </span>
                               </div>
-                              <div className="flex justify-between border-t border-gray-100 pt-1">
-                                <span className="font-bold text-gray-700">
+                              <div className="flex justify-between border-t border-gray-100 dark:border-slate-800 pt-1">
+                                <span className="font-bold text-gray-700 dark:text-slate-300">
                                   Saldo Restante:
                                 </span>
                                 <span
-                                  className={`font-bold ${saldoRestante > 0 ? "text-rose-600" : "text-emerald-600"}`}
+                                  className={`font-bold ${saldoRestante > 0 ? "text-rose-600 dark:text-rose-400" : "text-emerald-600 dark:text-emerald-400"}`}
                                 >
                                   ${saldoRestante.toFixed(2)}
                                 </span>
@@ -483,11 +484,44 @@ export function VistaPaciente({ isOpen, onClose, paciente }) {
                           </div>
                         </div>
 
+                        {/* TRATAMIENTOS / PRÁCTICAS Y DIENTES AFECTADOS */}
+                        {t.PracticaTurnos && t.PracticaTurnos.length > 0 && (
+                          <div className="border-t border-gray-100 dark:border-slate-800 pt-2">
+                            <span className="text-[10px] font-bold text-gray-400 dark:text-slate-500 uppercase block mb-1.5">
+                              Tratamientos y Piezas Dentales
+                            </span>
+                            <div className="flex flex-col gap-1.5">
+                              {t.PracticaTurnos.map((pt, idx) => (
+                                <div
+                                  key={idx}
+                                  className="bg-white dark:bg-slate-900 p-2.5 rounded-xl border border-gray-200 dark:border-slate-800 flex items-center justify-between text-xs"
+                                >
+                                  <div>
+                                    <span className="font-semibold text-gray-800 dark:text-slate-100">
+                                      {pt.Practica?.nombre_referencia ||
+                                        pt.Practica?.nombre_nomenclador ||
+                                        `Práctica #${pt.id_practica}`}
+                                    </span>
+                                    {pt.dientes && pt.dientes.length > 0 && (
+                                      <span className="block text-[11px] text-emerald-700 dark:text-emerald-400 font-medium mt-0.5">
+                                        🦷 {formatearResumenDientes(pt.dientes)}
+                                      </span>
+                                    )}
+                                  </div>
+                                  <span className="text-[10px] font-semibold text-gray-500 dark:text-slate-400 bg-gray-100 dark:bg-slate-800 px-2 py-0.5 rounded-md">
+                                    {pt.ObraSocial?.nombre || "Particular"}
+                                  </span>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+
                         {/* INDICADOR DE SALDO PENDIENTE */}
                         {saldoRestante > 0 && (
                           <div className="flex justify-end pt-1">
-                            <span className="flex items-center gap-1.5 bg-amber-50 text-amber-800 border border-amber-200/80 px-3 py-1.5 rounded-xl font-bold text-xs">
-                              <Banknote size={14} className="text-amber-600" />
+                            <span className="flex items-center gap-1.5 bg-amber-50 dark:bg-amber-950/40 text-amber-800 dark:text-amber-300 border border-amber-200/80 dark:border-amber-800/60 px-3 py-1.5 rounded-xl font-bold text-xs">
+                              <Banknote size={14} className="text-amber-600 dark:text-amber-400" />
                               <span>Saldo pendiente de cobro: ${saldoRestante.toFixed(2)}</span>
                             </span>
                           </div>
@@ -503,7 +537,7 @@ export function VistaPaciente({ isOpen, onClose, paciente }) {
           {/* PAGINACIÓN DE LA FICHA */}
           {totalPaginas > 1 && (
             <div className="flex items-center justify-between pt-2 px-1 shrink-0">
-              <span className="text-[11px] text-gray-500 font-medium">
+              <span className="text-[11px] text-gray-500 dark:text-slate-400 font-medium">
                 Página {paginaActual} de {totalPaginas}
               </span>
               <div className="flex gap-1">
@@ -511,7 +545,7 @@ export function VistaPaciente({ isOpen, onClose, paciente }) {
                   type="button"
                   disabled={paginaActual === 1}
                   onClick={() => setPaginaActual((p) => p - 1)}
-                  className="px-2.5 py-1 rounded-lg bg-gray-100 hover:bg-gray-200 text-xs font-semibold disabled:opacity-40 cursor-pointer"
+                  className="px-2.5 py-1 rounded-lg bg-gray-100 dark:bg-slate-800 hover:bg-gray-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-xs font-semibold disabled:opacity-40 cursor-pointer"
                 >
                   Anterior
                 </button>
@@ -519,7 +553,7 @@ export function VistaPaciente({ isOpen, onClose, paciente }) {
                   type="button"
                   disabled={paginaActual === totalPaginas}
                   onClick={() => setPaginaActual((p) => p + 1)}
-                  className="px-2.5 py-1 rounded-lg bg-gray-100 hover:bg-gray-200 text-xs font-semibold disabled:opacity-40 cursor-pointer"
+                  className="px-2.5 py-1 rounded-lg bg-gray-100 dark:bg-slate-800 hover:bg-gray-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-xs font-semibold disabled:opacity-40 cursor-pointer"
                 >
                   Siguiente
                 </button>
@@ -529,7 +563,7 @@ export function VistaPaciente({ isOpen, onClose, paciente }) {
         </div>
 
         {/* PIE DEL MODAL */}
-        <div className="border-t border-gray-200 pt-3 flex justify-end shrink-0">
+        <div className="border-t border-gray-200 dark:border-slate-800 pt-3 flex justify-end shrink-0">
           <button
             type="button"
             onClick={onClose}

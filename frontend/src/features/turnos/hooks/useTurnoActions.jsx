@@ -39,6 +39,13 @@ export function useTurnoActions(recargar, cerrarModal) {
           id_estado: Number(datosFormulario.id_estado || 1),
           precio_final: parseFloat(datosFormulario.precio_final || 0),
           notas_consulta: datosFormulario.notas_consulta?.trim() || undefined,
+          practicas: Array.isArray(datosFormulario.practicas)
+            ? datosFormulario.practicas
+                .map((p) =>
+                  typeof p === "object" ? Number(p.id_practica) : Number(p)
+                )
+                .filter(Boolean)
+            : undefined,
         };
 
         await api.put(`/turnos/${turnoSeleccionadoCRUD.id_turno}`, payload);
@@ -57,6 +64,13 @@ export function useTurnoActions(recargar, cerrarModal) {
           fecha_hora_inicio: fechaInicioDate.toISOString(),
           fecha_hora_fin: fechaFinDate.toISOString(),
           notas_consulta: datosFormulario.notas_consulta?.trim() || undefined,
+          practicas: Array.isArray(datosFormulario.practicas)
+            ? datosFormulario.practicas
+                .map((p) =>
+                  typeof p === "object" ? Number(p.id_practica) : Number(p)
+                )
+                .filter(Boolean)
+            : [],
         };
 
         await api.post("/turnos", payload);
@@ -76,15 +90,25 @@ export function useTurnoActions(recargar, cerrarModal) {
   const procesarAtencionTurno = async (datosAtencion, turnoSeleccionado, cerrarModalAtender) => {
     if (!turnoSeleccionado) return;
     try {
+      const practicasValidas = (datosAtencion.practicas || []).filter(
+        (p) => p && p.id_practica
+      );
+
       const payloadAtencion = {
         notas_consulta: datosAtencion.notas_consulta?.trim() || undefined,
-        precio_final: parseFloat(datosAtencion.precio_final),
-        practicas_realizadas: datosAtencion.practicas
-          .filter((p) => p.id_practica)
-          .map((p) => Number(p.id_practica)),
-        obras_sociales: datosAtencion.practicas
-          .filter((p) => p.id_practica)
-          .map((p) => (p.id_obra_social ? Number(p.id_obra_social) : null)),
+        precio_final: parseFloat(datosAtencion.precio_final || 0),
+        practicas: practicasValidas.map((p) => ({
+          id_practica: Number(p.id_practica),
+          id_obra_social: p.id_obra_social ? Number(p.id_obra_social) : null,
+          dientes: Array.isArray(p.dientes) ? p.dientes : [],
+        })),
+        practicas_realizadas: practicasValidas.map((p) => Number(p.id_practica)),
+        obras_sociales: practicasValidas.map((p) =>
+          p.id_obra_social ? Number(p.id_obra_social) : null
+        ),
+        dientes_por_practica: practicasValidas.map((p) =>
+          Array.isArray(p.dientes) ? p.dientes : []
+        ),
       };
 
       await api.patch(`/turnos/${turnoSeleccionado.id_turno}/atender`, payloadAtencion);

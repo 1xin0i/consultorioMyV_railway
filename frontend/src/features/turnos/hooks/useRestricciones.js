@@ -49,10 +49,11 @@ export const useRestricciones = () => {
     setRestricciones((prev) => prev.filter((r) => r.id !== id));
   }, []);
 
-  // Formato "YYYY-MM-DD" en zona horaria local
+  // Formato "YYYY-MM-DD" en zona horaria local sin crear Date innecesariamente
   const formatearFechaStr = (f) => {
     if (!f) return "";
-    const d = new Date(f);
+    if (typeof f === "string" && /^\d{4}-\d{2}-\d{2}$/.test(f)) return f;
+    const d = f instanceof Date ? f : new Date(f);
     const y = d.getFullYear();
     const m = (d.getMonth() + 1).toString().padStart(2, "0");
     const day = d.getDate().toString().padStart(2, "0");

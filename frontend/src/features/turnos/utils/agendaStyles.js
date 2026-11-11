@@ -10,50 +10,50 @@ export const OBTENER_ESTILOS_ESTADO = (estado) => {
 
   if (nombreEstado.includes("programado")) {
     return {
-      bg: "bg-amber-50/95 hover:bg-amber-100/90",
-      border: "border-amber-300",
-      text: "text-amber-900",
-      badge: "bg-amber-100 text-amber-800 border-amber-300/60",
+      bg: "bg-amber-50/95 dark:bg-amber-950/80 hover:bg-amber-100/90 dark:hover:bg-amber-900/80",
+      border: "border-amber-300 dark:border-amber-700/80",
+      text: "text-amber-900 dark:text-amber-100",
+      badge: "bg-amber-100 dark:bg-amber-900/60 text-amber-800 dark:text-amber-200 border-amber-300/60 dark:border-amber-700/60",
       indicator: "bg-amber-500",
       icon: Clock,
     };
   }
   if (nombreEstado.includes("atendido")) {
     return {
-      bg: "bg-emerald-50/95 hover:bg-emerald-100/90",
-      border: "border-emerald-300",
-      text: "text-emerald-900",
-      badge: "bg-emerald-100 text-emerald-800 border-emerald-300/60",
+      bg: "bg-emerald-50/95 dark:bg-emerald-950/80 hover:bg-emerald-100/90 dark:hover:bg-emerald-900/80",
+      border: "border-emerald-300 dark:border-emerald-700/80",
+      text: "text-emerald-900 dark:text-emerald-100",
+      badge: "bg-emerald-100 dark:bg-emerald-900/60 text-emerald-800 dark:text-emerald-200 border-emerald-300/60 dark:border-emerald-700/60",
       indicator: "bg-emerald-500",
       icon: CheckCircle2,
     };
   }
   if (nombreEstado.includes("cancelado")) {
     return {
-      bg: "bg-rose-50/95 hover:bg-rose-100/90",
-      border: "border-rose-300",
-      text: "text-rose-900",
-      badge: "bg-rose-100 text-rose-800 border-rose-300/60",
+      bg: "bg-rose-50/95 dark:bg-rose-950/80 hover:bg-rose-100/90 dark:hover:bg-rose-900/80",
+      border: "border-rose-300 dark:border-rose-700/80",
+      text: "text-rose-900 dark:text-rose-100",
+      badge: "bg-rose-100 dark:bg-rose-900/60 text-rose-800 dark:text-rose-200 border-rose-300/60 dark:border-rose-700/60",
       indicator: "bg-rose-500",
       icon: XCircle,
     };
   }
   if (nombreEstado.includes("inasistente") || nombreEstado.includes("inasistido")) {
     return {
-      bg: "bg-[#f0f6f9]/95 hover:bg-[#e4eff4]",
-      border: "border-[#93BBCF]",
-      text: "text-[#2b5d73]",
-      badge: "bg-[#dce9f0] text-[#244f62] border-[#93BBCF]/60",
+      bg: "bg-[#f0f6f9]/95 dark:bg-[#162d38] hover:bg-[#e4eff4] dark:hover:bg-[#1f3d4c]",
+      border: "border-[#93BBCF] dark:border-[#3B7A94]",
+      text: "text-[#2b5d73] dark:text-[#a5d2e6]",
+      badge: "bg-[#dce9f0] dark:bg-[#1d3846] text-[#244f62] dark:text-[#bde0f0] border-[#93BBCF]/60 dark:border-[#3B7A94]/60",
       indicator: "bg-[#3B7A94]",
       icon: UserRoundX,
     };
   }
 
   return {
-    bg: "bg-gray-50 hover:bg-gray-100",
-    border: "border-gray-200",
-    text: "text-gray-800",
-    badge: "bg-gray-100 text-gray-700 border-gray-200",
+    bg: "bg-gray-50 dark:bg-slate-800 hover:bg-gray-100 dark:hover:bg-slate-700",
+    border: "border-gray-200 dark:border-slate-700",
+    text: "text-gray-800 dark:text-slate-200",
+    badge: "bg-gray-100 dark:bg-slate-800 text-gray-700 dark:text-slate-300 border-gray-200 dark:border-slate-700",
     indicator: "bg-gray-400",
     icon: Clock,
   };
@@ -66,9 +66,9 @@ export const OBTENER_ESTILOS_ESTADO = (estado) => {
 export const OBTENER_ESTILOS_OCUPACION_MES = (porcentaje) => {
   if (porcentaje === 0) {
     return {
-      dotColor: "bg-gray-300",
+      dotColor: "bg-gray-300 dark:bg-slate-600",
       barColor: "bg-transparent",
-      badgeColor: "text-gray-400 bg-gray-50 border-gray-200",
+      badgeColor: "text-gray-400 dark:text-slate-400 bg-gray-50 dark:bg-slate-800/80 border-gray-200 dark:border-slate-700",
       etiqueta: "Sin turnos",
     };
   }
@@ -76,7 +76,7 @@ export const OBTENER_ESTILOS_OCUPACION_MES = (porcentaje) => {
     return {
       dotColor: "bg-emerald-500",
       barColor: "bg-emerald-500",
-      badgeColor: "text-emerald-800 bg-emerald-50/70 border-emerald-200/80",
+      badgeColor: "text-emerald-800 dark:text-emerald-300 bg-emerald-50/70 dark:bg-emerald-950/60 border-emerald-200/80 dark:border-emerald-800/60",
       etiqueta: `${porcentaje}%`,
     };
   }
@@ -84,14 +84,14 @@ export const OBTENER_ESTILOS_OCUPACION_MES = (porcentaje) => {
     return {
       dotColor: "bg-amber-500",
       barColor: "bg-amber-500",
-      badgeColor: "text-amber-800 bg-amber-50/80 border-amber-200",
+      badgeColor: "text-amber-800 dark:text-amber-300 bg-amber-50/80 dark:bg-amber-950/60 border-amber-200 dark:border-amber-800/60",
       etiqueta: `${porcentaje}%`,
     };
   }
   return {
     dotColor: "bg-rose-500",
     barColor: "bg-rose-500",
-    badgeColor: "text-rose-800 bg-rose-50/80 border-rose-200",
+    badgeColor: "text-rose-800 dark:text-rose-300 bg-rose-50/80 dark:bg-rose-950/60 border-rose-200 dark:border-rose-800/60",
     etiqueta: `${porcentaje}%`,
   };
 };

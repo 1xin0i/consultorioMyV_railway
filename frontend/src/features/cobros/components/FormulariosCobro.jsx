@@ -21,7 +21,8 @@ export function FormularioCrearEditarCobro({
   editando,
   datosFormulario,
   actualizarDatos,
-  turnosAtendidos,
+  turnosAtendidos = [],
+  cargando = false,
 }) {
   const [turnoSeleccionado, setTurnoSeleccionado] = useState(null);
   const [practicasTurno, setPracticasTurno] = useState([]);
@@ -41,8 +42,8 @@ export function FormularioCrearEditarCobro({
   }, []);
 
   useEffect(() => {
-    const idTurno = datosFormulario.id_turno;
-    if (!idTurno || turnosAtendidos.length === 0) {
+    const idTurno = datosFormulario?.id_turno;
+    if (!idTurno || !turnosAtendidos || turnosAtendidos.length === 0) {
       setTurnoSeleccionado(null);
       setPracticasTurno([]);
       return;
@@ -54,8 +55,25 @@ export function FormularioCrearEditarCobro({
     if (tEncontrado) {
       setTurnoSeleccionado(tEncontrado);
       cargarDetallesDelTurno(idTurno);
+
+      if (
+        (!datosFormulario.monto_a_cobrar ||
+          Number(datosFormulario.monto_a_cobrar) === 0) &&
+        tEncontrado.precio_final
+      ) {
+        actualizarDatos({
+          monto_a_cobrar: tEncontrado.precio_final,
+          id_paciente: tEncontrado.id_paciente,
+        });
+      }
     }
-  }, [datosFormulario.id_turno, turnosAtendidos, cargarDetallesDelTurno]);
+  }, [
+    datosFormulario?.id_turno,
+    datosFormulario?.monto_a_cobrar,
+    turnosAtendidos,
+    cargarDetallesDelTurno,
+    actualizarDatos,
+  ]);
 
   const modalidadActual =
     datosFormulario?.modalidad === "informal" ? "informal" : "inmediato";
@@ -79,22 +97,22 @@ export function FormularioCrearEditarCobro({
   };
 
   const manejarEnvio = (e) => {
-    if (e) e.preventDefault();
+    if (e?.preventDefault) e.preventDefault();
     if (typeof guardarCobro === "function") {
-      guardarCobro(e);
+      guardarCobro(datosFormulario, editando);
     } else if (typeof procesarFormulario === "function") {
-      procesarFormulario(e);
+      procesarFormulario(datosFormulario);
     }
   };
 
   return (
-    <form onSubmit={manejarEnvio}>
-      <Modal
-        isOpen={modalAbierto}
-        onClose={cerrarModal}
-        width="max-w-2xl"
-        title={editando ? "Editar Registro de Cobro" : "Registrar Cobro"}
-      >
+    <Modal
+      isOpen={modalAbierto}
+      onClose={cerrarModal}
+      onSubmit={manejarEnvio}
+      width="max-w-2xl"
+      title={editando ? "Editar Registro de Cobro" : "Registrar Cobro"}
+    >
         <div className="text-xs text-gray-500 mb-4 -mt-2 font-medium">
           Módulo administrativo y contable de cobros
         </div>
@@ -123,6 +141,7 @@ export function FormularioCrearEditarCobro({
                 ) : (
                   <InputFiltro
                     datos={turnosAtendidos}
+                    campoId="id_turno"
                     camposFiltrado={[
                       "id_turno",
                       "Paciente.nombre",
@@ -130,23 +149,24 @@ export function FormularioCrearEditarCobro({
                       "Paciente.dni",
                     ]}
                     formatoVisual={(t) =>
-                      `Turno #${t.id_turno} - ${t.Paciente?.nombre || ""} ${t.Paciente?.apellido || ""} ($${t.precio_final || 0})`
+                      `Turno #${t.id_turno} - ${t.Paciente?.nombre || ""} ${t.Paciente?.apellido || ""} ($${Number(t.precio_final || 0).toLocaleString("es-AR")})`
                     }
                     placeholder="Buscar por ID de turno o nombre de paciente..."
                     valorInicial={datosFormulario.id_turno || ""}
                     alSeleccionar={(t) => {
-                      actualizarDatos({
-                        target: { name: "id_turno", value: t.id_turno },
-                      });
-                      actualizarDatos({
-                        target: { name: "id_paciente", value: t.id_paciente },
-                      });
-                      actualizarDatos({
-                        target: {
-                          name: "monto_a_cobrar",
-                          value: t.precio_final || "",
-                        },
-                      });
+                      if (t) {
+                        actualizarDatos({
+                          id_turno: t.id_turno,
+                          id_paciente: t.id_paciente,
+                          monto_a_cobrar: t.precio_final || "",
+                        });
+                      } else {
+                        actualizarDatos({
+                          id_turno: "",
+                          id_paciente: "",
+                          monto_a_cobrar: "",
+                        });
+                      }
                     }}
                   />
                 )}
@@ -273,19 +293,27 @@ export function FormularioCrearEditarCobro({
           <button
             type="button"
             onClick={cerrarModal}
-            className="px-4 py-2.5 rounded-xl text-gray-600 bg-gray-100 hover:bg-gray-200 font-medium text-xs sm:text-sm transition-colors cursor-pointer"
+            disabled={cargando}
+            className="px-4 py-2.5 rounded-xl text-gray-600 bg-gray-100 hover:bg-gray-200 font-medium text-xs sm:text-sm transition-colors cursor-pointer disabled:opacity-50"
           >
             Cancelar
           </button>
           <button
             type="submit"
-            className="px-5 py-2.5 rounded-xl text-white bg-[#2eb086] hover:bg-[#259370] font-semibold text-xs sm:text-sm transition-all shadow-sm cursor-pointer"
+            onClick={manejarEnvio}
+            disabled={cargando}
+            className="px-5 py-2.5 rounded-xl text-white bg-[#2eb086] hover:bg-[#259370] font-semibold text-xs sm:text-sm transition-all shadow-sm cursor-pointer disabled:opacity-50 flex items-center gap-2"
           >
-            {editando ? "Guardar Cambios" : "Confirmar Registro"}
+            {cargando ? (
+              <span>Procesando...</span>
+            ) : editando ? (
+              "Guardar Cambios"
+            ) : (
+              "Confirmar Registro"
+            )}
           </button>
         </div>
       </Modal>
-    </form>
   );
 }
 
@@ -391,7 +419,7 @@ function DetalleCuotas({ datosFormulario, actualizarDatos }) {
         </span>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <div>
           <label className="block text-xs font-semibold text-gray-700 mb-1">
             Monto Total a Financiar *
@@ -424,22 +452,6 @@ function DetalleCuotas({ datosFormulario, actualizarDatos }) {
               </option>
             ))}
           </select>
-        </div>
-
-        <div>
-          <label className="block text-xs font-semibold text-gray-700 mb-1">
-            1° Vencimiento *
-          </label>
-          <input
-            type="date"
-            name="fecha_primer_vencimiento"
-            value={
-              datosFormulario.fecha_primer_vencimiento ||
-              new Date().toISOString().split("T")[0]
-            }
-            onChange={actualizarDatos}
-            className="w-full border border-gray-300 p-2.5 rounded-xl text-xs sm:text-sm bg-white focus:ring-2 focus:ring-[#2eb086]/50 font-medium text-gray-800"
-          />
         </div>
       </div>
     </div>

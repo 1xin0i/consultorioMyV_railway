@@ -83,9 +83,7 @@ export default function GestionHorarios() {
     <div className="w-full min-h-screen flex flex-col">
       {/* Cabecera común unificada */}
       <Header
-        icono={Clock}
         titulo="Horarios de Atención"
-        subtitulo="Horario de atención"
       />
 
       <div className="w-full max-w-4xl mx-auto p-4 md:p-6 flex flex-col gap-6">
@@ -93,8 +91,8 @@ export default function GestionHorarios() {
         {/* Tarjetas de Selección Horaria */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           {/* Hora Inicio */}
-          <div className="bg-white p-4 rounded-2xl border border-gray-200/80 shadow-xs flex flex-col gap-2">
-            <label className="text-xs font-bold text-gray-700 flex items-center gap-1.5">
+          <div className="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-gray-200/80 dark:border-slate-800 shadow-xs flex flex-col gap-2">
+            <label className="text-xs font-bold text-gray-700 dark:text-slate-200 flex items-center gap-1.5">
               <span>Hora de Apertura</span>
             </label>
             <select
@@ -102,25 +100,25 @@ export default function GestionHorarios() {
               onChange={(e) =>
                 setForm((prev) => ({ ...prev, horaInicio: e.target.value }))
               }
-              className="w-full p-2.5 bg-gray-50 border border-gray-300 rounded-xl text-sm font-bold text-gray-800 focus:outline-none focus:ring-2 focus:ring-[#2eb086] cursor-pointer"
+              className="w-full p-2.5 bg-gray-50 dark:bg-slate-800 border border-gray-300 dark:border-slate-700 rounded-xl text-sm font-bold text-gray-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-[#2eb086] cursor-pointer"
             >
               {Array.from({ length: 15 }, (_, i) => i + 6).map((h) => {
                 const str = `${h.toString().padStart(2, "0")}:00`;
                 return (
-                  <option key={str} value={str}>
+                  <option key={str} value={str} className="bg-white dark:bg-slate-800 text-gray-800 dark:text-slate-100">
                     {str} hs
                   </option>
                 );
               })}
             </select>
-            <span className="text-[11px] text-gray-400">
+            <span className="text-[11px] text-gray-400 dark:text-slate-500">
               Inicio de los turnos en agenda
             </span>
           </div>
 
           {/* Hora Fin */}
-          <div className="bg-white p-4 rounded-2xl border border-gray-200/80 shadow-xs flex flex-col gap-2">
-            <label className="text-xs font-bold text-gray-700 flex items-center gap-1.5">
+          <div className="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-gray-200/80 dark:border-slate-800 shadow-xs flex flex-col gap-2">
+            <label className="text-xs font-bold text-gray-700 dark:text-slate-200 flex items-center gap-1.5">
               <span>Hora de Cierre</span>
             </label>
             <select
@@ -128,25 +126,25 @@ export default function GestionHorarios() {
               onChange={(e) =>
                 setForm((prev) => ({ ...prev, horaFin: e.target.value }))
               }
-              className="w-full p-2.5 bg-gray-50 border border-gray-300 rounded-xl text-sm font-bold text-gray-800 focus:outline-none focus:ring-2 focus:ring-[#2eb086] cursor-pointer"
+              className="w-full p-2.5 bg-gray-50 dark:bg-slate-800 border border-gray-300 dark:border-slate-700 rounded-xl text-sm font-bold text-gray-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-[#2eb086] cursor-pointer"
             >
               {Array.from({ length: 15 }, (_, i) => i + 12).map((h) => {
                 const str = `${h.toString().padStart(2, "0")}:00`;
                 return (
-                  <option key={str} value={str}>
+                  <option key={str} value={str} className="bg-white dark:bg-slate-800 text-gray-800 dark:text-slate-100">
                     {str} hs
                   </option>
                 );
               })}
             </select>
-            <span className="text-[11px] text-gray-400">
+            <span className="text-[11px] text-gray-400 dark:text-slate-500">
               Cierre de atención en el consultorio
             </span>
           </div>
 
           {/* Duración de Módulo */}
-          <div className="bg-white p-4 rounded-2xl border border-gray-200/80 shadow-xs flex flex-col gap-2">
-            <label className="text-xs font-bold text-gray-700 flex items-center gap-1.5">
+          <div className="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-gray-200/80 dark:border-slate-800 shadow-xs flex flex-col gap-2">
+            <label className="text-xs font-bold text-gray-700 dark:text-slate-200 flex items-center gap-1.5">
               <span>Módulo por Turno</span>
             </label>
             <select
@@ -157,22 +155,22 @@ export default function GestionHorarios() {
                   duracionModuloMinutos: Number(e.target.value),
                 }))
               }
-              className="w-full p-2.5 bg-gray-50 border border-gray-300 rounded-xl text-sm font-bold text-gray-800 focus:outline-none focus:ring-2 focus:ring-[#2eb086] cursor-pointer"
+              className="w-full p-2.5 bg-gray-50 dark:bg-slate-800 border border-gray-300 dark:border-slate-700 rounded-xl text-sm font-bold text-gray-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-[#2eb086] cursor-pointer"
             >
-              <option value={15}>15 minutos</option>
-              <option value={20}>20 minutos</option>
-              <option value={30}>30 minutos (Estándar)</option>
-              <option value={45}>45 minutos</option>
-              <option value={60}>1 hora</option>
+              <option value={15} className="bg-white dark:bg-slate-800 text-gray-800 dark:text-slate-100">15 minutos</option>
+              <option value={20} className="bg-white dark:bg-slate-800 text-gray-800 dark:text-slate-100">20 minutos</option>
+              <option value={30} className="bg-white dark:bg-slate-800 text-gray-800 dark:text-slate-100">30 minutos (Estándar)</option>
+              <option value={45} className="bg-white dark:bg-slate-800 text-gray-800 dark:text-slate-100">45 minutos</option>
+              <option value={60} className="bg-white dark:bg-slate-800 text-gray-800 dark:text-slate-100">1 hora</option>
             </select>
-            <span className="text-[11px] text-gray-400">
+            <span className="text-[11px] text-gray-400 dark:text-slate-500">
               División de slots en la grilla
             </span>
           </div>
         </div>
 
         {/* Resumen Dinámico en Tiempo Real */}
-        <div className="bg-emerald-50/70 border border-emerald-200 rounded-2xl p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-emerald-900">
+        <div className="bg-emerald-50/70 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800/60 rounded-2xl p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-emerald-900 dark:text-emerald-200">
           <div className="flex items-center gap-3">
             <div className="p-2.5 bg-[#2eb086] text-white rounded-xl shadow-xs">
               <Clock size={20} />
@@ -181,7 +179,7 @@ export default function GestionHorarios() {
               <p className="text-sm font-bold">
                 Jornada configurada: {horasJornada} horas de atención
               </p>
-              <p className="text-xs text-emerald-700 mt-0.5">
+              <p className="text-xs text-emerald-700 dark:text-emerald-300 mt-0.5">
                 Capacidad máxima de{" "}
                 <span className="font-extrabold">{totalModulosDia} módulos/turnos</span>{" "}
                 por día ({form.horaInicio} a {form.horaFin}).
@@ -189,18 +187,18 @@ export default function GestionHorarios() {
             </div>
           </div>
 
-          <div className="text-xs font-semibold px-3 py-1.5 bg-white text-emerald-800 rounded-xl border border-emerald-200/80 shrink-0">
+          <div className="text-xs font-semibold px-3 py-1.5 bg-white dark:bg-slate-800 text-emerald-800 dark:text-emerald-300 rounded-xl border border-emerald-200/80 dark:border-emerald-800/80 shrink-0">
             Base mensual: 100% = {totalModulosDia} módulos
           </div>
         </div>
 
         {/* Selección de Días de Atención */}
-        <div className="bg-white p-5 rounded-2xl border border-gray-200/80 shadow-xs flex flex-col gap-3">
-          <label className="text-sm font-bold text-gray-800 flex items-center gap-2">
+        <div className="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-gray-200/80 dark:border-slate-800 shadow-xs flex flex-col gap-3">
+          <label className="text-sm font-bold text-gray-800 dark:text-slate-100 flex items-center gap-2">
             <Calendar size={18} className="text-[#2eb086]" />
             <span>Días de Atención Semanales</span>
           </label>
-          <p className="text-xs text-gray-500">
+          <p className="text-xs text-gray-500 dark:text-slate-400">
             Selecciona los días en los que el consultorio se encuentra abierto.
           </p>
 
@@ -214,15 +212,15 @@ export default function GestionHorarios() {
                   onClick={() => toggleDia(id)}
                   className={`p-3 rounded-xl border text-xs font-bold flex flex-col items-center justify-center gap-1.5 transition-all cursor-pointer ${
                     activo
-                      ? "bg-emerald-50 text-emerald-900 border-[#2eb086] shadow-xs"
-                      : "bg-gray-50 text-gray-400 border-gray-200 hover:bg-gray-100"
+                      ? "bg-emerald-50 dark:bg-emerald-950/60 text-emerald-900 dark:text-emerald-200 border-[#2eb086] shadow-xs"
+                      : "bg-gray-50 dark:bg-slate-800/60 text-gray-400 dark:text-slate-400 border-gray-200 dark:border-slate-700 hover:bg-gray-100 dark:hover:bg-slate-800"
                   }`}
                 >
                   <div
                     className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] ${
                       activo
                         ? "bg-[#2eb086] text-white"
-                        : "bg-gray-200 text-gray-500"
+                        : "bg-gray-200 dark:bg-slate-700 text-gray-500 dark:text-slate-300"
                     }`}
                   >
                     {activo ? <Check size={12} /> : "—"}

@@ -2,6 +2,7 @@
 
 import {
   PracticaTurno,
+  PracticaTurnoDiente,
   Turno,
   Practica,
   ObraSocial,
@@ -14,11 +15,22 @@ export const getAllPracticaTurno = async (req, res) => {
       include: [
         {
           model: Practica,
-          attributes: ["codigo_nomenclador", "nombre_nomenclador"],
+          attributes: [
+            "id_practica",
+            "codigo_nomenclador",
+            "nombre_nomenclador",
+            "nombre_referencia",
+            "precio_referencia",
+          ],
         },
         {
           model: ObraSocial,
-          attributes: ["nombre"],
+          attributes: ["id_obra_social", "nombre"],
+        },
+        {
+          model: PracticaTurnoDiente,
+          as: "dientes",
+          attributes: ["id", "numero_fdi", "cara"],
         },
       ],
     });
@@ -57,11 +69,22 @@ export const getPracticasByTurnoId = async (req, res) => {
       include: [
         {
           model: Practica,
-          attributes: ["codigo_nomenclador"],
+          attributes: [
+            "id_practica",
+            "codigo_nomenclador",
+            "nombre_nomenclador",
+            "nombre_referencia",
+            "precio_referencia",
+          ],
         },
         {
           model: ObraSocial,
-          attributes: ["nombre"],
+          attributes: ["id_obra_social", "nombre"],
+        },
+        {
+          model: PracticaTurnoDiente,
+          as: "dientes",
+          attributes: ["id", "numero_fdi", "cara"],
         },
       ],
     });

@@ -63,6 +63,8 @@ export function useCRUDModal(estadoInicialFormulario) {
     } else if (e?.target) {
       const { name, value } = e.target;
       setDatosFormulario((prev) => ({ ...prev, [name]: value }));
+    } else if (e && typeof e === "object") {
+      setDatosFormulario((prev) => ({ ...prev, ...e }));
     }
   }, []);
 

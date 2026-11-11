@@ -24,7 +24,12 @@ export function useObraSocialActions(recargar, cerrarModal) {
     obraSocialSeleccionada,
   ) =>
     guardar(
-      { nombre: datosFormulario.nombre.trim() },
+      {
+        nombre: datosFormulario.nombre.trim(),
+        codigo_prestador: datosFormulario.codigo_prestador
+          ? datosFormulario.codigo_prestador.trim()
+          : null,
+      },
       editando,
       obraSocialSeleccionada,
     );

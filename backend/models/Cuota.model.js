@@ -34,7 +34,8 @@ export const Cuota = sequelize.define(
     },
     fecha_vencimiento: {
       type: DataTypes.DATEONLY,
-      allowNull: false,
+      allowNull: true,
+      defaultValue: DataTypes.NOW,
     },
     fecha_cobro: {
       type: DataTypes.DATE,
@@ -64,10 +65,7 @@ export const Cuota = sequelize.define(
     vencida: {
       type: DataTypes.VIRTUAL,
       get() {
-        const hoy = new Date();
-        return (
-          this.estado !== "Pagada" && new Date(this.fecha_vencimiento) < hoy
-        );
+        return false;
       },
     },
     activo: {

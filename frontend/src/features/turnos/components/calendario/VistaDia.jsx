@@ -1,5 +1,6 @@
 /** @format */
 
+import { useMemo, memo } from "react";
 import { User, Clock, Lock } from "lucide-react";
 import useTurnoTouchClick from "../../hooks/useTurnoTouchClick";
 import {
@@ -11,7 +12,12 @@ import {
   formatHoraSimple,
 } from "../../utils/agendaStyles";
 
-const ItemTurnoDia = ({ turno, style, duracionMinutos, onEventClick }) => {
+const ItemTurnoDia = memo(function ItemTurnoDia({
+  turno,
+  style,
+  duracionMinutos,
+  onEventClick,
+}) {
   const touchProps = useTurnoTouchClick(turno, onEventClick);
   const estado = turno.EstadoTurno?.estado || "Programado";
   const estilos = OBTENER_ESTILOS_ESTADO(estado);
@@ -26,7 +32,7 @@ const ItemTurnoDia = ({ turno, style, duracionMinutos, onEventClick }) => {
     <div
       style={style}
       {...touchProps}
-      className={`absolute pointer-events-auto px-3 py-1.5 sm:py-2 rounded-xl text-xs sm:text-sm font-semibold shadow-2xs border cursor-pointer hover:shadow-md transition-all overflow-hidden flex flex-col justify-center z-10 ${estilos.bg} ${estilos.border} ${estilos.text}`}
+      className={`absolute pointer-events-auto px-3 py-1.5 sm:py-2 rounded-xl text-xs sm:text-sm font-semibold shadow-2xs border cursor-pointer hover:shadow-md transition-shadow overflow-hidden flex flex-col justify-center z-10 ${estilos.bg} ${estilos.border} ${estilos.text}`}
     >
       <div className="flex flex-col justify-center gap-1 min-w-0">
         {/* Fila superior: Paciente y Badge de Estado */}
@@ -47,7 +53,9 @@ const ItemTurnoDia = ({ turno, style, duracionMinutos, onEventClick }) => {
         <div className="flex items-center gap-2.5 text-[11px] sm:text-xs opacity-85 font-normal leading-tight">
           <span className="flex items-center gap-1 font-medium">
             <Clock size={12} className="shrink-0" />
-            <span>{horaInicio} - {horaFin} hs</span>
+            <span>
+              {horaInicio} - {horaFin} hs
+            </span>
           </span>
           {duracionMinutos > 30 && (
             <span className="text-[10px] font-semibold bg-white/70 px-1.5 py-0.2 rounded border border-gray-200/50">
@@ -65,9 +73,9 @@ const ItemTurnoDia = ({ turno, style, duracionMinutos, onEventClick }) => {
       </div>
     </div>
   );
-};
+});
 
-export const VistaDia = ({
+export const VistaDia = memo(function VistaDia({
   fecha,
   turnos,
   slotsHoras = DEFAULT_SLOTS,
@@ -82,28 +90,33 @@ export const VistaDia = ({
   onTouchMove,
   onTouchEnd,
   onEventClick,
-}) => {
-  const turnosDelDia = turnos.filter((t) => esMismoDia(t.fecha_hora_inicio, fecha));
+}) {
   const horaInicioReal =
     horaInicioAgenda ??
     (slotsHoras && slotsHoras.length > 0
       ? parseInt(slotsHoras[0].split(":")[0], 10)
       : 8);
-  const turnosPosicionados = procesarTurnosColocacion(
-    turnosDelDia,
-    SLOT_HEIGHT_DIA,
-    horaInicioReal,
-  );
+
+  const turnosPosicionados = useMemo(() => {
+    const turnosDelDia = turnos.filter((t) =>
+      esMismoDia(t.fecha_hora_inicio, fecha),
+    );
+    return procesarTurnosColocacion(
+      turnosDelDia,
+      SLOT_HEIGHT_DIA,
+      horaInicioReal,
+    );
+  }, [turnos, fecha, horaInicioReal]);
 
   return (
-    <div className="flex w-full min-w-0 bg-white">
+    <div className="flex w-full min-w-0 bg-white dark:bg-slate-900">
       {/* Columna fija de horas */}
-      <div className="w-14 md:w-20 shrink-0 border-r border-gray-200 select-none bg-gray-50/80">
+      <div className="w-14 md:w-20 shrink-0 border-r border-gray-200 dark:border-slate-800 select-none bg-gray-50/80 dark:bg-slate-800/60">
         {slotsHoras.map((hora) => (
           <div
             key={hora}
             style={{ height: `${SLOT_HEIGHT_DIA}px` }}
-            className="text-[11px] md:text-xs font-bold text-gray-700 p-1 md:p-2 border-b border-gray-200 flex items-center justify-center"
+            className="text-[11px] md:text-xs font-bold text-gray-700 dark:text-slate-300 p-1 md:p-2 border-b border-gray-200 dark:border-slate-800 flex items-center justify-center"
           >
             {hora}
           </div>
@@ -115,8 +128,13 @@ export const VistaDia = ({
         {/* Grilla de slots de fondo */}
         {slotsHoras.map((hora) => {
           const pasado = esSlotPasado(fecha, hora);
-          const bloqueado = esSlotBloqueado ? esSlotBloqueado(fecha, hora) : false;
-          const restriccion = bloqueado && obtenerRestriccionSlot ? obtenerRestriccionSlot(fecha, hora) : null;
+          const bloqueado = esSlotBloqueado
+            ? esSlotBloqueado(fecha, hora)
+            : false;
+          const restriccion =
+            bloqueado && obtenerRestriccionSlot
+              ? obtenerRestriccionSlot(fecha, hora)
+              : null;
           const seleccion = isSlotSelected(fecha, hora);
 
           return (
@@ -129,15 +147,18 @@ export const VistaDia = ({
               onTouchStart={(e) => onTouchStart(e, fecha, hora)}
               onTouchMove={onTouchMove}
               onTouchEnd={onTouchEnd}
-              className={`w-full border-b border-gray-200 transition-colors select-none flex items-center px-3 justify-between ${
+              className={`w-full border-b border-gray-200 dark:border-slate-800 transition-colors select-none flex items-center px-3 justify-between ${
                 bloqueado || pasado
-                  ? "bg-slate-100/90 text-slate-600 cursor-not-allowed border-slate-200"
-                  : "bg-white hover:bg-emerald-50/30 cursor-pointer"
-              } ${seleccion ? "!bg-emerald-100/90" : ""}`}
+                  ? "bg-slate-100/90 dark:bg-slate-950/70 text-slate-600 dark:text-slate-400 cursor-not-allowed border-slate-200 dark:border-slate-800"
+                  : "bg-white dark:bg-slate-900 hover:bg-emerald-50/30 dark:hover:bg-emerald-950/30 cursor-pointer"
+              } ${seleccion ? "!bg-emerald-100/90 dark:!bg-emerald-900/60" : ""}`}
             >
               {bloqueado && (
-                <div className="flex items-center gap-1.5 text-xs font-semibold text-slate-700">
-                  <Lock size={13} className="text-slate-600 shrink-0" />
+                <div className="flex items-center gap-1.5 text-xs font-semibold text-slate-700 dark:text-slate-300">
+                  <Lock
+                    size={13}
+                    className="text-slate-600 dark:text-slate-400 shrink-0"
+                  />
                   <span className="truncate">
                     {restriccion?.motivo || "Horario Bloqueado"}
                   </span>
@@ -162,6 +183,6 @@ export const VistaDia = ({
       </div>
     </div>
   );
-};
+});
 
 export default VistaDia;

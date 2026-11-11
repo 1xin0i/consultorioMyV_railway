@@ -388,7 +388,7 @@ export default function FormularioCuotas({ modalCuotas, cerrarModal, cobroSelecc
                           <td className="px-3 py-2.5 font-medium whitespace-nowrap">
                             {c.fecha_cobro
                               ? `${formatFechaTabla(c.fecha_cobro)} ${formatSoloHora(c.fecha_cobro)}`
-                              : formatFechaTabla(c.fecha_vencimiento)}
+                              : "Pendiente"}
                           </td>
                           <td className="px-3 py-2.5 font-bold text-gray-900 whitespace-nowrap">
                             $

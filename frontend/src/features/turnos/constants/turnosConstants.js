@@ -6,4 +6,5 @@ export const ESTADO_INICIAL_TURNO = {
   duracion_minutos: 30,
   precio_final: 0,
   notas_consulta: "",
+  practicas: [],
 };

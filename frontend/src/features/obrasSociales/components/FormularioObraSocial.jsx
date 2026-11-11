@@ -16,30 +16,49 @@ export function FormularioCrearEditar({
         width="max-w-md"
         title={editando ? "Editar Obra Social" : "Nueva Obra Social"}
       >
-        <div>
-          <label className="block text-sm font-semibold text-gray-700 mb-1">Nombre de la Obra Social *</label>
-          <input
-            type="text"
-            name="nombre"
-            value={datosFormulario.nombre}
-            onChange={actualizarDatos}
-            placeholder="Ej: OSDE, Swiss Medical..."
-            required
-            className="w-full border border-gray-300 p-2.5 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#2eb086]/50"
-          />
+        <div className="flex flex-col gap-3.5">
+          <div>
+            <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+              Nombre de la Obra Social / Prepaga *
+            </label>
+            <input
+              type="text"
+              name="nombre"
+              value={datosFormulario.nombre}
+              onChange={actualizarDatos}
+              placeholder="Ej: OSDE, Swiss Medical..."
+              required
+              className="w-full px-3.5 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs sm:text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-[#0d8266]/40"
+            />
+          </div>
+
+          <div>
+            <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+              Código de Prestador / Coseguro
+            </label>
+            <input
+              type="text"
+              name="codigo_prestador"
+              value={datosFormulario.codigo_prestador || ""}
+              onChange={actualizarDatos}
+              placeholder="Ej: #1234-A, #345-SM..."
+              className="w-full px-3.5 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs sm:text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-[#0d8266]/40"
+            />
+          </div>
         </div>
-        <div className="border-t border-gray-200 my-5" />
-        <div className="flex justify-end gap-3">
+
+        <div className="border-t border-slate-100 dark:border-slate-800 my-4" />
+        <div className="flex justify-end gap-2">
           <button
             type="button"
             onClick={cerrarModal}
-            className="px-4 py-2.5 rounded-xl text-gray-600 bg-gray-100 font-medium text-sm"
+            className="px-4 py-2 rounded-xl text-xs font-semibold text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
           >
             Cancelar
           </button>
           <button
             type="submit"
-            className="px-5 py-2.5 rounded-xl text-white bg-[#2eb086] font-semibold text-sm"
+            className="px-4 py-2 rounded-xl text-xs font-bold text-white bg-[#0d8266] hover:bg-[#0b6f57] transition-all cursor-pointer shadow-xs"
           >
             {editando ? "Guardar" : "Crear"}
           </button>

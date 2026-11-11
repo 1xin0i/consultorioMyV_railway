@@ -10,6 +10,7 @@ import {
 
 // * IMPORTACION DE CONTEXTS
 import { AuthProvider } from "./context/AuthContext";
+import { ThemeProvider } from "./context/ThemeContext";
 import { SidebarProvider } from "./context/SidebarProvider";
 import { ConfiguracionProvider } from "./context/ConfiguracionContext";
 
@@ -85,12 +86,14 @@ function App() {
 
   return (
     <AuthProvider>
-      <ConfiguracionProvider>
-        <SidebarProvider>
-          <RouterProvider router={router} />
-          <ReloadPrompt />
-        </SidebarProvider>
-      </ConfiguracionProvider>
+      <ThemeProvider>
+        <ConfiguracionProvider>
+          <SidebarProvider>
+            <RouterProvider router={router} />
+            <ReloadPrompt />
+          </SidebarProvider>
+        </ConfiguracionProvider>
+      </ThemeProvider>
     </AuthProvider>
   );
 }

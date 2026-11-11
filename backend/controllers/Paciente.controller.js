@@ -13,11 +13,20 @@ export const getAllPacientes = async (req, res) => {
       defaultLimit: 9,
       defaultSortField: "apellido",
       defaultSortOrder: "ASC",
-      allowedSortFields: Object.keys(Paciente.rawAttributes),
+      allowedSortFields: [...Object.keys(Paciente.rawAttributes), "paciente"],
     });
-    const where = {
-      activo: true,
-    };
+
+    const estadoFiltrado = req.query.estadoFiltrado;
+    const where = {};
+
+    if (estadoFiltrado === "inactivos" || estadoFiltrado === "false" || estadoFiltrado === "0") {
+      where.activo = false;
+    } else if (estadoFiltrado === "todos" || estadoFiltrado === "all") {
+      // mostrar todos (activos e inactivos)
+    } else {
+      // por defecto solo activos
+      where.activo = true;
+    }
 
     // Busqueda por nombre apellido dni telefono
     if (search !== "") {
@@ -26,6 +35,18 @@ export const getAllPacientes = async (req, res) => {
         { apellido: { [Op.like]: `%${search}%` } },
         { dni: { [Op.like]: `%${search}%` } },
         { telefono: { [Op.like]: `%${search}%` } },
+        Sequelize.where(
+          Sequelize.fn("concat", Sequelize.col("nombre"), " ", Sequelize.col("apellido")),
+          { [Op.like]: `%${search}%` }
+        ),
+      ];
+    }
+
+    let orderClause = [[sortField, sortOrder]];
+    if (sortField === "paciente") {
+      orderClause = [
+        ["apellido", sortOrder],
+        ["nombre", sortOrder],
       ];
     }
 
@@ -33,7 +54,7 @@ export const getAllPacientes = async (req, res) => {
       where,
       limit,
       offset,
-      order: [[sortField, sortOrder]],
+      order: orderClause,
       include: [
         {
           model: PacienteObraSocial,

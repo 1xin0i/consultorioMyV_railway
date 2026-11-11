@@ -12,7 +12,7 @@ import ModalCambiarPassword from "../auth/ModalCambiarPassword";
 export default function Layout() {
   const { isOpen } = useSidebar();
   return (
-    <div className="min-h-screen w-full flex flex-col">
+    <div className="min-h-screen w-full flex flex-col bg-slate-50 dark:bg-slate-950">
       {/* Sidebar PC */}
       <div className="hidden md:block">
         <Sidebar />
@@ -20,9 +20,15 @@ export default function Layout() {
 
       {/* Contenido principal */}
       <main
-        className={`flex-1 w-full transition-all bg-[#F4F6F8] text-black duration-300 ${isOpen ? "md:pl-72.5" : "md:pl-20"}`}
+        className={`flex-1 w-full transition-all bg-slate-50 text-slate-900 dark:bg-slate-950 dark:text-slate-100 duration-300 ${isOpen ? "md:pl-72.5" : "md:pl-20"}`}
       >
-        <Toaster position="top-right" toastOptions={{ duration: 4000 }}>
+        <Toaster
+          position="top-right"
+          toastOptions={{
+            duration: 4000,
+            className: "!bg-white dark:!bg-slate-800 !text-slate-900 dark:!text-slate-100 border border-slate-200 dark:border-slate-700 shadow-lg",
+          }}
+        >
           {(t) => (
             <ToastBar toast={t}>
               {({ icon, message }) => (
@@ -33,7 +39,7 @@ export default function Layout() {
                     <button
                       type="button"
                       onClick={() => toast.dismiss(t.id)}
-                      className="p-1 text-gray-400 hover:text-gray-700 rounded-md transition-colors ml-2 cursor-pointer"
+                      className="p-1 text-gray-400 hover:text-gray-700 dark:text-slate-400 dark:hover:text-slate-200 rounded-md transition-colors ml-2 cursor-pointer"
                       title="Cerrar notificación"
                     >
                       <X size={14} />

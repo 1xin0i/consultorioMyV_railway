@@ -1,6 +1,6 @@
 /** @format */
 
-import { useState, useRef, useEffect, useCallback } from "react";
+import { useState, useRef, useEffect, useCallback, useMemo, memo } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import toast from "react-hot-toast";
 
@@ -13,7 +13,11 @@ import VistaDia from "./VistaDia";
 import VistaSemana from "./VistaSemana";
 import VistaMes from "./VistaMes";
 
-export const AgendaCalendar = ({ turnos = [], onDateSelect, onEventClick }) => {
+export const AgendaCalendar = memo(function AgendaCalendar({
+  turnos = [],
+  onDateSelect,
+  onEventClick,
+}) {
   const {
     configuracion,
     slotsHoras,
@@ -188,6 +192,7 @@ export const AgendaCalendar = ({ turnos = [], onDateSelect, onEventClick }) => {
       }
     },
     disabled: isSelecting || isSelectingMes,
+    scrollToTopOnSwipe: false,
   });
 
   const irHoy = () => setFechaActual(new Date());
@@ -199,8 +204,8 @@ export const AgendaCalendar = ({ turnos = [], onDateSelect, onEventClick }) => {
     return `${y}-${m}-${d}T${horaStr}:00`;
   };
 
-  const getDiasSemana = (date) => {
-    const start = new Date(date);
+  const diasSemana = useMemo(() => {
+    const start = new Date(fechaActual);
     const day = start.getDay();
     const diff = start.getDate() - day + (day === 0 ? -6 : 1);
     start.setDate(diff);
@@ -212,7 +217,15 @@ export const AgendaCalendar = ({ turnos = [], onDateSelect, onEventClick }) => {
       dias.push(d);
     }
     return dias;
-  };
+  }, [fechaActual]);
+
+  const handleEventClick = useCallback((...args) => {
+    onEventClickRef.current?.(...args);
+  }, []);
+
+  const cerrarModalRestriccion = useCallback(() => {
+    setModalRestriccionAbierto(false);
+  }, []);
 
   // Validación estricta por hora exacta (comparando fecha y hora del slot vs ahora)
   const esSlotPasado = useCallback(
@@ -566,25 +579,25 @@ export const AgendaCalendar = ({ turnos = [], onDateSelect, onEventClick }) => {
   return (
     <div
       {...interactiveSwipeProps}
-      className="w-full h-full flex flex-col bg-white rounded-2xl select-none overflow-hidden border border-gray-200/90 shadow-sm relative"
+      className="w-full h-full flex flex-col bg-white dark:bg-slate-900 rounded-2xl select-none overflow-hidden border border-gray-200/90 dark:border-slate-800 shadow-sm relative"
     >
       {/* ─── HEADER DE LA AGENDA ─── */}
-      <div className="border-b border-gray-200/80 bg-white flex flex-col">
+      <div className="border-b border-gray-200/80 dark:border-slate-800 bg-white dark:bg-slate-900 flex flex-col">
         {/* Fila principal: navegación de fechas a la izquierda, selector de vista a la derecha */}
         <div className="flex items-center justify-between gap-1.5 px-2.5 py-2 sm:px-4 sm:py-2.5 min-w-0">
           <div className="flex items-center gap-1.5 sm:gap-2.5 min-w-0">
             <button
               type="button"
               onClick={irHoy}
-              className="px-2.5 py-1 sm:px-3.5 sm:py-1.5 text-xs font-bold text-gray-800 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 hover:border-gray-300 shadow-xs transition-colors shrink-0 cursor-pointer"
+              className="px-2.5 py-1 sm:px-3.5 sm:py-1.5 text-xs font-bold text-gray-800 dark:text-slate-200 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-lg hover:bg-gray-50 dark:hover:bg-slate-700 hover:border-gray-300 dark:hover:border-slate-600 shadow-xs transition-colors shrink-0 cursor-pointer"
             >
               Hoy
             </button>
-            <div className="flex items-center bg-white border border-gray-200 rounded-lg shadow-xs overflow-hidden shrink-0">
+            <div className="flex items-center bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-lg shadow-xs overflow-hidden shrink-0">
               <button
                 type="button"
                 onClick={() => cambiarFecha(-1)}
-                className="p-1 sm:p-1.5 text-gray-700 hover:text-gray-900 hover:bg-gray-50 transition-colors cursor-pointer"
+                className="p-1 sm:p-1.5 text-gray-700 dark:text-slate-300 hover:text-gray-900 dark:hover:text-white hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors cursor-pointer"
                 aria-label="Anterior"
               >
                 <ChevronLeft size={16} className="sm:w-5 sm:h-5" />
@@ -592,14 +605,14 @@ export const AgendaCalendar = ({ turnos = [], onDateSelect, onEventClick }) => {
               <button
                 type="button"
                 onClick={() => cambiarFecha(1)}
-                className="p-1 sm:p-1.5 text-gray-700 hover:text-gray-900 hover:bg-gray-50 transition-colors cursor-pointer"
+                className="p-1 sm:p-1.5 text-gray-700 dark:text-slate-300 hover:text-gray-900 dark:hover:text-white hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors cursor-pointer"
                 aria-label="Siguiente"
               >
                 <ChevronRight size={16} className="sm:w-5 sm:h-5" />
               </button>
             </div>
             {/* Versión móvil compacta */}
-            <h2 className="sm:hidden text-xs font-bold text-gray-900 capitalize truncate min-w-0">
+            <h2 className="sm:hidden text-xs font-bold text-gray-900 dark:text-slate-100 capitalize truncate min-w-0">
               {vista === "dia"
                 ? fechaActual.toLocaleDateString("es-AR", {
                     weekday: "short",
@@ -614,7 +627,7 @@ export const AgendaCalendar = ({ turnos = [], onDateSelect, onEventClick }) => {
                     })}
             </h2>
             {/* Versión escritorio completa */}
-            <h2 className="hidden sm:inline text-sm md:text-base font-extrabold text-gray-900 capitalize ml-1 truncate">
+            <h2 className="hidden sm:inline text-sm md:text-base font-extrabold text-gray-900 dark:text-slate-100 capitalize ml-1 truncate">
               {fechaActual.toLocaleDateString("es-AR", {
                 month: "long",
                 year: "numeric",
@@ -624,14 +637,14 @@ export const AgendaCalendar = ({ turnos = [], onDateSelect, onEventClick }) => {
           </div>
 
           {/* Selector de vistas: fijo a la derecha */}
-          <div className="flex items-center bg-gray-100 p-0.5 sm:p-1 rounded-xl text-xs font-semibold shrink-0 ml-auto border border-gray-200/50">
+          <div className="flex items-center bg-gray-100 dark:bg-slate-800 p-0.5 sm:p-1 rounded-xl text-xs font-semibold shrink-0 ml-auto border border-gray-200/50 dark:border-slate-700">
             <button
               type="button"
               onClick={() => setVista("dia")}
               className={`px-2 py-1 sm:px-3.5 sm:py-1.5 rounded-lg transition-all text-[11px] sm:text-xs cursor-pointer ${
                 vista === "dia"
-                  ? "bg-white text-gray-900 shadow-xs font-bold"
-                  : "text-gray-600 hover:text-gray-900"
+                  ? "bg-white dark:bg-slate-700 text-gray-900 dark:text-white shadow-xs font-bold"
+                  : "text-gray-600 dark:text-slate-400 hover:text-gray-900 dark:hover:text-white"
               }`}
             >
               Día
@@ -641,8 +654,8 @@ export const AgendaCalendar = ({ turnos = [], onDateSelect, onEventClick }) => {
               onClick={() => setVista("semana")}
               className={`px-2 py-1 sm:px-3.5 sm:py-1.5 rounded-lg transition-all text-[11px] sm:text-xs cursor-pointer ${
                 vista === "semana"
-                  ? "bg-white text-gray-900 shadow-xs font-bold"
-                  : "text-gray-600 hover:text-gray-900"
+                  ? "bg-white dark:bg-slate-700 text-gray-900 dark:text-white shadow-xs font-bold"
+                  : "text-gray-600 dark:text-slate-400 hover:text-gray-900 dark:hover:text-white"
               }`}
             >
               Semana
@@ -652,8 +665,8 @@ export const AgendaCalendar = ({ turnos = [], onDateSelect, onEventClick }) => {
               onClick={() => setVista("mes")}
               className={`px-2 py-1 sm:px-3.5 sm:py-1.5 rounded-lg transition-all text-[11px] sm:text-xs cursor-pointer ${
                 vista === "mes"
-                  ? "bg-white text-gray-900 shadow-xs font-bold"
-                  : "text-gray-600 hover:text-gray-900"
+                  ? "bg-white dark:bg-slate-700 text-gray-900 dark:text-white shadow-xs font-bold"
+                  : "text-gray-600 dark:text-slate-400 hover:text-gray-900 dark:hover:text-white"
               }`}
             >
               Mes
@@ -664,12 +677,12 @@ export const AgendaCalendar = ({ turnos = [], onDateSelect, onEventClick }) => {
         {/* Leyenda de ocupación exclusiva para vista mes */}
         {vista === "mes" && (
           <div className="px-2 pb-2.5 sm:px-3.5 sm:pb-3 -mt-1 flex justify-end items-center">
-            <div className="flex flex-wrap items-center justify-end gap-2 sm:gap-3.5 text-[11px] text-gray-600">
-              <span className="font-bold text-gray-800 flex items-center gap-1">
+            <div className="flex flex-wrap items-center justify-end gap-2 sm:gap-3.5 text-[11px] text-gray-600 dark:text-slate-400">
+              <span className="font-bold text-gray-800 dark:text-slate-200 flex items-center gap-1">
                 Ocupación:
               </span>
               <span className="inline-flex items-center gap-1.5">
-                <span className="w-2.5 h-2.5 rounded border border-gray-300 inline-block bg-white" />
+                <span className="w-2.5 h-2.5 rounded border border-gray-300 dark:border-slate-700 inline-block bg-white dark:bg-slate-800" />
                 <span>Libre ({capacidadTotal} disp.)</span>
               </span>
               <span className="inline-flex items-center gap-1.5">
@@ -692,12 +705,12 @@ export const AgendaCalendar = ({ turnos = [], onDateSelect, onEventClick }) => {
       {/* ─── CONTENEDOR PRINCIPAL DE LA VISTA ─── */}
       <div
         ref={containerRef}
-        className="flex-1 overflow-y-auto relative min-h-0 bg-white"
+        className="flex-1 overflow-y-auto relative min-h-0 bg-white dark:bg-slate-900"
         style={{ touchAction: isSelecting || isSelectingMes ? "none" : "pan-y" }}
       >
         <div
           style={interactiveSwipeStyle}
-          className="w-full h-full will-change-transform"
+          className="w-full h-full"
         >
         {vista === "dia" && (
           <VistaDia
@@ -714,7 +727,7 @@ export const AgendaCalendar = ({ turnos = [], onDateSelect, onEventClick }) => {
             onTouchStart={handleTouchStart}
             onTouchMove={handleTouchMove}
             onTouchEnd={handleTouchEnd}
-            onEventClick={(...args) => onEventClickRef.current?.(...args)}
+            onEventClick={handleEventClick}
           />
         )}
 
@@ -723,8 +736,9 @@ export const AgendaCalendar = ({ turnos = [], onDateSelect, onEventClick }) => {
             fechaActual={fechaActual}
             setFechaActual={setFechaActual}
             setVista={setVista}
-            dias={getDiasSemana(fechaActual)}
+            dias={diasSemana}
             turnos={turnos}
+            ahora={ahora}
             slotsHoras={slotsHorasActuales}
             horaInicioAgenda={horaInicioNum}
             esSlotPasado={esSlotPasado}
@@ -739,7 +753,7 @@ export const AgendaCalendar = ({ turnos = [], onDateSelect, onEventClick }) => {
             onTouchStart={handleTouchStart}
             onTouchMove={handleTouchMove}
             onTouchEnd={handleTouchEnd}
-            onEventClick={(...args) => onEventClickRef.current?.(...args)}
+            onEventClick={handleEventClick}
           />
         )}
 
@@ -764,11 +778,11 @@ export const AgendaCalendar = ({ turnos = [], onDateSelect, onEventClick }) => {
       </div>
 
       {/* ─── BOTONES RÁPIDOS FLOTANTES INFERIORES EN TELÉFONO ─── */}
-      <div className="fixed md:hidden right-4 bottom-20 z-40 flex items-center gap-1 bg-white/95 backdrop-blur-xs border border-gray-200/90 shadow-lg rounded-full p-1 transition-all">
+      <div className="fixed md:hidden right-4 bottom-20 z-40 flex items-center gap-1 bg-white/95 border border-gray-200/90 shadow-lg rounded-full p-1">
         <button
           type="button"
           onClick={() => cambiarFecha(-1)}
-          className="p-2 text-gray-700 hover:text-gray-900 hover:bg-gray-100 rounded-full active:scale-95 transition-all cursor-pointer"
+          className="p-2 text-gray-700 hover:text-gray-900 hover:bg-gray-100 rounded-full active:scale-95 transition-colors cursor-pointer"
           aria-label="Anterior"
         >
           <ChevronLeft size={18} />
@@ -776,33 +790,32 @@ export const AgendaCalendar = ({ turnos = [], onDateSelect, onEventClick }) => {
         <button
           type="button"
           onClick={irHoy}
-          className="px-2.5 py-1 text-xs font-bold text-emerald-800 bg-emerald-50 hover:bg-emerald-100 rounded-full active:scale-95 transition-all cursor-pointer"
+          className="px-2.5 py-1 text-xs font-bold text-emerald-800 bg-emerald-50 hover:bg-emerald-100 rounded-full active:scale-95 transition-colors cursor-pointer"
         >
           Hoy
         </button>
         <button
           type="button"
           onClick={() => cambiarFecha(1)}
-          className="p-2 text-gray-700 hover:text-gray-900 hover:bg-gray-100 rounded-full active:scale-95 transition-all cursor-pointer"
+          className="p-2 text-gray-700 hover:text-gray-900 hover:bg-gray-100 rounded-full active:scale-95 transition-colors cursor-pointer"
           aria-label="Siguiente"
         >
           <ChevronRight size={18} />
         </button>
       </div>
       {/* ─── MODAL DE RESTRICCIONES (DISPONIBLE PARA SEMANA Y DÍA) ─── */}
-      <ModalRestriccion
-        isOpen={modalRestriccionAbierto}
-        onClose={() => setModalRestriccionAbierto(false)}
-        rangoFechas={rangoModalRestriccion}
-        onGuardar={agregarRestriccion}
-        onEliminar={eliminarRestriccion}
-        restriccionesExistentes={
-          obtenerRestriccionesDeFecha?.(rangoModalRestriccion.inicio) || []
-        }
-      />
+      {modalRestriccionAbierto && (
+        <ModalRestriccion
+          isOpen={modalRestriccionAbierto}
+          onClose={cerrarModalRestriccion}
+          rangoFechas={rangoModalRestriccion}
+          onGuardar={agregarRestriccion}
+          onEliminar={eliminarRestriccion}
+        />
+      )}
     </div>
   );
-};
+});
 
 export const AgendaCalendario = AgendaCalendar;
 export default AgendaCalendar;
