@@ -20,6 +20,28 @@ export const Usuario = sequelize.define(
       type: DataTypes.STRING,
       allowNull: false,
     },
+    email: {
+      type: DataTypes.STRING,
+      allowNull: true,
+      unique: true,
+      validate: {
+        isEmail: {
+          msg: "Formato de correo electrónico inválido.",
+        },
+      },
+    },
+    reset_token: {
+      type: DataTypes.STRING,
+      allowNull: true,
+    },
+    reset_token_expires: {
+      type: DataTypes.DATE,
+      allowNull: true,
+    },
+    refresh_token: {
+      type: DataTypes.STRING(512),
+      allowNull: true,
+    },
     rol: {
       type: DataTypes.ENUM("admin", "odontologo"),
       allowNull: false,

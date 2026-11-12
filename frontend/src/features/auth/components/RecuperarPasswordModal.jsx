@@ -1,9 +1,10 @@
 /** @format */
 
 import { useState, useEffect, useRef, useCallback, useId } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   X,
-  Mail,
+  User,
   CheckCircle2,
   AlertCircle,
   ShieldCheck,
@@ -16,8 +17,10 @@ import {
 import api from "../../../services/api";
 
 export default function RecuperarPasswordModal({ isOpen, onClose, onSuccess }) {
-  const [paso, setPaso] = useState(1); // 1: Pedir correo, 2: Ingresar código y nueva contraseña, 3: Éxito
-  const [email, setEmail] = useState("");
+  const navigate = useNavigate();
+
+  const [paso, setPaso] = useState(1); // 1: Pedir usuario o correo, 2: Ingresar código y nueva contraseña, 3: Éxito
+  const [identificador, setIdentificador] = useState("");
   const [codigo, setCodigo] = useState("");
   const [nuevaPassword, setNuevaPassword] = useState("");
   const [confirmarPassword, setConfirmarPassword] = useState("");
@@ -25,9 +28,9 @@ export default function RecuperarPasswordModal({ isOpen, onClose, onSuccess }) {
   const [cargando, setCargando] = useState(false);
   const [error, setError] = useState("");
 
-  const inputEmailRef = useRef(null);
+  const inputIdentificadorRef = useRef(null);
   const inputCodigoRef = useRef(null);
-  const emailInputId = useId();
+  const identificadorInputId = useId();
   const codigoInputId = useId();
   const passwordInputId = useId();
   const confirmPasswordInputId = useId();
@@ -35,7 +38,7 @@ export default function RecuperarPasswordModal({ isOpen, onClose, onSuccess }) {
   useEffect(() => {
     return () => {
       setPaso(1);
-      setEmail("");
+      setIdentificador("");
       setCodigo("");
       setNuevaPassword("");
       setConfirmarPassword("");
@@ -46,7 +49,7 @@ export default function RecuperarPasswordModal({ isOpen, onClose, onSuccess }) {
 
   const handleClose = useCallback(() => {
     setPaso(1);
-    setEmail("");
+    setIdentificador("");
     setCodigo("");
     setNuevaPassword("");
     setConfirmarPassword("");
@@ -68,8 +71,12 @@ export default function RecuperarPasswordModal({ isOpen, onClose, onSuccess }) {
 
     window.addEventListener("keydown", handleKeyDown);
     const timer = setTimeout(() => {
-      if (paso === 1 && inputEmailRef.current) inputEmailRef.current.focus();
-      if (paso === 2 && inputCodigoRef.current) inputCodigoRef.current.focus();
+      if (paso === 1 && inputIdentificadorRef.current) {
+        inputIdentificadorRef.current.focus();
+      }
+      if (paso === 2 && inputCodigoRef.current) {
+        inputCodigoRef.current.focus();
+      }
     }, 150);
 
     return () => {
@@ -80,21 +87,25 @@ export default function RecuperarPasswordModal({ isOpen, onClose, onSuccess }) {
 
   if (!isOpen) return null;
 
-  // Paso 1: Enviar solicitud de código
+  // Paso 1: Enviar solicitud de código (por usuario o correo electrónico)
   const handleSolicitarCodigo = async (e) => {
     if (e) e.preventDefault();
     if (cargando) return;
     setError("");
 
-    if (!email.trim() || !email.includes("@")) {
-      setError("Por favor, ingresá un correo electrónico válido.");
+    const identLimpio = identificador.trim();
+    if (!identLimpio) {
+      setError("Por favor, ingresá tu usuario o correo electrónico.");
       return;
     }
 
     setCargando(true);
 
     try {
-      await api.post("/auth/recuperar-password", { email: email.trim() });
+      await api.post("/auth/recuperar-password", {
+        identificador: identLimpio,
+        email: identLimpio,
+      });
       setPaso(2);
       setError("");
     } catch (err) {
@@ -119,8 +130,20 @@ export default function RecuperarPasswordModal({ isOpen, onClose, onSuccess }) {
       return;
     }
 
-    if (nuevaPassword.length < 6) {
-      setError("La nueva contraseña debe tener al menos 6 caracteres.");
+    if (nuevaPassword.length < 8) {
+      setError("La nueva contraseña debe tener al menos 8 caracteres.");
+      return;
+    }
+
+    if (
+      !/[A-Z]/.test(nuevaPassword) ||
+      !/[a-z]/.test(nuevaPassword) ||
+      !/[0-9]/.test(nuevaPassword) ||
+      !/[^A-Za-z0-9]/.test(nuevaPassword)
+    ) {
+      setError(
+        "La contraseña debe contener al menos una mayúscula, una minúscula, un número y un carácter especial.",
+      );
       return;
     }
 
@@ -137,6 +160,11 @@ export default function RecuperarPasswordModal({ isOpen, onClose, onSuccess }) {
         nueva_contraseña: nuevaPassword,
       });
 
+      // Limpiar ambos tokens de sesión (Access Token + Refresh Token)
+      localStorage.removeItem("token");
+      localStorage.removeItem("refreshToken");
+      localStorage.removeItem("usuario");
+
       const msgExito =
         res.data?.mensaje ||
         "Contraseña actualizada exitosamente. Iniciá sesión con tus nuevas credenciales.";
@@ -144,6 +172,7 @@ export default function RecuperarPasswordModal({ isOpen, onClose, onSuccess }) {
       if (onSuccess) {
         onSuccess(msgExito);
         handleClose();
+        navigate("/login", { replace: true });
       } else {
         setPaso(3);
         setError("");
@@ -167,31 +196,31 @@ export default function RecuperarPasswordModal({ isOpen, onClose, onSuccess }) {
       }}
     >
       <div
-        className="relative w-full max-w-md bg-white rounded-2xl shadow-xl border border-slate-200 overflow-hidden text-slate-800 animate-in zoom-in-95 duration-200"
+        className="relative w-full max-w-md bg-white dark:bg-slate-900 rounded-2xl shadow-xl border border-slate-200 dark:border-slate-800 overflow-hidden text-slate-800 dark:text-slate-100 animate-in zoom-in-95 duration-200"
         role="dialog"
         aria-modal="true"
       >
         {/* Encabezado */}
-        <header className="p-6 pb-4 relative border-b border-slate-100 flex items-start justify-between">
+        <header className="p-6 pb-4 relative border-b border-slate-100 dark:border-slate-800 flex items-start justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-teal-50 border border-teal-100 flex items-center justify-center text-[#2eb086] shrink-0">
+            <div className="w-10 h-10 rounded-xl bg-teal-50 dark:bg-emerald-950/60 border border-teal-100 dark:border-emerald-800/60 flex items-center justify-center text-[#2eb086] shrink-0">
               {paso === 2 ? <KeyRound size={20} /> : <ShieldCheck size={20} />}
             </div>
             <div>
-              <h2 className="text-base font-bold text-slate-900 leading-tight">
+              <h2 className="text-base font-bold text-slate-900 dark:text-slate-100 leading-tight">
                 {paso === 2 ? "Código de Verificación" : "Recuperar Contraseña"}
               </h2>
-              <p className="text-xs text-slate-500 mt-0.5">
+              <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
                 {paso === 2
                   ? "Ingresá el PIN de 6 dígitos recibido por correo"
-                  : "Ingresá tu correo para recibir las instrucciones"}
+                  : "Ingresá tu usuario o correo para recibir las instrucciones"}
               </p>
             </div>
           </div>
           <button
             type="button"
             onClick={handleClose}
-            className="w-8 h-8 rounded-lg hover:bg-slate-100 text-slate-400 hover:text-slate-600 flex items-center justify-center transition-colors cursor-pointer"
+            className="w-8 h-8 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 flex items-center justify-center transition-colors cursor-pointer"
             aria-label="Cerrar modal"
           >
             <X size={18} />
@@ -201,24 +230,26 @@ export default function RecuperarPasswordModal({ isOpen, onClose, onSuccess }) {
         {paso === 3 ? (
           /* Estado Éxito: Contraseña restablecida */
           <div className="p-6 flex flex-col items-center text-center gap-4">
-            <div className="w-14 h-14 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-600 flex items-center justify-center animate-in zoom-in duration-200">
+            <div className="w-14 h-14 rounded-full bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200 dark:border-emerald-800/60 text-emerald-600 dark:text-emerald-400 flex items-center justify-center animate-in zoom-in duration-200">
               <CheckCircle2 size={30} />
             </div>
             <div className="space-y-1">
-              <h3 className="text-sm font-bold text-slate-900">
+              <h3 className="text-sm font-bold text-slate-900 dark:text-slate-100">
                 ¡Contraseña Restablecida!
               </h3>
-              <p className="text-xs text-slate-600 leading-relaxed max-w-xs">
-                Tu clave de acceso ha sido actualizada con éxito. Ya podés iniciar sesión con tus nuevas credenciales.
+              <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed max-w-xs">
+                Tu clave de acceso ha sido actualizada con éxito. Ya podés
+                iniciar sesión con tus nuevas credenciales.
               </p>
             </div>
             <button
               type="button"
               onClick={() => {
                 onSuccess?.(
-                  "Contraseña actualizada exitosamente. Iniciá sesión con tus nuevas credenciales."
+                  "Contraseña actualizada exitosamente. Iniciá sesión con tus nuevas credenciales.",
                 );
                 handleClose();
+                navigate("/login", { replace: true });
               }}
               className="w-full mt-2 py-2.5 px-4 rounded-xl text-xs font-semibold text-white bg-[#2eb086] hover:bg-[#259370] active:scale-98 transition-all shadow-sm cursor-pointer"
             >
@@ -227,16 +258,22 @@ export default function RecuperarPasswordModal({ isOpen, onClose, onSuccess }) {
           </div>
         ) : paso === 2 ? (
           /* Paso 2: Ingresar PIN de 6 dígitos y nueva contraseña */
-          <form onSubmit={handleRestablecerPassword} autoComplete="off" className="p-6 space-y-4">
-            <div className="p-3 rounded-xl bg-teal-50 border border-teal-100 text-teal-800 text-xs font-medium leading-relaxed">
-              Enviamos un código de 6 dígitos a <strong>{email}</strong>. Válido durante 15 minutos.
+          <form
+            onSubmit={handleRestablecerPassword}
+            autoComplete="off"
+            className="p-6 space-y-4"
+          >
+            <div className="p-3 rounded-xl bg-teal-50 dark:bg-emerald-950/40 border border-teal-100 dark:border-emerald-800/60 text-teal-800 dark:text-emerald-300 text-xs font-medium leading-relaxed">
+              Si los datos de <strong>{identificador}</strong> coinciden con una
+              cuenta registrada, enviamos un código de 6 dígitos al correo
+              asociado (válido por 15 minutos).
             </div>
 
             {/* Código de 6 dígitos */}
             <div className="space-y-1.5">
               <label
                 htmlFor={codigoInputId}
-                className="block text-xs font-semibold text-slate-700 text-center"
+                className="block text-xs font-semibold text-slate-700 dark:text-slate-300 text-center"
               >
                 Código de 6 Dígitos
               </label>
@@ -257,7 +294,7 @@ export default function RecuperarPasswordModal({ isOpen, onClose, onSuccess }) {
                     setError("");
                   }}
                   placeholder="000000"
-                  className="w-full text-center font-mono text-2xl tracking-[0.25em] font-bold py-2.5 px-4 bg-white border border-slate-200 rounded-xl text-[#0f766e] placeholder:text-slate-300 focus:outline-none focus:ring-2 focus:ring-[#2eb086]/30 focus:border-[#2eb086] transition-all disabled:opacity-60 disabled:cursor-not-allowed"
+                  className="w-full text-center font-mono text-2xl tracking-[0.25em] font-bold py-2.5 px-4 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-[#0f766e] dark:text-emerald-400 placeholder:text-slate-300 dark:placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-[#2eb086]/30 focus:border-[#2eb086] transition-all disabled:opacity-60 disabled:cursor-not-allowed"
                 />
               </div>
             </div>
@@ -266,12 +303,12 @@ export default function RecuperarPasswordModal({ isOpen, onClose, onSuccess }) {
             <div className="space-y-1.5">
               <label
                 htmlFor={passwordInputId}
-                className="block text-xs font-semibold text-slate-700"
+                className="block text-xs font-semibold text-slate-700 dark:text-slate-300"
               >
-                Nueva Contraseña
+                Nueva Contraseña (mín. 8 caracteres, mayúscula, número y símbolo)
               </label>
               <div className="relative flex items-center">
-                <span className="absolute left-3.5 text-slate-400">
+                <span className="absolute left-3.5 text-slate-400 dark:text-slate-500">
                   <Lock size={16} />
                 </span>
                 <input
@@ -283,13 +320,13 @@ export default function RecuperarPasswordModal({ isOpen, onClose, onSuccess }) {
                     setNuevaPassword(e.target.value);
                     setError("");
                   }}
-                  placeholder="Mínimo 6 caracteres"
-                  className="w-full pl-10 pr-10 py-2.5 bg-white border border-slate-200 rounded-xl text-base md:text-xs font-medium text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#2eb086]/30 focus:border-[#2eb086] transition-all disabled:opacity-60"
+                  placeholder="Ej: MiClave2026!"
+                  className="w-full pl-10 pr-10 py-2.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-base md:text-xs font-medium text-slate-800 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-[#2eb086]/30 focus:border-[#2eb086] transition-all disabled:opacity-60"
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 text-slate-400 hover:text-slate-600 transition-colors cursor-pointer"
+                  className="absolute right-3 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors cursor-pointer"
                 >
                   {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
                 </button>
@@ -300,12 +337,12 @@ export default function RecuperarPasswordModal({ isOpen, onClose, onSuccess }) {
             <div className="space-y-1.5">
               <label
                 htmlFor={confirmPasswordInputId}
-                className="block text-xs font-semibold text-slate-700"
+                className="block text-xs font-semibold text-slate-700 dark:text-slate-300"
               >
                 Confirmar Nueva Contraseña
               </label>
               <div className="relative flex items-center">
-                <span className="absolute left-3.5 text-slate-400">
+                <span className="absolute left-3.5 text-slate-400 dark:text-slate-500">
                   <Lock size={16} />
                 </span>
                 <input
@@ -318,13 +355,13 @@ export default function RecuperarPasswordModal({ isOpen, onClose, onSuccess }) {
                     setError("");
                   }}
                   placeholder="Repetí la contraseña"
-                  className="w-full pl-10 pr-4 py-2.5 bg-white border border-slate-200 rounded-xl text-base md:text-xs font-medium text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#2eb086]/30 focus:border-[#2eb086] transition-all disabled:opacity-60"
+                  className="w-full pl-10 pr-4 py-2.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-base md:text-xs font-medium text-slate-800 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-[#2eb086]/30 focus:border-[#2eb086] transition-all disabled:opacity-60"
                 />
               </div>
             </div>
 
             {error && (
-              <div className="flex items-start gap-2 p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs font-medium animate-in fade-in">
+              <div className="flex items-start gap-2 p-3 rounded-xl bg-rose-50 dark:bg-rose-950/60 border border-rose-200 dark:border-rose-800/60 text-rose-700 dark:text-rose-300 text-xs font-medium animate-in fade-in">
                 <AlertCircle size={16} className="shrink-0 mt-0.5" />
                 <span>{error}</span>
               </div>
@@ -332,7 +369,12 @@ export default function RecuperarPasswordModal({ isOpen, onClose, onSuccess }) {
 
             <button
               type="submit"
-              disabled={cargando || codigo.length !== 6 || !nuevaPassword || !confirmarPassword}
+              disabled={
+                cargando ||
+                codigo.length !== 6 ||
+                !nuevaPassword ||
+                !confirmarPassword
+              }
               className="w-full py-2.5 px-4 rounded-xl text-xs font-semibold text-white bg-[#2eb086] hover:bg-[#259370] active:scale-98 disabled:opacity-60 disabled:cursor-not-allowed transition-all shadow-sm cursor-pointer flex items-center justify-center gap-2"
             >
               {cargando ? (
@@ -355,47 +397,53 @@ export default function RecuperarPasswordModal({ isOpen, onClose, onSuccess }) {
                 setError("");
               }}
               disabled={cargando}
-              className="w-full text-center text-xs text-slate-500 hover:text-slate-800 font-semibold cursor-pointer transition-colors pt-1"
+              className="w-full text-center text-xs text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 font-semibold cursor-pointer transition-colors pt-1"
             >
-              ← Volver o ingresar otro correo
+              ← Volver o ingresar otro usuario / correo
             </button>
           </form>
         ) : (
-          /* Paso 1: Pedir Correo */
-          <form onSubmit={handleSolicitarCodigo} autoComplete="off" className="p-6 space-y-4">
+          /* Paso 1: Pedir Usuario o Correo Electrónico */
+          <form
+            onSubmit={handleSolicitarCodigo}
+            autoComplete="off"
+            className="p-6 space-y-4"
+          >
             <div className="space-y-1.5">
               <label
-                htmlFor={emailInputId}
-                className="block text-xs font-semibold text-slate-700"
+                htmlFor={identificadorInputId}
+                className="block text-xs font-semibold text-slate-700 dark:text-slate-300"
               >
-                Correo Electrónico Registrado
+                Usuario o Correo Electrónico
               </label>
               <div className="relative flex items-center">
-                <span className="absolute left-3.5 text-slate-400">
-                  <Mail size={16} />
+                <span className="absolute left-3.5 text-slate-400 dark:text-slate-500">
+                  <User size={16} />
                 </span>
                 <input
-                  ref={inputEmailRef}
-                  id={emailInputId}
-                  name="email_recovery_prevent_autofill"
-                  type="email"
-                  value={email}
+                  ref={inputIdentificadorRef}
+                  id={identificadorInputId}
+                  name="identificador_recovery_prevent_autofill"
+                  type="text"
+                  value={identificador}
                   disabled={cargando}
                   onChange={(e) => {
-                    setEmail(e.target.value);
+                    setIdentificador(e.target.value);
                     setError("");
                   }}
-                  placeholder="ejemplo@consultoriomyv.com"
+                  placeholder="Ej: admin o correo@ejemplo.com"
                   autoComplete="off"
-                  className={`w-full pl-10 pr-4 py-2.5 bg-white border border-slate-200 rounded-xl text-base md:text-xs font-medium text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#2eb086]/30 focus:border-[#2eb086] transition-all ${
-                    cargando ? "opacity-60 cursor-not-allowed bg-slate-50" : ""
+                  className={`w-full pl-10 pr-4 py-2.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-base md:text-xs font-medium text-slate-800 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-[#2eb086]/30 focus:border-[#2eb086] transition-all ${
+                    cargando
+                      ? "opacity-60 cursor-not-allowed bg-slate-50 dark:bg-slate-800/50"
+                      : ""
                   }`}
                 />
               </div>
             </div>
 
             {error && (
-              <div className="flex items-start gap-2 p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs font-medium animate-in fade-in">
+              <div className="flex items-start gap-2 p-3 rounded-xl bg-rose-50 dark:bg-rose-950/60 border border-rose-200 dark:border-rose-800/60 text-rose-700 dark:text-rose-300 text-xs font-medium animate-in fade-in">
                 <AlertCircle size={16} className="shrink-0 mt-0.5" />
                 <span>{error}</span>
               </div>
@@ -403,7 +451,7 @@ export default function RecuperarPasswordModal({ isOpen, onClose, onSuccess }) {
 
             <button
               type="submit"
-              disabled={cargando || !email.trim()}
+              disabled={cargando || !identificador.trim()}
               className="w-full py-2.5 px-4 rounded-xl text-xs font-semibold text-white bg-[#2eb086] hover:bg-[#259370] active:scale-98 disabled:opacity-60 disabled:cursor-not-allowed transition-all shadow-sm cursor-pointer flex items-center justify-center gap-2"
             >
               {cargando ? (
@@ -420,7 +468,7 @@ export default function RecuperarPasswordModal({ isOpen, onClose, onSuccess }) {
               type="button"
               onClick={handleClose}
               disabled={cargando}
-              className="w-full text-center text-xs text-slate-500 hover:text-slate-800 font-semibold cursor-pointer transition-colors pt-1"
+              className="w-full text-center text-xs text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 font-semibold cursor-pointer transition-colors pt-1"
             >
               Volver al inicio de sesión
             </button>

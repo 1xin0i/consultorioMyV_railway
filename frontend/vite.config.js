@@ -49,7 +49,7 @@ export default defineConfig(({ mode }) => {
           "icons/apple-touch-icon.png",
         ],
         manifest: {
-          /* id: "/", */
+          id: "/",
           name: "Consultorio Odontológico M&V",
           short_name: "M&V Turnos",
           description:

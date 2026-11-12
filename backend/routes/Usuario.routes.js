@@ -7,8 +7,13 @@ import * as UsuarioController from "../controllers/Usuario.controller.js";
 import { validateSchema } from "../middleware/validateSchema.js";
 import { verificarToken } from "../middleware/auth.middleware.js";
 import {
+  mailResetLimiter,
+  verifyCodeLimiter,
+} from "../middleware/rateLimit.middleware.js";
+import {
   loginSchema,
   createUsuarioSchema,
+  updateUsuarioSchema,
   recuperarPasswordSchema,
   restablecerPasswordSchema,
 } from "../schemas/Usuario.schema.js";
@@ -25,16 +30,22 @@ router.post("/refreshToken", UsuarioController.refreshToken);
 
 // 2. Perfil de Usuario Autenticado
 router.get("/me", verificarToken, UsuarioController.obtenerUsuarioActual);
-router.put("/cambiar-password", verificarToken, UsuarioController.cambiarPassword);
+router.put(
+  "/cambiar-password",
+  verificarToken,
+  UsuarioController.cambiarPassword,
+);
 
-// 3. Recuperación de Contraseña por Correo
+// 3. Recuperación de Contraseña por Correo (con Rate Limiters anti-spam y anti-fuerza bruta)
 router.post(
   "/recuperar-password",
+  mailResetLimiter,
   validateSchema(recuperarPasswordSchema),
   UsuarioController.solicitarRecuperacionPassword,
 );
 router.post(
   "/restablecer-password",
+  verifyCodeLimiter,
   validateSchema(restablecerPasswordSchema),
   UsuarioController.restablecerPassword,
 );
@@ -49,6 +60,12 @@ router.post(
   "/",
   validateSchema(createUsuarioSchema),
   UsuarioController.createUsuario,
+);
+router.put(
+  "/:id",
+  verificarToken,
+  validateSchema(updateUsuarioSchema),
+  UsuarioController.updateUsuario,
 );
 
 export default router;

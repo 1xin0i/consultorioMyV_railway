@@ -103,13 +103,29 @@ export function AuthProvider({ children }) {
     setModalPasswordAbierto(false);
   }, []);
 
-  const cambiarPassword = useCallback(async (passwordActual, nuevaPassword) => {
-    const { data } = await api.put("/auth/cambiar-password", {
-      password_actual: passwordActual,
-      nueva_password: nuevaPassword,
-    });
-    return data;
-  }, []);
+  const cambiarPassword = useCallback(
+    async (passwordActual, nuevaPassword, email) => {
+      const payload = {
+        password_actual: passwordActual,
+      };
+      if (nuevaPassword !== undefined && nuevaPassword !== "") {
+        payload.nueva_password = nuevaPassword;
+      }
+      if (email !== undefined) {
+        payload.email = email.trim() === "" ? null : email.trim();
+      }
+
+      const { data } = await api.put("/auth/cambiar-password", payload);
+
+      if (data?.usuario) {
+        setUsuario(data.usuario);
+        localStorage.setItem("usuario", JSON.stringify(data.usuario));
+      }
+
+      return data;
+    },
+    [],
+  );
 
   const value = {
     usuario,

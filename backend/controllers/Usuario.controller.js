@@ -4,10 +4,12 @@ import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import crypto from "crypto";
 import nodemailer from "nodemailer";
+import { Op } from "sequelize";
 import sequelize from "../config/database.js";
 import { Usuario } from "../models/Usuario.model.js";
 
-const JWT_SECRET = process.env.JWT_SECRET || "clave_secreta_super_segura_myv_2026";
+const JWT_SECRET =
+  process.env.JWT_SECRET || "clave_secreta_super_segura_myv_2026";
 const JWT_REFRESH_SECRET =
   process.env.JWT_REFRESH_SECRET || "clave_refresh_super_segura_myv_2026";
 
@@ -17,19 +19,8 @@ const JWT_REFRESH_SECRET =
 const ACCESS_TOKEN_EXP = "4h";
 const REFRESH_TOKEN_EXP = "15d";
 
-// Almacén en memoria de códigos de recuperación temporales
-// Estructura: Map<codigo, { id_usuario, identificador, expira }>
-const codigosRecuperacion = new Map();
-
-// Limpieza periódica cada 10 minutos de códigos vencidos
-setInterval(() => {
-  const ahora = Date.now();
-  for (const [codigo, data] of codigosRecuperacion.entries()) {
-    if (data.expira < ahora) {
-      codigosRecuperacion.delete(codigo);
-    }
-  }
-}, 10 * 60 * 1000);
+const MENSAJE_RECUPERACION_GENERICO =
+  "Si los datos coinciden con una cuenta registrada, se enviarán las instrucciones al correo asociado.";
 
 /**
  * Obtiene el transporter de nodemailer configurado según las variables de entorno.
@@ -59,17 +50,25 @@ const asegurarUsuarioPorDefecto = async () => {
     if (cantidad === 0) {
       const salt = await bcrypt.genSalt(10);
       const hashPassword = await bcrypt.hash("Admin123!", salt);
+      const emailDefault =
+        process.env.ADMIN_RECOVERY_EMAIL?.trim() ||
+        process.env.EMAIL_USER?.trim() ||
+        null;
       await Usuario.create({
         nombre_usuario: "admin",
         contraseña: hashPassword,
+        email: emailDefault,
         rol: "admin",
       });
       console.log(
-        "[AUTH] Usuario inicial creado: usuario 'admin' / contraseña 'Admin123!'"
+        "[AUTH] Usuario inicial creado: usuario 'admin' / contraseña 'Admin123!'",
       );
     }
   } catch (err) {
-    console.error("[AUTH] Error al verificar/crear usuario por defecto:", err.message);
+    console.error(
+      "[AUTH] Error al verificar/crear usuario por defecto:",
+      err.message,
+    );
   }
 };
 
@@ -95,7 +94,7 @@ const generarTokens = (usuario) => {
 };
 
 /**
- * 1. Login General / Maestro
+ * 1. Login General / Maestro (por nombre de usuario o email)
  */
 export const login = async (req, res) => {
   try {
@@ -105,6 +104,7 @@ export const login = async (req, res) => {
       req.body.identificador ||
       req.body.usuario ||
       req.body.nombre_usuario ||
+      req.body.email ||
       "";
     const rawPass =
       req.body.password ||
@@ -112,10 +112,10 @@ export const login = async (req, res) => {
       req.body.contrasenia ||
       "";
 
-    const nombre_usuario = rawUser.trim();
+    const identificador = rawUser.trim();
     const password = rawPass;
 
-    if (!nombre_usuario || !password) {
+    if (!identificador || !password) {
       return res.status(400).json({
         status: "error",
         mensaje: "El usuario y la contraseña son requeridos",
@@ -123,7 +123,15 @@ export const login = async (req, res) => {
     }
 
     const usuario = await Usuario.findOne({
-      where: { nombre_usuario },
+      where: {
+        [Op.or]: [
+          { nombre_usuario: identificador },
+          sequelize.where(
+            sequelize.fn("LOWER", sequelize.col("email")),
+            identificador.toLowerCase(),
+          ),
+        ],
+      },
     });
 
     if (!usuario) {
@@ -143,6 +151,10 @@ export const login = async (req, res) => {
 
     const { token, refreshToken } = generarTokens(usuario);
 
+    // Guardar el refreshToken activo en el usuario para poder invalidarlo ante cambio de clave
+    usuario.refresh_token = refreshToken;
+    await usuario.save();
+
     return res.status(200).json({
       status: "success",
       mensaje: "Inicio de sesión exitoso",
@@ -152,7 +164,10 @@ export const login = async (req, res) => {
       refreshExpiraEn: REFRESH_TOKEN_EXP,
       usuario: {
         id: usuario.id_usuario,
+        id_usuario: usuario.id_usuario,
         nombre: usuario.nombre_usuario,
+        nombre_usuario: usuario.nombre_usuario,
+        email: usuario.email || null,
         rol: usuario.rol,
       },
     });
@@ -172,7 +187,8 @@ export const loginMaestro = login;
  */
 export const refreshToken = async (req, res) => {
   try {
-    const authHeader = req.headers["authorization"] || req.headers["Authorization"];
+    const authHeader =
+      req.headers["authorization"] || req.headers["Authorization"];
     const tokenHeader =
       authHeader && authHeader.startsWith("Bearer ")
         ? authHeader.slice(7).trim()
@@ -208,7 +224,22 @@ export const refreshToken = async (req, res) => {
         });
       }
 
+      // Si el refresh_token fue anulado tras restablecer/cambiar contraseña, rechazar la renovación
+      if (
+        usuario.refresh_token === "REVOKED" ||
+        (usuario.refresh_token && usuario.refresh_token !== tokenRefresh)
+      ) {
+        return res.status(401).json({
+          status: "error",
+          mensaje:
+            "Tu sesión fue cerrada por un cambio de credenciales. Por favor volvé a ingresar.",
+          code: "SESSION_REVOKED",
+        });
+      }
+
       const nuevosTokens = generarTokens(usuario);
+      usuario.refresh_token = nuevosTokens.refreshToken;
+      await usuario.save();
 
       return res.status(200).json({
         status: "success",
@@ -217,7 +248,10 @@ export const refreshToken = async (req, res) => {
         expiraEn: ACCESS_TOKEN_EXP,
         usuario: {
           id: usuario.id_usuario,
+          id_usuario: usuario.id_usuario,
           nombre: usuario.nombre_usuario,
+          nombre_usuario: usuario.nombre_usuario,
+          email: usuario.email || null,
           rol: usuario.rol,
         },
       });
@@ -244,7 +278,7 @@ export const obtenerUsuarioActual = async (req, res) => {
     }
 
     const usuario = await Usuario.findByPk(req.user.id, {
-      attributes: ["id_usuario", "nombre_usuario", "rol"],
+      attributes: ["id_usuario", "nombre_usuario", "email", "rol"],
     });
 
     if (!usuario) {
@@ -268,68 +302,94 @@ export const obtenerUsuarioActual = async (req, res) => {
 };
 
 /**
- * 4. Solicitar Recuperación de Contraseña
+ * 4. Solicitar Recuperación de Contraseña (búsqueda por usuario o email con Op.or)
  */
 export const solicitarRecuperacionPassword = async (req, res) => {
   try {
-    const rawUser = req.body.email || req.body.usuario || req.body.nombre_usuario || "";
-    const identificador = rawUser.trim();
+    const rawIdentificador =
+      req.body.identificador ||
+      req.body.email ||
+      req.body.usuario ||
+      req.body.nombre_usuario ||
+      "";
+    const identificador = rawIdentificador.trim();
 
     if (!identificador) {
       return res.status(400).json({
         status: "error",
-        mensaje: "El usuario o correo es obligatorio.",
+        mensaje: "El usuario o correo electrónico es obligatorio.",
       });
     }
 
-    // Buscar el usuario: primero por nombre exacto, o por odontologo/primer usuario existente
-    let usuario = await Usuario.findOne({ where: { nombre_usuario: identificador } });
-    if (!usuario) {
-      usuario = (await Usuario.findOne({ where: { rol: "odontologo" } })) || (await Usuario.findOne());
-    }
+    const identificadorLower = identificador.toLowerCase();
 
+    // Buscar al usuario tanto por nombre_usuario como por email (Op.or)
+    const usuario = await Usuario.findOne({
+      where: {
+        [Op.or]: [
+          { nombre_usuario: identificador },
+          sequelize.where(
+            sequelize.fn("LOWER", sequelize.col("nombre_usuario")),
+            identificadorLower,
+          ),
+          sequelize.where(
+            sequelize.fn("LOWER", sequelize.col("email")),
+            identificadorLower,
+          ),
+        ],
+      },
+    });
+
+    // Respuesta genérica si no existe para no filtrar qué usuarios o emails están registrados
     if (!usuario) {
-      await asegurarUsuarioPorDefecto();
-      usuario = await Usuario.findOne();
+      console.log(
+        `[AUTH] Solicitud de recuperación para identificador no registrado: ${identificador}`,
+      );
+      return res.status(200).json({
+        status: "success",
+        mensaje: MENSAJE_RECUPERACION_GENERICO,
+      });
     }
 
     const pinRecuperacion = crypto.randomInt(100000, 1000000).toString();
 
-    // Guardar en memoria el PIN asociado al id_usuario (válido por 15 min)
-    codigosRecuperacion.set(pinRecuperacion, {
-      id_usuario: usuario.id_usuario,
-      identificador,
-      expira: Date.now() + 15 * 60 * 1000,
-    });
+    // Persistir PIN y expiración (15 minutos) en la base de datos
+    usuario.reset_token = pinRecuperacion;
+    usuario.reset_token_expires = new Date(Date.now() + 15 * 60 * 1000);
+    await usuario.save();
+
+    // Correo destino: prioriza usuario.email, con fallback a ADMIN_RECOVERY_EMAIL o EMAIL_USER
+    const destinoEmail =
+      usuario.email?.trim() ||
+      process.env.ADMIN_RECOVERY_EMAIL?.trim() ||
+      process.env.EMAIL_USER?.trim() ||
+      null;
 
     console.log(
-      `[AUTH] Código de recuperación generado para ${identificador} (Usuario ID: ${usuario.id_usuario}): [ ${pinRecuperacion} ]`
+      `[AUTH] Código de recuperación generado para usuario '${usuario.nombre_usuario}' (ID: ${usuario.id_usuario}, destino: ${destinoEmail || "consola"}): [ ${pinRecuperacion} ]`,
     );
 
     const transporter = getTransporter();
 
-    // Si no está configurado Nodemailer en .env
-    if (!transporter) {
+    // Fallback en desarrollo cuando EMAIL_USER o EMAIL_PASS no están definidos en .env
+    if (!transporter || !destinoEmail) {
       console.warn(
-        `[AUTH] ⚠️ AVISO: EMAIL_USER o EMAIL_PASS no están configurados en backend/.env.`
+        `[AUTH] ⚠️ AVISO: EMAIL_USER / EMAIL_PASS (o correo destino) no están configurados en backend/.env.`,
       );
       console.warn(
-        `[AUTH] ⚠️ Para pruebas en desarrollo, utilizá el PIN mostrado arriba: [ ${pinRecuperacion} ]`
+        `[AUTH] ⚠️ Para pruebas en desarrollo, utilizá el PIN de 6 dígitos generado arriba: [ ${pinRecuperacion} ]`,
       );
 
-      return res.status(500).json({
-        status: "error",
-        mensaje:
-          "El servicio de correo no está configurado en el servidor (.env: falta EMAIL_USER y/o EMAIL_PASS). Agregá tus credenciales en backend/.env para enviar correos reales.",
-        codigoDev: pinRecuperacion,
+      return res.status(200).json({
+        status: "success",
+        mensaje: MENSAJE_RECUPERACION_GENERICO,
       });
     }
 
-    // Configurar y despachar el correo
     const emailRemitente = process.env.EMAIL_USER?.trim();
     const mailOptions = {
       from: `"Consultorio Odontológico M&V" <${emailRemitente}>`,
-      to: identificador,
+      to: destinoEmail,
       subject: "Código de recuperación de contraseña - Consultorio M&V",
       html: `
         <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; max-width: 500px; margin: 0 auto; padding: 28px 24px; border: 1px solid #e5e7eb; border-radius: 16px; background-color: #ffffff;">
@@ -337,7 +397,7 @@ export const solicitarRecuperacionPassword = async (req, res) => {
             <h2 style="color: #2eb086; margin: 0; font-size: 22px; font-weight: 700;">Consultorio Odontológico M&V</h2>
             <p style="color: #6b7280; font-size: 13px; margin-top: 4px;">Recuperación de contraseña</p>
           </div>
-          <p style="color: #374151; font-size: 15px; line-height: 1.5;">Hola,</p>
+          <p style="color: #374151; font-size: 15px; line-height: 1.5;">Hola <strong>${usuario.nombre_usuario}</strong>,</p>
           <p style="color: #374151; font-size: 15px; line-height: 1.5;">Recibimos una solicitud para restablecer la contraseña de tu cuenta. Ingresá el siguiente código de verificación en la aplicación:</p>
           <div style="background-color: #f0fdf4; border: 1px dashed #2eb086; border-radius: 12px; padding: 20px; margin: 24px 0; text-align: center;">
             <span style="font-size: 12px; color: #166534; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; display: block; margin-bottom: 8px;">Tu código de verificación</span>
@@ -353,22 +413,22 @@ export const solicitarRecuperacionPassword = async (req, res) => {
 
     try {
       await transporter.sendMail(mailOptions);
-      console.log(`[AUTH] Correo de recuperación enviado con éxito a: ${identificador}`);
-
-      return res.status(200).json({
-        status: "success",
-        mensaje: `Se envió un código de verificación a ${identificador}.`,
-      });
+      console.log(
+        `[AUTH] Correo de recuperación enviado con éxito a: ${destinoEmail}`,
+      );
     } catch (mailError) {
       console.error("[AUTH] Error al enviar email con Nodemailer:", mailError);
       return res.status(500).json({
         status: "error",
         mensaje:
-          "Hubo un error al enviar el correo por Gmail. Verificá que la 'Contraseña de aplicación' de Google sea válida.",
-        detalle: mailError.message,
-        codigoDev: pinRecuperacion,
+          "Hubo un error al despachar el correo de recuperación. Verificá la configuración del servidor de correo.",
       });
     }
+
+    return res.status(200).json({
+      status: "success",
+      mensaje: MENSAJE_RECUPERACION_GENERICO,
+    });
   } catch (error) {
     console.error("Error en solicitarRecuperacionPassword:", error);
     return res.status(500).json({
@@ -379,7 +439,7 @@ export const solicitarRecuperacionPassword = async (req, res) => {
 };
 
 /**
- * 5. Restablecer Contraseña
+ * 5. Restablecer Contraseña consumiendo el PIN de 6 dígitos persistido en DB
  */
 export const restablecerPassword = async (req, res) => {
   try {
@@ -392,57 +452,53 @@ export const restablecerPassword = async (req, res) => {
       "";
     const nueva_contraseña = rawPass.toString();
 
-    if (!codigo || codigo.length !== 6) {
+    if (!codigo || !/^\d{6}$/.test(codigo)) {
       return res.status(400).json({
         status: "error",
         mensaje: "El código debe tener exactamente 6 dígitos numéricos.",
       });
     }
 
-    if (!nueva_contraseña || nueva_contraseña.length < 6) {
+    if (
+      nueva_contraseña.length < 8 ||
+      !/[A-Z]/.test(nueva_contraseña) ||
+      !/[a-z]/.test(nueva_contraseña) ||
+      !/[0-9]/.test(nueva_contraseña) ||
+      !/[^A-Za-z0-9]/.test(nueva_contraseña)
+    ) {
       return res.status(400).json({
         status: "error",
-        mensaje: "La nueva contraseña debe tener al menos 6 caracteres.",
+        mensaje:
+          "La contraseña debe tener al menos 8 caracteres e incluir mayúscula, minúscula, número y carácter especial.",
       });
     }
 
-    const dataRecuperacion = codigosRecuperacion.get(codigo);
+    const usuario = await Usuario.findOne({
+      where: {
+        reset_token: codigo,
+        reset_token_expires: { [Op.gt]: new Date() },
+      },
+    });
 
-    if (!dataRecuperacion) {
+    if (!usuario) {
       return res.status(400).json({
         status: "error",
         mensaje: "El código ingresado es incorrecto o ya ha expirado.",
       });
     }
 
-    if (Date.now() > dataRecuperacion.expira) {
-      codigosRecuperacion.delete(codigo);
-      return res.status(400).json({
-        status: "error",
-        mensaje: "El código ha expirado. Por favor solicitá uno nuevo.",
-      });
-    }
-
-    const usuario = await Usuario.findByPk(dataRecuperacion.id_usuario);
-    if (!usuario) {
-      return res.status(404).json({
-        status: "error",
-        mensaje: "Usuario no encontrado.",
-      });
-    }
-
     const salt = await bcrypt.genSalt(10);
     const hashPassword = await bcrypt.hash(nueva_contraseña, salt);
 
-    await usuario.update({
-      contraseña: hashPassword,
-    });
-
-    // Eliminar el código para que sea de un solo uso
-    codigosRecuperacion.delete(codigo);
+    usuario.contraseña = hashPassword;
+    usuario.reset_token = null;
+    usuario.reset_token_expires = null;
+    // Anular refresh_token para invalidar sesiones abiertas en otros dispositivos
+    usuario.refresh_token = "REVOKED";
+    await usuario.save();
 
     console.log(
-      `[AUTH] Contraseña restablecida con éxito para usuario '${usuario.nombre_usuario}' (ID: ${usuario.id_usuario})`
+      `[AUTH] Contraseña restablecida con éxito para usuario '${usuario.nombre_usuario}' (ID: ${usuario.id_usuario})`,
     );
 
     return res.status(200).json({
@@ -460,7 +516,7 @@ export const restablecerPassword = async (req, res) => {
 };
 
 /**
- * 6. Crear Usuario (Gestión / Administración)
+ * 6. Cambiar Contraseña y/o Correo de Recuperación (Usuario autenticado)
  */
 export const cambiarPassword = async (req, res) => {
   try {
@@ -472,27 +528,20 @@ export const cambiarPassword = async (req, res) => {
       });
     }
 
-    const { password_actual, nueva_password } = req.body;
-
-    if (!password_actual || !nueva_password) {
-      return res.status(400).json({
-        status: "error",
-        mensaje: "La contraseña actual y la nueva contraseña son requeridas.",
-      });
-    }
-
-    if (nueva_password.length < 6) {
-      return res.status(400).json({
-        status: "error",
-        mensaje: "La nueva contraseña debe tener al menos 6 caracteres.",
-      });
-    }
+    const { password_actual, nueva_password, email } = req.body;
 
     const usuario = await Usuario.findByPk(id_usuario);
     if (!usuario) {
       return res.status(404).json({
         status: "error",
         mensaje: "Usuario no encontrado",
+      });
+    }
+
+    if (!password_actual) {
+      return res.status(400).json({
+        status: "error",
+        mensaje: "La contraseña actual es requerida para confirmar los cambios.",
       });
     }
 
@@ -504,29 +553,95 @@ export const cambiarPassword = async (req, res) => {
       });
     }
 
-    const salt = await bcrypt.genSalt(10);
-    const nuevaHash = await bcrypt.hash(nueva_password, salt);
+    // Procesar actualización opcional de email
+    if (email !== undefined) {
+      const emailNormalizado =
+        email === null || String(email).trim() === ""
+          ? null
+          : String(email).trim().toLowerCase();
 
-    await usuario.update({
-      contraseña: nuevaHash,
-    });
+      if (
+        emailNormalizado &&
+        !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailNormalizado)
+      ) {
+        return res.status(400).json({
+          status: "error",
+          mensaje: "Formato de correo electrónico inválido.",
+        });
+      }
+
+      if (emailNormalizado && emailNormalizado !== usuario.email) {
+        const existeEmail = await Usuario.findOne({
+          where: {
+            email: emailNormalizado,
+            id_usuario: { [Op.ne]: id_usuario },
+          },
+        });
+        if (existeEmail) {
+          return res.status(400).json({
+            status: "error",
+            mensaje:
+              "Ese correo electrónico ya está asociado a otro usuario.",
+          });
+        }
+      }
+
+      usuario.email = emailNormalizado;
+    }
+
+    // Procesar cambio de contraseña si se proporcionó nueva_password
+    if (nueva_password && String(nueva_password).trim() !== "") {
+      const passStr = String(nueva_password);
+      if (
+        passStr.length < 8 ||
+        !/[A-Z]/.test(passStr) ||
+        !/[a-z]/.test(passStr) ||
+        !/[0-9]/.test(passStr) ||
+        !/[^A-Za-z0-9]/.test(passStr)
+      ) {
+        return res.status(400).json({
+          status: "error",
+          mensaje:
+            "La nueva contraseña debe tener al menos 8 caracteres e incluir mayúscula, minúscula, número y carácter especial.",
+        });
+      }
+
+      const salt = await bcrypt.genSalt(10);
+      usuario.contraseña = await bcrypt.hash(passStr, salt);
+      usuario.refresh_token = "REVOKED";
+    }
+
+    await usuario.save();
 
     return res.status(200).json({
       status: "success",
-      mensaje: "Contraseña actualizada exitosamente.",
+      mensaje: nueva_password
+        ? "Credenciales actualizadas exitosamente."
+        : "Correo de recuperación actualizado exitosamente.",
+      usuario: {
+        id: usuario.id_usuario,
+        id_usuario: usuario.id_usuario,
+        nombre: usuario.nombre_usuario,
+        nombre_usuario: usuario.nombre_usuario,
+        email: usuario.email || null,
+        rol: usuario.rol,
+      },
     });
   } catch (error) {
     console.error("Error en cambiarPassword:", error);
     return res.status(500).json({
       status: "error",
-      mensaje: "Error interno al cambiar la contraseña",
+      mensaje: "Error interno al actualizar los datos de la cuenta",
     });
   }
 };
 
+/**
+ * 7. Crear Usuario (Gestión / Administración)
+ */
 export const createUsuario = async (req, res) => {
   try {
-    const { nombre_usuario, contraseña, rol } = req.body;
+    const { nombre_usuario, contraseña, email, rol } = req.body;
 
     const existe = await Usuario.findOne({ where: { nombre_usuario } });
     if (existe) {
@@ -536,12 +651,30 @@ export const createUsuario = async (req, res) => {
       });
     }
 
+    const emailNormalizado =
+      email && String(email).trim() !== ""
+        ? String(email).trim().toLowerCase()
+        : null;
+
+    if (emailNormalizado) {
+      const existeEmail = await Usuario.findOne({
+        where: { email: emailNormalizado },
+      });
+      if (existeEmail) {
+        return res.status(400).json({
+          status: "error",
+          mensaje: "El correo electrónico ya está registrado",
+        });
+      }
+    }
+
     const salt = await bcrypt.genSalt(10);
     const hashPassword = await bcrypt.hash(contraseña, salt);
 
     const nuevoUsuario = await Usuario.create({
       nombre_usuario,
       contraseña: hashPassword,
+      email: emailNormalizado,
       rol: rol || "odontologo",
     });
 
@@ -551,6 +684,7 @@ export const createUsuario = async (req, res) => {
       data: {
         id_usuario: nuevoUsuario.id_usuario,
         nombre_usuario: nuevoUsuario.nombre_usuario,
+        email: nuevoUsuario.email,
         rol: nuevoUsuario.rol,
       },
     });
@@ -559,6 +693,92 @@ export const createUsuario = async (req, res) => {
     return res.status(500).json({
       status: "error",
       mensaje: "Error al crear el usuario",
+    });
+  }
+};
+
+/**
+ * 8. Actualizar Usuario (Administración / Edición)
+ */
+export const updateUsuario = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { nombre_usuario, contraseña, email, rol } = req.body;
+
+    const usuario = await Usuario.findByPk(id);
+    if (!usuario) {
+      return res.status(404).json({
+        status: "error",
+        mensaje: "Usuario no encontrado",
+      });
+    }
+
+    if (nombre_usuario && nombre_usuario !== usuario.nombre_usuario) {
+      const existeNombre = await Usuario.findOne({
+        where: {
+          nombre_usuario,
+          id_usuario: { [Op.ne]: id },
+        },
+      });
+      if (existeNombre) {
+        return res.status(400).json({
+          status: "error",
+          mensaje: "El nombre de usuario ya está registrado",
+        });
+      }
+      usuario.nombre_usuario = nombre_usuario;
+    }
+
+    if (email !== undefined) {
+      const emailNormalizado =
+        email === null || String(email).trim() === ""
+          ? null
+          : String(email).trim().toLowerCase();
+
+      if (emailNormalizado && emailNormalizado !== usuario.email) {
+        const existeEmail = await Usuario.findOne({
+          where: {
+            email: emailNormalizado,
+            id_usuario: { [Op.ne]: id },
+          },
+        });
+        if (existeEmail) {
+          return res.status(400).json({
+            status: "error",
+            mensaje: "El correo electrónico ya está registrado",
+          });
+        }
+      }
+      usuario.email = emailNormalizado;
+    }
+
+    if (rol) {
+      usuario.rol = rol;
+    }
+
+    if (contraseña) {
+      const salt = await bcrypt.genSalt(10);
+      usuario.contraseña = await bcrypt.hash(contraseña, salt);
+      usuario.refresh_token = "REVOKED";
+    }
+
+    await usuario.save();
+
+    return res.status(200).json({
+      status: "success",
+      mensaje: "Usuario actualizado exitosamente",
+      data: {
+        id_usuario: usuario.id_usuario,
+        nombre_usuario: usuario.nombre_usuario,
+        email: usuario.email,
+        rol: usuario.rol,
+      },
+    });
+  } catch (error) {
+    console.error("Error en updateUsuario:", error);
+    return res.status(500).json({
+      status: "error",
+      mensaje: "Error al actualizar el usuario",
     });
   }
 };
