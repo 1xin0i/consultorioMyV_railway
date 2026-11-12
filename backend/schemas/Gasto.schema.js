@@ -37,23 +37,12 @@ export const createGastoSchema = z.object({
 
   metodo_pago: z
     .enum(metodosPagoEnum, {
-      errorMap: () => ({ message: "Método de pago inválido (Efectivo, Transferencia, Tarjeta, Otro)" }),
+      errorMap: () => ({
+        message:
+          "Método de pago inválido (Efectivo, Transferencia, Tarjeta, Otro)",
+      }),
     })
     .default("Efectivo"),
-
-  comprobante: z
-    .string({ invalid_type_error: "El comprobante debe ser un texto" })
-    .trim()
-    .max(100, "El comprobante no puede superar los 100 caracteres")
-    .optional()
-    .nullish(),
-
-  notas: z
-    .string({ invalid_type_error: "Las notas deben ser un texto" })
-    .trim()
-    .max(500, "Las notas no pueden superar los 500 caracteres")
-    .optional()
-    .nullish(),
 });
 
 export const updateGastoSchema = z.object({
@@ -61,7 +50,12 @@ export const updateGastoSchema = z.object({
 
   monto: z.coerce.number().positive("El monto debe ser mayor a 0").optional(),
 
-  concepto: z.string().trim().min(3, "El concepto debe tener al menos 3 caracteres").max(255).optional(),
+  concepto: z
+    .string()
+    .trim()
+    .min(3, "El concepto debe tener al menos 3 caracteres")
+    .max(255)
+    .optional(),
 
   fecha_gasto: z.coerce
     .date({
@@ -70,8 +64,4 @@ export const updateGastoSchema = z.object({
     .optional(),
 
   metodo_pago: z.enum(metodosPagoEnum).optional(),
-
-  comprobante: z.string().trim().max(100).optional().nullish(),
-
-  notas: z.string().trim().max(500).optional().nullish(),
 });

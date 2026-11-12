@@ -21,7 +21,14 @@ export const createTurnoSchema = z.object({
   fecha_hora_fin: z.coerce
     .date({
       invalid_type_error: "Formato de fecha inválido",
-    }),
+    })
+    .optional(),
+
+  duracion_minutos: z.number().int().positive().optional(),
+  duracionMinutos: z.number().int().positive().optional(),
+
+  ignorar_restricciones: z.boolean().optional(),
+  ignorarRestricciones: z.boolean().optional(),
 
   precio_final: z
     .number({
@@ -141,36 +148,11 @@ export const atenderTurnoSchema = z.object({
     })
     .nullish(),
 
-  dientes_por_practica: z
-    .array(
-      z.array(
-        z.union([
-          z.number(),
-          z.object({
-            numero_fdi: z.number(),
-            cara: z.string().nullish(),
-          }),
-        ])
-      )
-    )
-    .optional(),
-
   practicas: z
     .array(
       z.object({
         id_practica: z.number(),
         id_obra_social: z.number().nullable().optional(),
-        dientes: z
-          .array(
-            z.union([
-              z.number(),
-              z.object({
-                numero_fdi: z.number(),
-                cara: z.string().nullish(),
-              }),
-            ])
-          )
-          .optional(),
       })
     )
     .optional(),

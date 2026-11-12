@@ -7,4 +7,5 @@ export const ESTADO_INICIAL_TURNO = {
   precio_final: 0,
   notas_consulta: "",
   practicas: [],
+  ignorarRestricciones: false,
 };

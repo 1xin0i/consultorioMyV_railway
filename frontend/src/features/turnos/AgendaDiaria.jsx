@@ -13,6 +13,7 @@ import AgendaCalendario from "./components/calendario/AgendaCalendario";
 //* COMPONENTES ESPECIFICOS DE TURNO
 import { VistaTurno } from "./components/modales/VistaTurno";
 import { AdvertenciaPacienteIncompleto } from "./components/AdvertenciaPacienteIncompleto";
+import ModalRegistrarPago from "../cobros/components/ModalRegistrarPago";
 
 //* HOOKS
 import { useTurnoSearchAgenda } from "./hooks/useTurnoSearchAgenda";
@@ -64,9 +65,11 @@ export default function AgendaDiaria() {
   const [turnoAtender, setTurnoAtender] = useState(null);
   const [cancelarConfig, setCancelarConfig] = useState(null); // { turno, inasistente: boolean }
   const [turnoReprogramar, setTurnoReprogramar] = useState(null);
+  const [turnoParaCobrar, setTurnoParaCobrar] = useState(null);
 
   const abrirParaVer = useCallback((t) => setTurnoVer(t), []);
   const abrirParaAtender = useCallback((t) => setTurnoAtender(t), []);
+  const abrirParaCobrar = useCallback((t) => setTurnoParaCobrar(t), []);
   const abrirParaCancelar = useCallback(
     (t) => setCancelarConfig({ turno: t, inasistente: false }),
     [],
@@ -216,6 +219,10 @@ export default function AgendaDiaria() {
             setTurnoVer(null);
             if (turnoTarget) abrirParaInasistente(turnoTarget);
           }}
+          abrirParaCobrar={(turnoTarget) => {
+            setTurnoVer(null);
+            if (turnoTarget) abrirParaCobrar(turnoTarget);
+          }}
         />
       )}
 
@@ -263,6 +270,19 @@ export default function AgendaDiaria() {
               () => setCancelarConfig(null),
             )
           }
+        />
+      )}
+
+      {/* //* MODAL: COBRAR TURNO */}
+      {turnoParaCobrar && (
+        <ModalRegistrarPago
+          isOpen={Boolean(turnoParaCobrar)}
+          onClose={() => setTurnoParaCobrar(null)}
+          turno={turnoParaCobrar}
+          onPagoRegistrado={() => {
+            setTurnoParaCobrar(null);
+            recargar();
+          }}
         />
       )}
     </div>

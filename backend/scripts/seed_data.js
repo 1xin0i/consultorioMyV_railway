@@ -12,7 +12,6 @@ import {
   Practica,
   Turno,
   PracticaTurno,
-  PracticaTurnoDiente,
   HistorialEstadoTurno,
   Cobro,
   Cuota,
@@ -89,14 +88,14 @@ async function cargarDatos() {
     // 4. Cargar Obras Sociales
     console.log("\n[4/10] Cargando obras sociales...");
     const obrasSocialesData = [
-      { id_obra_social: 1, nombre: "Particular", codigo_prestador: "PART-00", activo: true },
-      { id_obra_social: 2, nombre: "OSDE", codigo_prestador: "OSDE-210", activo: true },
-      { id_obra_social: 3, nombre: "Swiss Medical", codigo_prestador: "SM-01", activo: true },
-      { id_obra_social: 4, nombre: "Apross", codigo_prestador: "APR-COR", activo: true },
-      { id_obra_social: 5, nombre: "PAMI", codigo_prestador: "PAMI-99", activo: true },
-      { id_obra_social: 6, nombre: "Galeno", codigo_prestador: "GAL-03", activo: true },
-      { id_obra_social: 7, nombre: "Medifé", codigo_prestador: "MED-05", activo: true },
-      { id_obra_social: 8, nombre: "Sancor Salud", codigo_prestador: "SS-02", activo: true },
+      { id_obra_social: 1, nombre: "Particular", activo: true },
+      { id_obra_social: 2, nombre: "OSDE", activo: true },
+      { id_obra_social: 3, nombre: "Swiss Medical", activo: true },
+      { id_obra_social: 4, nombre: "Apross", activo: true },
+      { id_obra_social: 5, nombre: "PAMI", activo: true },
+      { id_obra_social: 6, nombre: "Galeno", activo: true },
+      { id_obra_social: 7, nombre: "Medifé", activo: true },
+      { id_obra_social: 8, nombre: "Sancor Salud", activo: true },
     ];
 
     const obrasSocialesCreadas = [];
@@ -386,7 +385,7 @@ async function cargarDatos() {
     }
     console.log(`   Total pacientes listos: ${pacientesCreados.length}`);
 
-    // 8. Cargar Turnos con Prácticas, Dientes e Historial
+    // 8. Cargar Turnos con Prácticas e Historial
     console.log("\n[8/10] Cargando turnos y atenciones...");
     const turnosData = [
       {
@@ -406,7 +405,7 @@ async function cargarDatos() {
         fecha_hora_fin: "2026-11-06 11:00:00",
         precio_final: 35000.0,
         notas_consulta: "Restauración de resina en pieza 16 cara oclusal/distal.",
-        practicas: [{ codigo: "03.02", id_os: 3, dientes: [{ fdi: 16, cara: "OD" }] }],
+        practicas: [{ codigo: "03.02", id_os: 3 }],
         cobro: { monto: 35000.0, cuotas: 1, metodo: "Transferencia", pagado: true },
       },
       {
@@ -416,7 +415,7 @@ async function cargarDatos() {
         fecha_hora_fin: "2026-11-07 15:15:00",
         precio_final: 75000.0,
         notas_consulta: "Tratamiento de conducto en molar 46. Procedimiento exitoso sin dolor residual.",
-        practicas: [{ codigo: "08.02", id_os: 4, dientes: [{ fdi: 46, cara: null }] }],
+        practicas: [{ codigo: "08.02", id_os: 4 }],
         cobro: {
           monto: 75000.0,
           cuotas: 3,
@@ -461,7 +460,7 @@ async function cargarDatos() {
         fecha_hora_fin: "2026-11-12 12:00:00",
         precio_final: 60000.0,
         notas_consulta: "Extracción quirúrgica pieza 38 indicada por ortodoncista.",
-        practicas: [{ codigo: "05.02", id_os: 5, dientes: [{ fdi: 38, cara: null }] }],
+        practicas: [{ codigo: "05.02", id_os: 5 }],
       },
       {
         id_paciente: pacientesCreados[7].id_paciente,
@@ -512,21 +511,11 @@ async function cargarDatos() {
             (p) => p.codigo_nomenclador === pr.codigo,
           );
           if (practicaEncontrada) {
-            const practicaTurno = await PracticaTurno.create({
+            await PracticaTurno.create({
               id_turno: turno.id_turno,
               id_practica: practicaEncontrada.id_practica,
               id_obra_social: pr.id_os || null,
             });
-
-            if (pr.dientes && pr.dientes.length > 0) {
-              for (const d of pr.dientes) {
-                await PracticaTurnoDiente.create({
-                  id_practica_turno: practicaTurno.id_practica_turno,
-                  numero_fdi: d.fdi,
-                  cara: d.cara,
-                });
-              }
-            }
           }
         }
 
@@ -674,7 +663,6 @@ async function cargarDatos() {
     console.log(`   - Pacientes:            ${await Paciente.count()}`);
     console.log(`   - Turnos:               ${await Turno.count()}`);
     console.log(`   - Prácticas en Turnos:  ${await PracticaTurno.count()}`);
-    console.log(`   - Dientes registrados:  ${await PracticaTurnoDiente.count()}`);
     console.log(`   - Cobros:               ${await Cobro.count()}`);
     console.log(`   - Cuotas:               ${await Cuota.count()}`);
     console.log(`   - Gastos:               ${await Gasto.count()}`);

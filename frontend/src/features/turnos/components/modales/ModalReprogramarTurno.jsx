@@ -1,8 +1,10 @@
 /** @format */
 import { useState, useEffect } from "react";
+import { AlertCircle } from "lucide-react";
 import Modal from "../../../../components/common/Modal";
 import { formatDateTimeInput } from "../../../../utils";
 import { calcularHoraFin } from "../../utils/calcularHoraFin";
+import { useConfiguracion } from "../../../../context/ConfiguracionContext";
 
 export function ModalReprogramarTurno({
   isOpen,
@@ -19,17 +21,22 @@ export function ModalReprogramarTurno({
   const abierto = isOpen ?? modalReprogramarAbierto;
   const cerrar = onClose || cerrarModal;
   const turnoTarget = turno || turnoSeleccionado;
+  const { validarTurnoHorario } = useConfiguracion();
 
   const [datosInternos, setDatosInternos] = useState({
     fecha_hora_inicio: "",
     duracion_minutos: 30,
     fecha_hora_fin: "",
+    ignorarRestricciones: false,
   });
 
   useEffect(() => {
     if (abierto && turnoTarget) {
       if (datosExternos?.fecha_hora_inicio) {
-        setDatosInternos(datosExternos);
+        setDatosInternos({
+          ignorarRestricciones: false,
+          ...datosExternos,
+        });
       } else {
         const inicio = formatDateTimeInput(turnoTarget.fecha_hora_inicio);
         const fin = formatDateTimeInput(turnoTarget.fecha_hora_fin);
@@ -37,6 +44,7 @@ export function ModalReprogramarTurno({
           fecha_hora_inicio: inicio || "",
           duracion_minutos: turnoTarget.duracion_minutos || 30,
           fecha_hora_fin: fin || "",
+          ignorarRestricciones: Boolean(turnoTarget.ignorarRestricciones),
         });
       }
     }
@@ -46,7 +54,10 @@ export function ModalReprogramarTurno({
   useEffect(() => {
     if (datosInternos.fecha_hora_inicio && datosInternos.duracion_minutos) {
       calcularHoraFin(datosInternos, (e) => {
-        setDatosInternos((prev) => ({ ...prev, [e.target.name]: e.target.value }));
+        setDatosInternos((prev) => ({
+          ...prev,
+          [e.target.name]: e.target.value,
+        }));
       });
     }
   }, [datosInternos.fecha_hora_inicio, datosInternos.duracion_minutos]);
@@ -70,6 +81,11 @@ export function ModalReprogramarTurno({
 
   const datos = datosExternos?.fecha_hora_inicio ? datosExternos : datosInternos;
 
+  const validacionHorario =
+    datos?.fecha_hora_inicio && validarTurnoHorario
+      ? validarTurnoHorario(datos.fecha_hora_inicio, datos.duracion_minutos)
+      : null;
+
   return (
     <form onSubmit={handleSubmit}>
       <Modal
@@ -79,6 +95,45 @@ export function ModalReprogramarTurno({
         title={`Reprogramar Turno #${turnoTarget?.id_turno || ""}`}
       >
         <div className="flex flex-col gap-4">
+          {/* Banner Ámbar de Excepción / Urgencia */}
+          {validacionHorario && !validacionHorario.valido && (
+            <div className="p-3 bg-amber-50 dark:bg-amber-950/40 border border-amber-300 dark:border-amber-700/70 rounded-xl text-amber-900 dark:text-amber-200 flex flex-col gap-2">
+              <div className="flex items-start gap-2">
+                <AlertCircle
+                  size={16}
+                  className="text-amber-600 dark:text-amber-400 shrink-0 mt-0.5"
+                />
+                <div className="text-xs leading-relaxed">
+                  <span className="font-bold">
+                    ⚠️ Este horario está bloqueado (&quot;
+                    {validacionHorario.motivo || validacionHorario.mensaje}
+                    &quot;).
+                  </span>{" "}
+                  ¿Deseás reprogramarlo como turno excepcional / urgencia?
+                </div>
+              </div>
+              <label className="flex items-center gap-2 cursor-pointer select-none bg-white/85 dark:bg-slate-900/70 px-2.5 py-1.5 rounded-lg border border-amber-200 dark:border-amber-800/60">
+                <input
+                  type="checkbox"
+                  name="ignorarRestricciones"
+                  checked={Boolean(datos.ignorarRestricciones)}
+                  onChange={(e) =>
+                    handleChange({
+                      target: {
+                        name: "ignorarRestricciones",
+                        value: e.target.checked,
+                      },
+                    })
+                  }
+                  className="w-4 h-4 rounded accent-amber-600 cursor-pointer"
+                />
+                <span className="text-xs font-bold text-amber-900 dark:text-amber-200">
+                  Autorizar turno excepcional / urgencia
+                </span>
+              </label>
+            </div>
+          )}
+
           {/* Fecha y Hora de Inicio */}
           <div>
             <label className="block text-sm font-semibold text-gray-700 mb-1">
@@ -96,7 +151,9 @@ export function ModalReprogramarTurno({
 
           {/* Duración (Minutos) */}
           <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-1">Duración (Minutos)</label>
+            <label className="block text-sm font-semibold text-gray-700 mb-1">
+              Duración (Minutos)
+            </label>
             <select
               name="duracion_minutos"
               value={datos.duracion_minutos || 30}
@@ -109,7 +166,9 @@ export function ModalReprogramarTurno({
               <option value={60}>60 minutos (1 hora)</option>
               <option value={90}>90 minutos (1h 30m)</option>
               <option value={120}>120 minutos (2 horas)</option>
-              {![15, 30, 45, 60, 90, 120].includes(Number(datos.duracion_minutos)) &&
+              {![15, 30, 45, 60, 90, 120].includes(
+                Number(datos.duracion_minutos),
+              ) &&
                 Boolean(datos.duracion_minutos) && (
                   <option value={datos.duracion_minutos}>
                     {datos.duracion_minutos} minutos

@@ -7,17 +7,19 @@ import {
   HistorialEstadoTurno,
   Practica,
   PracticaTurno,
-  PracticaTurnoDiente,
   EstadoTurno,
   Paciente,
   ObraSocial,
+  SolicitudCobro,
   Cobro,
-  Cuota,
+  MetodoPago,
 } from "../models/index.model.js";
+import { formatearSolicitudConSaldos } from "./Cobro.controller.js";
 import {
   validarEstadoProgramado,
   validarEstados,
   validarSolapaminetoHorarios,
+  validarDisponibilidadAgenda,
 } from "../validations/Turno.validation.js";
 import { ESTADOS } from "../constants/EstadosTurno.js";
 import { parsePagination, buildPaginationMeta } from "../utils/pagination.js";
@@ -51,11 +53,6 @@ export const getAllTurnosAgenda = async (req, res) => {
             {
               model: ObraSocial,
               attributes: ["id_obra_social", "nombre"],
-            },
-            {
-              model: PracticaTurnoDiente,
-              as: "dientes",
-              attributes: ["id", "numero_fdi", "cara"],
             },
           ],
         },
@@ -190,30 +187,38 @@ export const getAllTurnos = async (req, res) => {
               model: ObraSocial,
               attributes: ["id_obra_social", "nombre"],
             },
-            {
-              model: PracticaTurnoDiente,
-              as: "dientes",
-              attributes: ["id", "numero_fdi", "cara"],
-            },
           ],
         },
         {
-          model: Cobro,
+          model: SolicitudCobro,
           required: false,
-          attributes: ["id_cobro", "monto_a_cobrar", "cant_cuotas"],
+          attributes: ["id", "monto_total", "estado", "observaciones"],
           include: [
             {
-              model: Cuota,
-              attributes: ["id_cuota", "monto_cobrado", "monto_cuota", "estado"],
+              model: Cobro,
+              as: "Cobros",
+              attributes: ["id", "monto", "metodo_pago_id", "fecha_cobro", "observaciones"],
             },
           ],
         },
       ],
     });
 
+    const dataFormateada = turnos.map((t) => {
+      const plain = t.get({ plain: true });
+      const solicitud = plain.SolicitudCobro
+        ? formatearSolicitudConSaldos(plain.SolicitudCobro)
+        : null;
+      return {
+        ...plain,
+        SolicitudCobro: solicitud,
+        Cobro: solicitud,
+      };
+    });
+
     res.status(200).json({
       status: "success",
-      data: turnos,
+      data: dataFormateada,
       meta: buildPaginationMeta(count, page, limit),
     });
   } catch (error) {
@@ -222,17 +227,19 @@ export const getAllTurnos = async (req, res) => {
   }
 };
 
-// Obtener todos los turnos en Atendido
+// Obtener todos los turnos en Atendido sin solicitud de cobro
 export const getAllTurnosAtendidos = async (req, res) => {
   try {
-    const cobrosExistentes = await Cobro.findAll({
-      where: { activo: true },
-      attributes: ["id_turno"],
+    const solicitudesExistentes = await SolicitudCobro.findAll({
+      where: { turno_id: { [Op.ne]: null } },
+      attributes: ["turno_id"],
     });
 
-    const turnosConCobroIds = cobrosExistentes.map((cobro) => cobro.id_turno);
+    const turnosConCobroIds = solicitudesExistentes
+      .map((s) => s.turno_id)
+      .filter(Boolean);
 
-    // 2. Traemos los turnos atendidos excluyendo los que ya están en la lista de cobrados
+    // 2. Traemos los turnos atendidos excluyendo los que ya tienen solicitud de cobro
     const turnos = await Turno.findAll({
       where: {
         activo: true,
@@ -300,11 +307,6 @@ export const getTurnoById = async (req, res) => {
               model: ObraSocial,
               attributes: ["id_obra_social", "nombre"],
             },
-            {
-              model: PracticaTurnoDiente,
-              as: "dientes",
-              attributes: ["id", "numero_fdi", "cara"],
-            },
           ],
         },
       ],
@@ -351,40 +353,50 @@ export const getTurnosByPacienteId = async (req, res) => {
               model: ObraSocial,
               attributes: ["id_obra_social", "nombre"],
             },
-            {
-              model: PracticaTurnoDiente,
-              as: "dientes",
-              attributes: ["id", "numero_fdi", "cara"],
-            },
           ],
         },
         {
-          model: Cobro,
+          model: SolicitudCobro,
           attributes: [
-            "id_cobro",
-            "monto_a_cobrar",
-            "cant_cuotas",
-            "fecha_emision",
+            "id",
+            "monto_total",
+            "estado",
+            "observaciones",
+            "created_at",
           ],
           include: [
             {
-              model: Cuota,
+              model: Cobro,
+              as: "Cobros",
               attributes: [
-                "id_cuota",
-                "monto_cobrado",
-                "monto_cuota",
-                "estado",
-                "metodo_pago",
+                "id",
+                "monto",
+                "metodo_pago_id",
+                "fecha_cobro",
+                "observaciones",
               ],
+              include: [{ model: MetodoPago, as: "MetodoPago" }],
             },
           ],
         },
       ],
     });
 
+    const dataFormateada = turnos.map((t) => {
+      const plain = t.get({ plain: true });
+      const solicitud = plain.SolicitudCobro
+        ? formatearSolicitudConSaldos(plain.SolicitudCobro)
+        : null;
+      return {
+        ...plain,
+        SolicitudCobro: solicitud,
+        Cobro: solicitud,
+      };
+    });
+
     return res.status(200).json({
       status: "success",
-      data: turnos,
+      data: dataFormateada,
     });
   } catch (error) {
     console.error("Error al obtener los turnos del paciente:", error);
@@ -402,17 +414,27 @@ export const createTurno = async (req, res) => {
       id_paciente,
       fecha_hora_inicio,
       fecha_hora_fin,
+      duracion_minutos,
+      duracionMinutos,
       precio_final,
       notas_consulta,
       practicas,
+      ignorar_restricciones,
+      ignorarRestricciones,
     } = req.body;
 
     // DEV: SUPONEMOS QUE ESTA CREADO EL ESTADO
     const id_estado = ESTADOS.PROGRAMADO;
 
+    const duracionCalc = Number(duracion_minutos ?? duracionMinutos) || 30;
+    const fechaFinCalculada =
+      fecha_hora_fin ||
+      new Date(new Date(fecha_hora_inicio).getTime() + duracionCalc * 60000);
+
+    // 1. Validar siempre que NO haya otro turno programado a esa misma hora (nunca se saltea)
     const haySolapamiento = await validarSolapaminetoHorarios(
       fecha_hora_inicio,
-      fecha_hora_fin,
+      fechaFinCalculada,
       null,
     );
 
@@ -423,13 +445,28 @@ export const createTurno = async (req, res) => {
       });
     }
 
+    // 2. Validar días laborales y bloqueos SOLO si no viene marcada la excepción
+    const ignorar = Boolean(ignorarRestricciones || ignorar_restricciones);
+    if (!ignorar) {
+      const disponibilidad = await validarDisponibilidadAgenda(
+        fecha_hora_inicio,
+        fechaFinCalculada,
+      );
+      if (!disponibilidad.disponible) {
+        return res.status(409).json({
+          error: disponibilidad.motivo,
+          codigo: "RESTRICCION_AGENDA",
+        });
+      }
+    }
+
     const result = await sequelize.transaction(async (t) => {
       const nuevoTurno = await Turno.create(
         {
           id_paciente,
           id_estado: id_estado,
           fecha_hora_inicio,
-          fecha_hora_fin,
+          fecha_hora_fin: fechaFinCalculada,
           precio_final: precio_final || 0,
           notas_consulta: notas_consulta || null,
         },
@@ -571,14 +608,13 @@ export const updateTurno = async (req, res) => {
   }
 };
 
-// Finalizar atención del turno y registrar prácticas con dientes (T-1314)
+// Finalizar atención del turno y registrar prácticas (T-1314)
 export const turnoAtendido = async (req, res) => {
   try {
     const {
       notas_consulta,
       practicas_realizadas,
       obras_sociales,
-      dientes_por_practica,
       practicas,
       precio_final,
     } = req.body;
@@ -627,14 +663,13 @@ export const turnoAtendido = async (req, res) => {
           .filter((p) => p && (p.id_practica || typeof p === "number"))
           .map((p) => {
             if (typeof p === "number") {
-              return { id_practica: p, id_obra_social: null, dientes: [] };
+              return { id_practica: p, id_obra_social: null };
             }
             return {
               id_practica: Number(p.id_practica),
               id_obra_social: p.id_obra_social
                 ? Number(p.id_obra_social)
                 : null,
-              dientes: Array.isArray(p.dientes) ? p.dientes : [],
             };
           });
       } else if (
@@ -648,9 +683,6 @@ export const turnoAtendido = async (req, res) => {
             id_obra_social: obras_sociales?.[idx]
               ? Number(obras_sociales[idx])
               : null,
-            dientes: Array.isArray(dientes_por_practica?.[idx])
-              ? dientes_por_practica[idx]
-              : [],
           }),
         );
       }
@@ -678,33 +710,15 @@ export const turnoAtendido = async (req, res) => {
           throw err;
         }
 
-        for (const item of listaPracticasAInsertar) {
-          const nuevaPt = await PracticaTurno.create(
-            {
-              id_turno: turno.id_turno,
-              id_practica: item.id_practica,
-              id_obra_social: item.id_obra_social || null,
-            },
-            { transaction: t },
-          );
+        const registrosPracticas = listaPracticasAInsertar.map((item) => ({
+          id_turno: turno.id_turno,
+          id_practica: item.id_practica,
+          id_obra_social: item.id_obra_social || null,
+        }));
 
-          if (item.dientes && item.dientes.length > 0) {
-            const dientesRecords = item.dientes
-              .map((d) => ({
-                id_practica_turno: nuevaPt.id_practica_turno,
-                numero_fdi:
-                  typeof d === "object" ? Number(d.numero_fdi) : Number(d),
-                cara: typeof d === "object" ? d.cara || null : null,
-              }))
-              .filter((d) => !isNaN(d.numero_fdi) && d.numero_fdi > 0);
-
-            if (dientesRecords.length > 0) {
-              await PracticaTurnoDiente.bulkCreate(dientesRecords, {
-                transaction: t,
-              });
-            }
-          }
-        }
+        await PracticaTurno.bulkCreate(registrosPracticas, {
+          transaction: t,
+        });
       }
 
       return turno;
@@ -833,7 +847,12 @@ export const turnoInasistido = async (req, res) => {
 export const turnoReprogramado = async (req, res) => {
   try {
     const turno = req.turno;
-    const { fecha_hora_inicio, fecha_hora_fin } = req.body;
+    const {
+      fecha_hora_inicio,
+      fecha_hora_fin,
+      ignorar_restricciones,
+      ignorarRestricciones,
+    } = req.body;
 
     const estado = await validarEstados(
       turno.id_estado,
@@ -859,6 +878,20 @@ export const turnoReprogramado = async (req, res) => {
         error:
           "El horario seleccionado se superpone con un turno ya programado.",
       });
+    }
+
+    const ignorar = Boolean(ignorarRestricciones || ignorar_restricciones);
+    if (!ignorar) {
+      const disponibilidad = await validarDisponibilidadAgenda(
+        fecha_hora_inicio,
+        fecha_hora_fin,
+      );
+      if (!disponibilidad.disponible) {
+        return res.status(409).json({
+          error: disponibilidad.motivo,
+          codigo: "RESTRICCION_AGENDA",
+        });
+      }
     }
 
     const result = await sequelize.transaction(async (t) => {

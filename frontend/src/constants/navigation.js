@@ -8,7 +8,7 @@ import {
   Wallet,
   Shield,
   FileText,
-  Clock,
+  SlidersHorizontal,
 } from "lucide-react";
 
 /**
@@ -38,8 +38,8 @@ export const NAV_ITEMS = [
   },
   {
     to: "/caja",
-    label: "Balance del Periodo",
-    labelCorto: "Balance",
+    label: "Cobros y Gastos",
+    labelCorto: "Cobros y Gastos",
     Icon: Wallet,
     IconMobile: Wallet,
   },
@@ -61,7 +61,7 @@ export const CONFIG_ITEMS = [
   },
   {
     to: "/configuracion/horarios",
-    label: "Horarios",
-    Icon: Clock,
+    label: "Ajustes",
+    Icon: SlidersHorizontal,
   },
 ];

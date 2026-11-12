@@ -13,6 +13,8 @@ import {
   UserRoundX,
   XCircle,
   CheckCircle2,
+  Clock,
+  Banknote,
 } from "lucide-react";
 import {
   obtenerColorAvatar,
@@ -30,10 +32,10 @@ const FMT_MONEDA = new Intl.NumberFormat("es-AR", {
   minimumFractionDigits: 2,
 });
 
-function formatearFechaSubtitulo(inicio, fin) {
-  if (!inicio) return "";
+function formatearFechaSubtitulo(inicio, fin, duracionMinutos) {
+  if (!inicio) return null;
   const dInicio = new Date(inicio);
-  if (isNaN(dInicio.getTime())) return "";
+  if (isNaN(dInicio.getTime())) return null;
 
   const diaSemana = FMT_DIA_SEMANA.format(dInicio);
   const diaSemanaCap = diaSemana.charAt(0).toUpperCase() + diaSemana.slice(1);
@@ -53,7 +55,26 @@ function formatearFechaSubtitulo(inicio, fin) {
   }
 
   const horas = horaFin ? `${horaInicio} a ${horaFin} hs` : `${horaInicio} hs`;
-  return `${diaSemanaCap}, ${dia} de ${mesCap} de ${anio} · ${horas}`;
+  return (
+    <div className="flex items-center gap-2 flex-wrap text-xs sm:text-sm">
+      <span className="font-semibold text-slate-800 dark:text-slate-100">
+        {diaSemanaCap}, {dia} de {mesCap} de {anio}
+      </span>
+      <span className="text-slate-300 dark:text-slate-600 font-bold">·</span>
+      <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-lg text-xs font-bold bg-teal-50 dark:bg-teal-950/60 text-[#0d8266] dark:text-emerald-300 border border-teal-200/90 dark:border-teal-800/70 shadow-2xs">
+        <Clock
+          size={13}
+          className="shrink-0 text-[#0d8266] dark:text-emerald-400"
+        />
+        <span>{horas}</span>
+      </span>
+      {duracionMinutos ? (
+        <span className="text-[11px] font-medium text-slate-400 dark:text-slate-500">
+          ({duracionMinutos} min)
+        </span>
+      ) : null}
+    </div>
+  );
 }
 
 export const VistaTurno = memo(function VistaTurno({
@@ -64,6 +85,7 @@ export const VistaTurno = memo(function VistaTurno({
   abrirParaAtender,
   abrirParaCancelar,
   abrirParaInasistente,
+  abrirParaCobrar,
 }) {
   const [practicasRemotas, setPracticasRemotas] = useState([]);
   const onCloseRef = useRef(onClose);
@@ -142,6 +164,7 @@ export const VistaTurno = memo(function VistaTurno({
       "01.01";
 
     const nombreObraSocial =
+      listaPracticas.find((p) => p?.ObraSocial?.nombre)?.ObraSocial?.nombre ||
       primerTratamiento?.ObraSocial?.nombre ||
       turno.ObraSocial?.nombre ||
       "Particular";
@@ -156,16 +179,14 @@ export const VistaTurno = memo(function VistaTurno({
       duracionMinutos = turno.duracion_minutos;
     }
 
-    const cuotas = turno.Cobro?.Cuotas || [];
-    const estaAbonado =
-      cuotas.length > 0 &&
-      cuotas.every(
-        (c) =>
-          c.estado === "Pagada" ||
-          c.estado === "Pagado" ||
-          (Number(c.monto_cobrado) > 0 &&
-            Number(c.monto_cobrado) >= Number(c.monto_cuota)),
-      );
+    const solicitudCobro = turno.SolicitudCobro || turno.Cobro;
+    const estaAbonado = Boolean(
+      solicitudCobro &&
+      (solicitudCobro.estado === "saldado" ||
+        (Number(solicitudCobro.monto_total ?? solicitudCobro.monto_a_cobrar) >
+          0 &&
+          Number(solicitudCobro.saldo_pendiente) === 0)),
+    );
 
     const coloresAvatar = obtenerColorAvatar(
       `${paciente.nombre || ""} ${paciente.apellido || ""}`,
@@ -179,11 +200,10 @@ export const VistaTurno = memo(function VistaTurno({
     const subtituloFecha = formatearFechaSubtitulo(
       turno.fecha_hora_inicio,
       turno.fecha_hora_fin,
+      duracionMinutos,
     );
 
-    const tituloModal = paciente.nombre
-      ? `Turno: ${paciente.nombre} ${paciente.apellido} · ${nombreTratamiento}`
-      : `Turno: ${nombreTratamiento}`;
+    const tituloModal = "Detalle del turno";
 
     const estilosCardEstado = esProgramado
       ? {
@@ -194,28 +214,28 @@ export const VistaTurno = memo(function VistaTurno({
           desc: "text-amber-800/80 dark:text-amber-300/80",
         }
       : esAtendido
-      ? {
-          card: "bg-emerald-50/80 dark:bg-emerald-950/40 border-emerald-200/90 dark:border-emerald-800/60",
-          label: "text-emerald-700/80 dark:text-emerald-400",
-          dot: "bg-emerald-500",
-          title: "text-emerald-950 dark:text-emerald-200",
-          desc: "text-emerald-800/80 dark:text-emerald-300/80",
-        }
-      : esCancelado
-      ? {
-          card: "bg-rose-50/80 dark:bg-rose-950/40 border-rose-200/90 dark:border-rose-800/60",
-          label: "text-rose-700/80 dark:text-rose-400",
-          dot: "bg-rose-500",
-          title: "text-rose-950 dark:text-rose-200",
-          desc: "text-rose-800/80 dark:text-rose-300/80",
-        }
-      : {
-          card: "bg-slate-100/90 dark:bg-slate-800/70 border-slate-300/90 dark:border-slate-700",
-          label: "text-slate-500 dark:text-slate-400",
-          dot: "bg-slate-500",
-          title: "text-slate-900 dark:text-slate-100",
-          desc: "text-slate-600 dark:text-slate-400",
-        };
+        ? {
+            card: "bg-emerald-50/80 dark:bg-emerald-950/40 border-emerald-200/90 dark:border-emerald-800/60",
+            label: "text-emerald-700/80 dark:text-emerald-400",
+            dot: "bg-emerald-500",
+            title: "text-emerald-950 dark:text-emerald-200",
+            desc: "text-emerald-800/80 dark:text-emerald-300/80",
+          }
+        : esCancelado
+          ? {
+              card: "bg-rose-50/80 dark:bg-rose-950/40 border-rose-200/90 dark:border-rose-800/60",
+              label: "text-rose-700/80 dark:text-rose-400",
+              dot: "bg-rose-500",
+              title: "text-rose-950 dark:text-rose-200",
+              desc: "text-rose-800/80 dark:text-rose-300/80",
+            }
+          : {
+              card: "bg-slate-100/90 dark:bg-slate-800/70 border-slate-300/90 dark:border-slate-700",
+              label: "text-slate-500 dark:text-slate-400",
+              dot: "bg-slate-500",
+              title: "text-slate-900 dark:text-slate-100",
+              desc: "text-slate-600 dark:text-slate-400",
+            };
 
     return {
       paciente,
@@ -224,6 +244,7 @@ export const VistaTurno = memo(function VistaTurno({
       esAtendido,
       esCancelado,
       estaCanceladoOInasistido,
+      listaPracticas,
       nombreTratamiento,
       codigoNomenclador,
       nombreObraSocial,
@@ -248,6 +269,7 @@ export const VistaTurno = memo(function VistaTurno({
     esAtendido,
     esCancelado,
     estaCanceladoOInasistido,
+    listaPracticas,
     nombreTratamiento,
     codigoNomenclador,
     nombreObraSocial,
@@ -276,7 +298,7 @@ export const VistaTurno = memo(function VistaTurno({
 
         {/* ─── HEADER DEL MODAL: Jerarquía limpia con Nombre del Paciente y Práctica ─── */}
         <div className="flex items-start justify-between gap-3">
-          <div className="flex items-center gap-3 min-w-0">
+          <div className="flex items-center gap-3 min-w-0 flex-1">
             <div className="w-10 h-10 rounded-2xl bg-teal-50 dark:bg-teal-950/60 text-[#0d8266] border border-[#0d8266]/30 flex items-center justify-center shrink-0 shadow-2xs">
               <Calendar size={20} />
             </div>
@@ -301,7 +323,7 @@ export const VistaTurno = memo(function VistaTurno({
         </div>
 
         {/* ─── DATOS DEL PACIENTE: Contacto rápido con WhatsApp y Teléfono ─── */}
-        <div className="rounded-2xl bg-slate-50/70 dark:bg-slate-800/40 p-3.5 sm:p-4 flex items-center justify-between gap-3 border border-slate-100 dark:border-slate-800">
+        <div className="rounded-2xl bg-teal-100/50  dark:bg-teal-950/30 p-3.5 sm:p-4 flex items-center justify-between gap-3 border border-teal-200/80 dark:border-teal-800/60 shadow-2xs">
           <div className="flex items-center gap-3 min-w-0">
             <div
               className={`w-11 h-11 rounded-full ${coloresAvatar.bg} ${coloresAvatar.text} border ${coloresAvatar.border} flex items-center justify-center font-bold text-sm shrink-0 shadow-2xs`}
@@ -344,9 +366,6 @@ export const VistaTurno = memo(function VistaTurno({
                   title="Contactar por WhatsApp"
                 >
                   <MessageCircle size={16} />
-                  <span className="text-xs font-bold hidden sm:inline">
-                    WhatsApp
-                  </span>
                 </a>
                 <a
                   href={`tel:${paciente.telefono}`}
@@ -354,9 +373,6 @@ export const VistaTurno = memo(function VistaTurno({
                   title="Llamar al paciente"
                 >
                   <Phone size={16} />
-                  <span className="text-xs font-bold hidden sm:inline">
-                    Llamar
-                  </span>
                 </a>
               </>
             ) : null}
@@ -388,12 +404,12 @@ export const VistaTurno = memo(function VistaTurno({
               className={`text-[11px] font-medium mt-1 ${estilosCardEstado.desc}`}
             >
               {esProgramado
-                ? "Esperando llegada del paciente"
+                ? "Turno programado"
                 : esAtendido
-                ? "Turno completado y atendido"
-                : esCancelado
-                ? "Turno cancelado"
-                : "El paciente no asistió"}
+                  ? "Turno completado y atendido"
+                  : esCancelado
+                    ? "Turno cancelado"
+                    : "El paciente no asistió"}
             </p>
           </div>
 
@@ -433,29 +449,96 @@ export const VistaTurno = memo(function VistaTurno({
           </div>
         </div>
 
-        {/* ─── TRATAMIENTO PLANIFICADO ─── */}
+        {/* ─── TRATAMIENTOS PLANIFICADOS ─── */}
         <div>
-          <h3 className="text-xs font-bold text-slate-800 dark:text-slate-200 mb-1.5">
-            Tratamiento Planificado
-          </h3>
-          <div className="rounded-2xl bg-slate-50/70 dark:bg-slate-800/40 border border-slate-100 dark:border-slate-800 p-3 sm:p-3.5 flex items-center justify-between gap-3">
-            <div className="flex items-center gap-3 min-w-0">
-              <div className="w-10 h-10 rounded-2xl bg-teal-50 dark:bg-teal-950/60 text-[#0d8266] border border-[#0d8266]/30 flex items-center justify-center shrink-0">
-                <Stethoscope size={18} />
-              </div>
-              <div className="flex flex-col min-w-0">
-                <span className="font-bold text-slate-900 dark:text-slate-100 text-xs sm:text-sm truncate">
-                  {nombreTratamiento}
-                </span>
-                <span className="text-[11px] text-slate-500 dark:text-slate-400 font-medium">
-                  Nomenclador: {codigoNomenclador}
-                </span>
-              </div>
-            </div>
+          <div className="flex items-center justify-between mb-1.5">
+            <h3 className="text-xs font-bold text-slate-800 dark:text-slate-200">
+              {listaPracticas && listaPracticas.length > 1
+                ? `Tratamientos Planificados (${listaPracticas.length})`
+                : "Tratamiento Planificado"}
+            </h3>
+            {listaPracticas && listaPracticas.length > 1 && (
+              <span className="text-[11px] font-semibold text-slate-500 dark:text-slate-400">
+                Duración total: {duracionMinutos} min
+              </span>
+            )}
+          </div>
 
-            <span className="text-xs font-bold text-slate-700 dark:text-slate-300 shrink-0 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 px-2.5 py-1 rounded-xl">
-              {duracionMinutos} min
-            </span>
+          <div className="flex flex-col gap-2">
+            {listaPracticas && listaPracticas.length > 0 ? (
+              listaPracticas.map((pt, idx) => {
+                const practica = pt.Practica || pt;
+                const nombre =
+                  practica.nombre_referencia ||
+                  practica.nombre_nomenclador ||
+                  "Consulta General / Diagnóstico";
+                const codigo =
+                  practica.codigo_nomenclador || practica.codigo || "";
+                const especialidad = practica.especialidad;
+                const precioRef = Number(practica.precio_referencia);
+
+                return (
+                  <div
+                    key={
+                      pt.id_practica_turno ||
+                      pt.id ||
+                      `${practica.id_practica || idx}-${idx}`
+                    }
+                    className="rounded-2xl bg-slate-50/70 dark:bg-slate-800/40 border border-slate-100 dark:border-slate-800 p-3 sm:p-3.5 flex items-center justify-between gap-3"
+                  >
+                    <div className="flex items-center gap-3 min-w-0">
+                      <div className="w-10 h-10 rounded-2xl bg-teal-50 dark:bg-teal-950/60 text-[#0d8266] border border-[#0d8266]/30 flex items-center justify-center shrink-0">
+                        <Stethoscope size={18} />
+                      </div>
+                      <div className="flex flex-col min-w-0">
+                        <span className="font-bold text-slate-900 dark:text-slate-100 text-xs sm:text-sm truncate">
+                          {nombre}
+                        </span>
+                        <div className="flex items-center gap-1.5 flex-wrap text-[11px] text-slate-500 dark:text-slate-400 font-medium mt-0.5">
+                          {codigo ? <span>Nomenclador: {codigo}</span> : null}
+                          {especialidad ? (
+                            <>
+                              <span>·</span>
+                              <span>{especialidad}</span>
+                            </>
+                          ) : null}
+                        </div>
+                      </div>
+                    </div>
+
+                    {listaPracticas.length === 1 ? (
+                      <span className="text-xs font-bold text-slate-700 dark:text-slate-300 shrink-0 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 px-2.5 py-1 rounded-xl shadow-2xs">
+                        {duracionMinutos} min
+                      </span>
+                    ) : precioRef > 0 ? (
+                      <span className="text-xs font-bold text-slate-700 dark:text-slate-300 shrink-0 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 px-2.5 py-1 rounded-xl shadow-2xs">
+                        ${FMT_MONEDA.format(precioRef)}
+                      </span>
+                    ) : null}
+                  </div>
+                );
+              })
+            ) : (
+              <div className="rounded-2xl bg-slate-50/70 dark:bg-slate-800/40 border border-slate-100 dark:border-slate-800 p-3 sm:p-3.5 flex items-center justify-between gap-3">
+                <div className="flex items-center gap-3 min-w-0">
+                  <div className="w-10 h-10 rounded-2xl bg-teal-50 dark:bg-teal-950/60 text-[#0d8266] border border-[#0d8266]/30 flex items-center justify-center shrink-0">
+                    <Stethoscope size={18} />
+                  </div>
+                  <div className="flex flex-col min-w-0">
+                    <span className="font-bold text-slate-900 dark:text-slate-100 text-xs sm:text-sm truncate">
+                      {nombreTratamiento}
+                    </span>
+                    <span className="text-[11px] text-slate-500 dark:text-slate-400 font-medium">
+                      Nomenclador: {codigoNomenclador}
+                    </span>
+                  </div>
+                </div>
+
+                <span className="text-xs font-bold text-slate-700 dark:text-slate-300 shrink-0 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 px-2.5 py-1 rounded-xl shadow-2xs">
+                  {duracionMinutos} min
+                </span>
+              </div>
+            )}
           </div>
         </div>
 
@@ -500,7 +583,10 @@ export const VistaTurno = memo(function VistaTurno({
                 className="px-2.5 py-2 text-xs font-semibold text-amber-700 dark:text-amber-400 bg-amber-50/60 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800/60 rounded-lg sm:rounded-xl hover:bg-amber-100 dark:hover:bg-amber-900/40 text-center flex items-center justify-center gap-1 sm:gap-1.5 transition-colors shadow-2xs active:scale-95 cursor-pointer"
                 title="Marcar Inasistido"
               >
-                <UserRoundX size={14} className="text-amber-600 dark:text-amber-400 shrink-0" />
+                <UserRoundX
+                  size={14}
+                  className="text-amber-600 dark:text-amber-400 shrink-0"
+                />
                 <span>Inasistido</span>
               </button>
 
@@ -512,7 +598,10 @@ export const VistaTurno = memo(function VistaTurno({
                 className="px-2.5 py-2 text-xs font-semibold text-rose-700 dark:text-rose-400 bg-rose-50/60 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800/60 rounded-lg sm:rounded-xl hover:bg-rose-100 dark:hover:bg-rose-900/40 text-center flex items-center justify-center gap-1 sm:gap-1.5 transition-colors shadow-2xs active:scale-95 cursor-pointer"
                 title="Cancelar Turno"
               >
-                <XCircle size={14} className="text-rose-600 dark:text-rose-400 shrink-0" />
+                <XCircle
+                  size={14}
+                  className="text-rose-600 dark:text-rose-400 shrink-0"
+                />
                 <span>Cancelar</span>
               </button>
             </div>
@@ -533,13 +622,13 @@ export const VistaTurno = memo(function VistaTurno({
             </div>
           )}
 
-          {/* Lado derecho: Cerrar (oculto en mobile si esProgramado) y Atender (ancho completo en mobile) */}
-          <div className="flex items-center justify-end gap-2 w-full sm:w-auto">
+          {/* Lado derecho: Cerrar y Atender / Cobrar */}
+          <div className="flex items-center justify-end gap-2 w-full sm:w-auto sm:ml-auto">
             <button
               type="button"
               onClick={onClose}
               className={`${
-                esProgramado
+                esProgramado || esAtendido
                   ? "hidden sm:inline-flex"
                   : "w-full sm:w-auto inline-flex justify-center"
               } px-3 py-2 text-xs font-semibold text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl transition-colors cursor-pointer whitespace-nowrap`}
@@ -557,6 +646,19 @@ export const VistaTurno = memo(function VistaTurno({
               >
                 <CheckCircle2 size={16} />
                 <span>Atender</span>
+              </button>
+            )}
+
+            {esAtendido && (
+              <button
+                type="button"
+                onClick={() => {
+                  if (abrirParaCobrar) abrirParaCobrar(turno);
+                }}
+                className="w-full sm:w-auto px-5 py-2.5 text-xs sm:text-sm font-bold text-white bg-[#0d8266] hover:bg-[#0b6f57] rounded-xl shadow-xs active:scale-95 transition-all cursor-pointer flex items-center justify-center gap-2 whitespace-nowrap"
+              >
+                <Banknote size={16} />
+                <span>Cobrar</span>
               </button>
             )}
           </div>

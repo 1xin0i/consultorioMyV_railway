@@ -15,16 +15,16 @@ INSERT INTO usuario (id_usuario, nombre_usuario, contraseña, rol) VALUES
 ON DUPLICATE KEY UPDATE nombre_usuario = VALUES(nombre_usuario);
 
 -- 2. OBRAS SOCIALES
-INSERT INTO obra_social (id_obra_social, nombre, codigo_prestador, activo) VALUES
-(1, 'Particular', 'PART-00', TRUE),
-(2, 'OSDE', 'OSDE-210', TRUE),
-(3, 'Swiss Medical', 'SM-01', TRUE),
-(4, 'Apross', 'APR-COR', TRUE),
-(5, 'PAMI', 'PAMI-99', TRUE),
-(6, 'Galeno', 'GAL-03', TRUE),
-(7, 'Medifé', 'MED-05', TRUE),
-(8, 'Sancor Salud', 'SS-02', TRUE)
-ON DUPLICATE KEY UPDATE nombre = VALUES(nombre), codigo_prestador = VALUES(codigo_prestador);
+INSERT INTO obra_social (id_obra_social, nombre, activo) VALUES
+(1, 'Particular', TRUE),
+(2, 'OSDE', TRUE),
+(3, 'Swiss Medical', TRUE),
+(4, 'Apross', TRUE),
+(5, 'PAMI', TRUE),
+(6, 'Galeno', TRUE),
+(7, 'Medifé', TRUE),
+(8, 'Sancor Salud', TRUE)
+ON DUPLICATE KEY UPDATE nombre = VALUES(nombre);
 
 -- 3. CATEGORÍAS DE GASTO
 INSERT INTO categoria_gasto (id_categoria_gasto, nombre, descripcion, activo) VALUES
@@ -117,22 +117,7 @@ INSERT INTO practica_turno (id_practica_turno, id_turno, id_practica, id_obra_so
 (8, 8, 14, 8)
 ON DUPLICATE KEY UPDATE id_practica = VALUES(id_practica);
 
--- 10. DETALLE DE DIENTES (FDI) Y CARAS
-CREATE TABLE IF NOT EXISTS practica_turno_diente (
-  id INT AUTO_INCREMENT PRIMARY KEY,
-  id_practica_turno INT NOT NULL,
-  numero_fdi TINYINT NOT NULL,
-  cara VARCHAR(10) NULL,
-  FOREIGN KEY (id_practica_turno) REFERENCES practica_turno(id_practica_turno) ON DELETE CASCADE
-);
-
-INSERT INTO practica_turno_diente (id, id_practica_turno, numero_fdi, cara) VALUES
-(1, 2, 16, 'OD'),
-(2, 3, 46, NULL),
-(3, 7, 38, NULL)
-ON DUPLICATE KEY UPDATE cara = VALUES(cara);
-
--- 11. COBROS Y CUOTAS (asociados a turnos atendidos)
+-- 10. COBROS Y CUOTAS (asociados a turnos atendidos)
 INSERT INTO cobro (id_cobro, id_turno, id_paciente, monto_a_cobrar, cant_cuotas, fecha_emision, activo) VALUES
 (1, 1, 1, 15000.00, 1, '2026-11-05', TRUE),
 (2, 2, 2, 35000.00, 1, '2026-11-06', TRUE),
@@ -147,7 +132,7 @@ INSERT INTO cuota (id_cuota, id_cobro, nro_cuota, monto_cuota, monto_cobrado, fe
 (5, 3, 3, 25000.00, 0.00, '2027-01-07', NULL, NULL, 'Pendiente', TRUE)
 ON DUPLICATE KEY UPDATE estado = VALUES(estado);
 
--- 12. GASTOS DEL CONSULTORIO
+-- 11. GASTOS DEL CONSULTORIO
 INSERT INTO gasto (id_gasto, id_categoria_gasto, monto, concepto, fecha_gasto, metodo_pago, comprobante, notas, activo) VALUES
 (1, 3, 180000.00, 'Alquiler consultorio Noviembre 2026', '2026-11-01 10:00:00', 'Transferencia', 'REC-LOC-2026-11', 'Pago mensual de alquiler y expensas comunes', TRUE),
 (2, 2, 34500.00, 'Factura EPEC - Energía Eléctrica', '2026-11-03 14:30:00', 'Transferencia', 'EPEC-9921448', 'Consumo bimestre consultorio', TRUE),

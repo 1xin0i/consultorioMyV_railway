@@ -19,8 +19,6 @@ export const createObraSocialSchema = z.object({
       "El nombre no puede contener números ni caracteres especiales como (), [], {}, comillas o comas",
     ),
 
-  codigo_prestador: z.string().trim().max(50).optional().nullable(),
-
   activo: z
     .boolean({ invalid_type_error: "El campo activo debe ser booleano" })
     .optional(),
@@ -40,8 +38,6 @@ export const updateObraSocialSchema = z.object({
       "El nombre no puede contener números ni caracteres especiales como (), [], {}, comillas o comas",
     )
     .optional(),
-
-  codigo_prestador: z.string().trim().max(50).optional().nullable(),
 
   activo: z
     .boolean({ invalid_type_error: "El campo activo debe ser booleano" })

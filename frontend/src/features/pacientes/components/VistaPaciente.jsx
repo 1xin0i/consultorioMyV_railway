@@ -16,7 +16,6 @@ import {
   CalendarCheck,
   CalendarClock,
 } from "lucide-react";
-import { formatearResumenDientes } from "../../turnos/constants/odontogramaConstants";
 
 export function VistaPaciente({ isOpen, onClose, paciente }) {
   const [turnos, setTurnos] = useState([]);
@@ -64,15 +63,18 @@ export function VistaPaciente({ isOpen, onClose, paciente }) {
     let totalPagado = 0;
 
     turnos.forEach((t) => {
-      const cobro = t.Cobro;
-      if (cobro) {
+      const solicitud = t.SolicitudCobro || t.Cobro;
+      if (solicitud) {
         const montoAcordado = Number(
-          cobro.monto_a_cobrar || t.precio_final || 0,
+          solicitud.monto_total ?? solicitud.monto_a_cobrar ?? t.precio_final ?? 0,
         );
-        const pagado = (cobro.Cuota || []).reduce(
-          (acc, c) => acc + (Number(c.monto_cobrado) || 0),
-          0,
-        );
+        const pagado =
+          solicitud.ya_cobrado !== undefined
+            ? Number(solicitud.ya_cobrado) || 0
+            : (solicitud.Cobros || []).reduce(
+                (acc, c) => acc + (Number(c.monto) || 0),
+                0,
+              );
         totalAcordado += montoAcordado;
         totalPagado += pagado;
       }
@@ -99,13 +101,22 @@ export function VistaPaciente({ isOpen, onClose, paciente }) {
 
       // Filtro de pendientes de cobro
       if (soloPendientes) {
-        const cobro = t.Cobro;
-        if (!cobro) return true; // Si no tiene cobro generado, está pendiente
-        const pagado = (cobro.Cuota || []).reduce(
-          (acc, c) => acc + (Number(c.monto_cobrado) || 0),
-          0,
+        const solicitud = t.SolicitudCobro || t.Cobro;
+        if (!solicitud) return true; // Si no tiene solicitud generada, está pendiente
+        const montoTotal = Number(
+          solicitud.monto_total ?? solicitud.monto_a_cobrar ?? 0,
         );
-        const saldo = Math.max(0, Number(cobro.monto_a_cobrar) - pagado);
+        const pagado =
+          solicitud.ya_cobrado !== undefined
+            ? Number(solicitud.ya_cobrado) || 0
+            : (solicitud.Cobros || []).reduce(
+                (acc, c) => acc + (Number(c.monto) || 0),
+                0,
+              );
+        const saldo =
+          solicitud.saldo_pendiente !== undefined
+            ? Number(solicitud.saldo_pendiente) || 0
+            : Math.max(0, montoTotal - pagado);
         if (saldo <= 0) return false;
       }
 
@@ -352,15 +363,21 @@ export function VistaPaciente({ isOpen, onClose, paciente }) {
           ) : (
             <div className="space-y-2">
               {turnosPaginados.map((t) => {
-                const cobro = t.Cobro;
+                const solicitud = t.SolicitudCobro || t.Cobro;
                 const totalAcordado = Number(
-                  cobro?.monto_a_cobrar || t.precio_final || 0,
+                  solicitud?.monto_total ?? solicitud?.monto_a_cobrar ?? t.precio_final ?? 0,
                 );
-                const totalPagado = (cobro?.Cuota || []).reduce(
-                  (acc, c) => acc + (Number(c.monto_cobrado) || 0),
-                  0,
-                );
-                const saldoRestante = Math.max(0, totalAcordado - totalPagado);
+                const totalPagado =
+                  solicitud?.ya_cobrado !== undefined
+                    ? Number(solicitud.ya_cobrado) || 0
+                    : (solicitud?.Cobros || []).reduce(
+                        (acc, c) => acc + (Number(c.monto) || 0),
+                        0,
+                      );
+                const saldoRestante =
+                  solicitud?.saldo_pendiente !== undefined
+                    ? Math.max(0, Number(solicitud.saldo_pendiente) || 0)
+                    : Math.max(0, totalAcordado - totalPagado);
 
                 const esDesplegado = acordeonAbiertoId === t.id_turno;
 
@@ -368,7 +385,7 @@ export function VistaPaciente({ isOpen, onClose, paciente }) {
                 let estadoCobroLabel = "Sin Cobro";
                 let estadoCobroColor = "bg-gray-100 dark:bg-slate-800 text-gray-600 dark:text-slate-400 border-gray-200 dark:border-slate-700";
 
-                if (cobro) {
+                if (solicitud) {
                   if (saldoRestante === 0 && totalAcordado > 0) {
                     estadoCobroLabel = "Pagado";
                     estadoCobroColor =
@@ -484,11 +501,11 @@ export function VistaPaciente({ isOpen, onClose, paciente }) {
                           </div>
                         </div>
 
-                        {/* TRATAMIENTOS / PRÁCTICAS Y DIENTES AFECTADOS */}
+                        {/* TRATAMIENTOS / PRÁCTICAS */}
                         {t.PracticaTurnos && t.PracticaTurnos.length > 0 && (
                           <div className="border-t border-gray-100 dark:border-slate-800 pt-2">
                             <span className="text-[10px] font-bold text-gray-400 dark:text-slate-500 uppercase block mb-1.5">
-                              Tratamientos y Piezas Dentales
+                              Tratamientos Realizados
                             </span>
                             <div className="flex flex-col gap-1.5">
                               {t.PracticaTurnos.map((pt, idx) => (
@@ -502,11 +519,6 @@ export function VistaPaciente({ isOpen, onClose, paciente }) {
                                         pt.Practica?.nombre_nomenclador ||
                                         `Práctica #${pt.id_practica}`}
                                     </span>
-                                    {pt.dientes && pt.dientes.length > 0 && (
-                                      <span className="block text-[11px] text-emerald-700 dark:text-emerald-400 font-medium mt-0.5">
-                                        🦷 {formatearResumenDientes(pt.dientes)}
-                                      </span>
-                                    )}
                                   </div>
                                   <span className="text-[10px] font-semibold text-gray-500 dark:text-slate-400 bg-gray-100 dark:bg-slate-800 px-2 py-0.5 rounded-md">
                                     {pt.ObraSocial?.nombre || "Particular"}

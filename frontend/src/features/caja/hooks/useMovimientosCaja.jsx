@@ -23,14 +23,10 @@ export function useMovimientosCaja(
     }
 
     // Fallback de cálculo local
-    let totalIngresos = 0;
-    cobros.forEach((c) => {
-      const pagado = (c.Cuotas || c.Cuota || []).reduce(
-        (acc, q) => acc + (Number(q.monto_cobrado) || 0),
-        0,
-      );
-      totalIngresos += pagado;
-    });
+    const totalIngresos = cobros.reduce(
+      (acc, c) => acc + (Number(c.monto ?? c.monto_cobrado ?? c.monto_a_cobrar) || 0),
+      0,
+    );
 
     const totalEgresos = gastos.reduce(
       (acc, g) => acc + (Number(g.monto) || 0),
@@ -41,12 +37,15 @@ export function useMovimientosCaja(
       0,
     );
     const totalCuotas = cuotasPendientes.reduce(
-      (acc, q) =>
+      (acc, s) =>
         acc +
-        Math.max(
-          0,
-          (Number(q.monto_cuota) || 0) - (Number(q.monto_cobrado) || 0),
-        ),
+        (s.saldo_pendiente !== undefined
+          ? Math.max(0, Number(s.saldo_pendiente) || 0)
+          : Math.max(
+              0,
+              (Number(s.monto_total ?? s.monto_cuota) || 0) -
+                (Number(s.ya_cobrado ?? s.monto_cobrado) || 0),
+            )),
       0,
     );
 
@@ -64,20 +63,20 @@ export function useMovimientosCaja(
   const movimientosUnificados = useMemo(() => {
     const listaIngresos = cobros
       .map((c) => {
-        const cuotas = c.Cuotas || c.Cuota || [];
-        const montoCobrado = cuotas.reduce(
-          (acc, q) => acc + (Number(q.monto_cobrado) || 0),
-          0,
-        ) || Number(c.monto_a_cobrar) || 0;
+        const idCobro = c.id || c.id_cobro;
+        const montoCobrado =
+          Number(c.monto ?? c.monto_cobrado ?? c.monto_a_cobrar) || 0;
 
         const pacienteNombre = c.Paciente
           ? `${c.Paciente.nombre} ${c.Paciente.apellido}`
           : "Paciente";
 
         const conceptoDetalle =
+          c.observaciones ||
           c.concepto ||
           (c.Turno?.PracticaTurnos?.[0]?.Practica?.nombre_referencia ||
-            "Limpieza dental");
+            c.SolicitudCobro?.observaciones ||
+            "Consulta Odontológica");
 
         const dniTexto = c.Paciente?.dni
           ? `DNI ${c.Paciente.dni.toLocaleString ? c.Paciente.dni.toLocaleString("es-AR") : c.Paciente.dni}`
@@ -88,23 +87,23 @@ export function useMovimientosCaja(
           : conceptoDetalle;
 
         return {
-          id: `ingreso-${c.id_cobro}`,
-          id_cobro: c.id_cobro,
+          id: `ingreso-${idCobro}`,
+          id_cobro: idCobro,
           tipo: "ingreso",
           concepto: `Cobro a ${pacienteNombre}`,
           subtitulo,
           categoria: "Cobro de Atención",
           monto: montoCobrado,
-          fecha: c.fecha_emision || c.createdAt,
-          metodo_pago: c.modalidad || "Efectivo",
-          comprobante: `Recibo #${c.id_cobro}`,
+          fecha: c.fecha_cobro || c.fecha_emision || c.created_at || c.createdAt,
+          metodo_pago: c.metodo_pago || c.modalidad || "Efectivo",
+          comprobante: `Recibo #${idCobro}`,
         };
       })
       .filter((m) => m.monto > 0);
 
     const listaEgresos = gastos.map((g) => {
       const proveedor = g.destinatario || g.proveedor || "Proveedor Dental";
-      const detalle = g.detalle || g.concepto || "Resinas y anestesia";
+      const detalle = g.detalle || g.concepto || "Insumos y servicios";
       const subtitulo = `${proveedor} · ${detalle}`;
 
       return {
@@ -117,7 +116,7 @@ export function useMovimientosCaja(
         monto: Number(g.monto) || 0,
         fecha: g.fecha_gasto || g.createdAt,
         metodo_pago: g.metodo_pago || "Efectivo",
-        comprobante: g.comprobante || `Factura #${g.id_gasto}`,
+        comprobante: `Gasto #${g.id_gasto}`,
       };
     });
 

@@ -39,14 +39,13 @@ import { useGastoActions } from "../gastos/hooks/useGastoActions";
 import { FormularioCrearEditar as FormularioGasto } from "../gastos/components/FormulariosGasto";
 
 //* HOOKS Y FORMULARIOS COBROS
-import { FormularioCrearEditarCobro as FormularioCobro } from "../cobros/components/FormulariosCobro";
 import ModalRegistrarPago from "../cobros/components/ModalRegistrarPago";
-import { useCobroActions } from "../cobros/hooks/useCobroActions";
+import VistaTurno from "../turnos/components/modales/VistaTurno";
+import api from "../../services/api";
 import { useCajaSearchPagination } from "./hooks/useCajaSearchPagination";
 
 //* CONSTANTES
 import {
-  ESTADO_INICIAL_COBRO,
   ESTADO_INICIAL_GASTO,
 } from "./constants/cajaConstants";
 
@@ -69,10 +68,32 @@ export default function GestionCaja() {
   //* VARIABLES GENERALES
   const [vistaActiva, setVistaActiva] = useState("cronologico"); // 'cronologico' | 'ingresos' | 'mayor' | 'pendientes'
   const [filtroMetodo, setFiltroMetodo] = useState("todos");
-  const [categoriaAbierta, setCategoriaAbierta] = useState(null);
-  const [metodoIngresoAbierto, setMetodoIngresoAbierto] = useState(null);
   const [menuFlotanteAbierto, setMenuFlotanteAbierto] = useState(false);
   const [itemParaCobrar, setItemParaCobrar] = useState(null);
+  const [turnoParaVer, setTurnoParaVer] = useState(null);
+
+  const handleVerTurno = useCallback(async (item) => {
+    const idT = item?.id_turno ?? item?.turno_id ?? item?.id;
+    if (!idT) return;
+    try {
+      if (item.fecha_hora_inicio && item.Paciente && item.PracticaTurnos) {
+        setTurnoParaVer(item);
+        return;
+      }
+      if (
+        item.raw?.fecha_hora_inicio &&
+        item.raw?.Paciente &&
+        item.raw?.PracticaTurnos
+      ) {
+        setTurnoParaVer(item.raw);
+        return;
+      }
+      const res = await api.get(`/turnos/${idT}`);
+      setTurnoParaVer(res.data?.data || item.raw || item);
+    } catch {
+      setTurnoParaVer(item.raw || item);
+    }
+  }, []);
 
   const location = useLocation();
 
@@ -124,14 +145,13 @@ export default function GestionCaja() {
     actualizarDatos: actualizarDatosGasto,
   } = useCRUDModal(ESTADO_INICIAL_GASTO);
 
-  //* HOOK DE CRUD MODAL COBRO
-  const {
-    modalAbierto: modalCobroAbierto,
-    datosFormulario: datosCobro,
-    abrirParaCrear: abrirParaCrearCobro,
-    cerrarModal: cerrarModalCobro,
-    actualizarDatos: actualizarDatosCobro,
-  } = useCRUDModal(ESTADO_INICIAL_COBRO);
+  //* ESTADO DE MODAL COBRO (UNIFICADO CON ModalRegistrarPago)
+  const [modalCobroAbierto, setModalCobroAbierto] = useState(false);
+  const abrirParaCrearCobro = () => setModalCobroAbierto(true);
+  const cerrarModalCobro = () => {
+    setModalCobroAbierto(false);
+    setItemParaCobrar(null);
+  };
 
   //* HOOK DE CATEGORIAS PARA GASTOS
   const { categorias, recargarCategorias } = useCategoriasGastosCatalogo();
@@ -146,12 +166,54 @@ export default function GestionCaja() {
     totalesBackend,
   );
 
-  //* HOOK DE PETICIONES API
+  //* HOOK DE PETICIONES API (GASTO)
   const { guardarGasto } = useGastoActions(recargar, () => cerrarModalGasto());
-  const { guardarCobro, cargandoAccion: cargandoCobro } = useCobroActions(
-    recargar,
-    () => cerrarModalCobro(),
-  );
+
+  //* LISTA UNIFICADA DE TURNOS PENDIENTES PARA SELECTOR DE COBRO
+  const turnosDisponiblesCobro = useMemo(() => {
+    const lista = [];
+    const idsVistos = new Set();
+
+    (turnosPendientes || []).forEach((t) => {
+      if (t.id_turno && !idsVistos.has(t.id_turno)) {
+        idsVistos.add(t.id_turno);
+        lista.push(t);
+      }
+    });
+
+    (cuotasPendientes || []).forEach((s) => {
+      const idT = s.id_turno ?? s.turno_id;
+      if (idT && !idsVistos.has(idT)) {
+        idsVistos.add(idT);
+        const tot = Number(s.monto_total ?? s.monto_a_cobrar ?? 0);
+        const cob =
+          s.ya_cobrado !== undefined
+            ? Number(s.ya_cobrado)
+            : (s.Cobros || []).reduce(
+                (acc, c) => acc + (Number(c.monto) || 0),
+                0,
+              );
+        const sal =
+          s.saldo_pendiente !== undefined
+            ? Number(s.saldo_pendiente)
+            : Math.max(0, tot - cob);
+
+        lista.push({
+          id_turno: idT,
+          precio_final: tot,
+          monto_total: tot,
+          ya_cobrado: cob,
+          saldo_pendiente: sal,
+          solicitud_cobro_id: s.id || s.id_solicitud_cobro,
+          Paciente: s.Paciente || s.Turno?.Paciente,
+          fecha_hora_inicio: s.Turno?.fecha_hora_inicio || s.created_at,
+          notas_consulta: s.concepto || s.observaciones,
+        });
+      }
+    });
+
+    return lista;
+  }, [turnosPendientes, cuotasPendientes]);
 
   //* FILTRADOS POR MÉTODO DE PAGO
   const movimientosFiltrados = useMemo(() => {
@@ -163,19 +225,11 @@ export default function GestionCaja() {
 
   const cobrosFiltrados = useMemo(() => {
     if (filtroMetodo === "todos") return cobros;
-    return (cobros || []).filter((c) => {
-      const cuotas = c.Cuotas || c.Cuota || [];
-      if (cuotas.length > 0) {
-        return cuotas.some((q) =>
-          (q.metodo_pago || "Efectivo")
-            .toLowerCase()
-            .includes(filtroMetodo.toLowerCase())
-        );
-      }
-      return (c.modalidad || "")
+    return (cobros || []).filter((c) =>
+      (c.metodo_pago || c.modalidad || "Efectivo")
         .toLowerCase()
-        .includes(filtroMetodo.toLowerCase());
-    });
+        .includes(filtroMetodo.toLowerCase())
+    );
   }, [cobros, filtroMetodo]);
 
   const gastosFiltrados = useMemo(() => {
@@ -200,7 +254,7 @@ export default function GestionCaja() {
       "Importe",
     ];
     const filas = movimientosUnificados.map((m) => [
-      m.tipo,
+      m.tipo === "ingreso" ? "Cobro" : "Gasto",
       `"${(m.concepto || "").replace(/"/g, '""')}"`,
       `"${m.fecha ? new Date(m.fecha).toLocaleString("es-AR") : ""}"`,
       `"${m.metodo_pago || "Efectivo"}"`,
@@ -215,12 +269,12 @@ export default function GestionCaja() {
     link.setAttribute("href", encodedUri);
     link.setAttribute(
       "download",
-      `balance_${modoAnual ? anio : `${mes}_${anio}`}.csv`
+      `cobros_y_gastos_${modoAnual ? anio : `${mes}_${anio}`}.csv`
     );
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
-    toast.success("Balance exportado a CSV correctamente");
+    toast.success("Cobros y gastos exportados a CSV correctamente");
   };
 
   //* ABRIR MODAL PARA COBRAR UN TURNO O ITEM PENDIENTE
@@ -242,61 +296,6 @@ export default function GestionCaja() {
     }
   }, [location.state, abrirCobroParaTurno]);
 
-  //* MAPEA LOS INGRESOS POR METODO DE PAGO
-  const ingresosPorMetodo = useMemo(() => {
-    const mapa = {};
-    (cobros || []).forEach((c) => {
-      const cuotas = c.Cuotas || c.Cuota || [];
-      const pacienteNombre = c.Paciente
-        ? `${c.Paciente.apellido}, ${c.Paciente.nombre}`
-        : "Paciente";
-
-      if (cuotas.length > 0) {
-        cuotas.forEach((q) => {
-          const cobradoCuota = Number(q.monto_cobrado) || 0;
-          if (cobradoCuota > 0) {
-            const metodo = q.metodo_pago || "Efectivo";
-            if (!mapa[metodo]) {
-              mapa[metodo] = { nombre: metodo, total: 0, items: [] };
-            }
-            mapa[metodo].total += cobradoCuota;
-            mapa[metodo].items.push({
-              id: `cuota-${q.id_cuota}`,
-              id_cobro: c.id_cobro,
-              nro_cuota: q.nro_cuota,
-              cant_cuotas: c.cant_cuotas,
-              concepto: `Cobro a ${pacienteNombre}${
-                c.cant_cuotas > 1 ? ` (Cuota #${q.nro_cuota}/${c.cant_cuotas})` : ""
-              }`,
-              paciente: pacienteNombre,
-              dni: c.Paciente?.dni,
-              fecha: q.fecha_cobro || c.fecha_emision || c.createdAt,
-              metodo_pago: metodo,
-              monto: cobradoCuota,
-              monto_total_cobro: Number(c.monto_a_cobrar) || 0,
-              comprobante: `Cobro #${c.id_cobro}`,
-            });
-          }
-        });
-      }
-    });
-    return Object.values(mapa);
-  }, [cobros]);
-
-  //* MAPEA LOS EGRESOS POR CATEGORIAS
-  const egresosPorCategoria = useMemo(() => {
-    const mapa = {};
-    gastos.forEach((g) => {
-      const catNombre = g.CategoriaGasto?.nombre || "Sin Categoría";
-      if (!mapa[catNombre]) {
-        mapa[catNombre] = { nombre: catNombre, total: 0, items: [] };
-      }
-      mapa[catNombre].total += Number(g.monto) || 0;
-      mapa[catNombre].items.push(g);
-    });
-    return Object.values(mapa);
-  }, [gastos]);
-
   const labelPeriodo = modoAnual ? `Año ${anio}` : `${MESES[mes - 1]} ${anio}`;
 
   const totalPendientesCount =
@@ -307,8 +306,8 @@ export default function GestionCaja() {
       <div className="w-full flex-1 flex flex-col gap-5">
         {/* //* HEADER PRINCIPAL: Con selector integrado y acciones */}
         <Header
-          titulo="Balance del Período"
-          subtitulo="Control de ingresos, egresos de consultorio y deudas"
+          titulo="Cobros y Gastos"
+          subtitulo="Registro de cobros, gastos del consultorio y turnos por cobrar"
           alerta={
             <SelectorPeriodoCaja
               mes={mes}
@@ -344,7 +343,7 @@ export default function GestionCaja() {
         />
 
         <div className="w-full px-4 sm:px-6 flex flex-col gap-5">
-          {/* //* KPIS (4 TARJETAS CON MÉTRICAS DEL PERÍODO) */}
+          {/* //* KPIS (3 TARJETAS CON MÉTRICAS DEL PERÍODO) */}
           <Kpis
             kpis={kpis}
             periodoLabel={labelPeriodo}
@@ -380,7 +379,7 @@ export default function GestionCaja() {
                       : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
                   }`}
                 >
-                  Ingresos ({cobros?.length || 0})
+                  Cobros ({cobros?.length || 0})
                 </button>
 
                 <button
@@ -392,7 +391,7 @@ export default function GestionCaja() {
                       : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
                   }`}
                 >
-                  Egresos ({gastos?.length || 0})
+                  Gastos ({gastos?.length || 0})
                 </button>
 
                 <button
@@ -404,7 +403,7 @@ export default function GestionCaja() {
                       : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
                   }`}
                 >
-                  <span>Por Cobrar</span>
+                  <span>Turnos por Cobrar</span>
                   {totalPendientesCount > 0 && (
                     <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300">
                       {totalPendientesCount}
@@ -424,7 +423,7 @@ export default function GestionCaja() {
                     <option value="todos">Todos los métodos</option>
                     <option value="efectivo">Efectivo</option>
                     <option value="transferencia">Transferencia</option>
-                    <option value="tarjeta">Tarjeta / Posnet</option>
+                    <option value="tarjeta">Tarjeta</option>
                   </select>
                   <ChevronDown
                     size={14}
@@ -454,21 +453,11 @@ export default function GestionCaja() {
             )}
 
             {vistaActiva === "ingresos" && (
-              <VistaDetalleIngresos
-                cobros={cobrosFiltrados}
-                ingresosPorMetodo={ingresosPorMetodo}
-                metodoAbierto={metodoIngresoAbierto}
-                setMetodoAbierto={setMetodoIngresoAbierto}
-              />
+              <VistaDetalleIngresos cobros={cobrosFiltrados} />
             )}
 
             {vistaActiva === "mayor" && (
-              <VistaLibroMayor
-                gastos={gastosFiltrados}
-                egresosPorCategoria={egresosPorCategoria}
-                categoriaAbierta={categoriaAbierta}
-                setCategoriaAbierta={setCategoriaAbierta}
-              />
+              <VistaLibroMayor gastos={gastosFiltrados} />
             )}
 
             {vistaActiva === "pendientes" && (
@@ -476,7 +465,7 @@ export default function GestionCaja() {
                 turnosPendientes={turnosPendientes}
                 cuotasPendientes={cuotasPendientes}
                 onCobrarItem={(item) => setItemParaCobrar(item)}
-                abrirCobroParaTurno={abrirCobroParaTurno}
+                onVerTurno={handleVerTurno}
               />
             )}
 
@@ -560,13 +549,36 @@ export default function GestionCaja() {
           </button>
         </div>
 
-        {/* //* MODAL RÁPIDO PARA COBRAR TURNO / SALDO PENDIENTE */}
-        {itemParaCobrar && (
+        {/* //* MODAL DE REGISTRAR COBRO (UNIFICADO) */}
+        {(modalCobroAbierto || Boolean(itemParaCobrar)) && (
           <ModalRegistrarPago
-            isOpen={Boolean(itemParaCobrar)}
-            onClose={() => setItemParaCobrar(null)}
+            isOpen={modalCobroAbierto || Boolean(itemParaCobrar)}
+            onClose={cerrarModalCobro}
             item={itemParaCobrar}
+            turnosLista={turnosDisponiblesCobro}
             onSuccess={recargar}
+            onVerTurno={handleVerTurno}
+          />
+        )}
+
+        {/* //* MODAL DE VER DETALLE DEL TURNO */}
+        {turnoParaVer && (
+          <VistaTurno
+            isOpen={Boolean(turnoParaVer)}
+            onClose={() => setTurnoParaVer(null)}
+            turno={turnoParaVer}
+            abrirParaCobrar={(t) => {
+              setTurnoParaVer(null);
+              setItemParaCobrar({
+                id_turno: t.id_turno,
+                paciente: t.Paciente,
+                monto_total: Number(t.precio_final) || 0,
+                ya_cobrado: 0,
+                saldo_pendiente: Number(t.precio_final) || 0,
+                tipo: "turno",
+                raw: t,
+              });
+            }}
           />
         )}
 
@@ -583,21 +595,6 @@ export default function GestionCaja() {
               e.preventDefault();
               guardarGasto(datosGasto, false, null);
             }}
-          />
-        )}
-
-        {/* //* MODALES: CREAR COBRO */}
-        {modalCobroAbierto && (
-          <FormularioCobro
-            modalAbierto={modalCobroAbierto}
-            cerrarModal={cerrarModalCobro}
-            datosFormulario={datosCobro}
-            actualizarDatos={actualizarDatosCobro}
-            turnosAtendidos={turnosPendientes}
-            guardarCobro={(datos) => {
-              guardarCobro(datos || datosCobro, false, null);
-            }}
-            cargando={cargandoCobro}
           />
         )}
       </div>

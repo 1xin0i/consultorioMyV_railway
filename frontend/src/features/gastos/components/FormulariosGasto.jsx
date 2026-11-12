@@ -137,32 +137,22 @@ export function FormularioCrearEditar({
               />
             </div>
 
-            {/* COMPROBANTE */}
+            {/* MÉTODO DE PAGO */}
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-1">
-                N° Comprobante / Ticket
+                Método de Pago
               </label>
-              <input
-                type="text"
-                name="comprobante"
-                value={datosFormulario.comprobante}
+              <select
+                name="metodo_pago"
+                value={datosFormulario.metodo_pago || "Efectivo"}
                 onChange={actualizarDatos}
-                placeholder="Ej: FACT-A-0001-00004521"
-                className="w-full border border-gray-300 p-2.5 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#2eb086]/50 focus:border-[#2eb086]"
-              />
-            </div>
-
-            {/* NOTAS */}
-            <div className="col-span-1 md:col-span-2">
-              <label className="block text-sm font-semibold text-gray-700 mb-1">Notas Adicionales</label>
-              <textarea
-                name="notas"
-                rows={2}
-                value={datosFormulario.notas}
-                onChange={actualizarDatos}
-                placeholder="Observaciones adicionales..."
-                className="w-full border border-gray-300 p-2.5 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#2eb086]/50 focus:border-[#2eb086]"
-              />
+                className="w-full border border-gray-300 p-2.5 rounded-xl text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[#2eb086]/50 focus:border-[#2eb086]"
+              >
+                <option value="Efectivo">Efectivo</option>
+                <option value="Transferencia">Transferencia</option>
+                <option value="Tarjeta">Tarjeta</option>
+                <option value="Otro">Otro</option>
+              </select>
             </div>
           </div>
 

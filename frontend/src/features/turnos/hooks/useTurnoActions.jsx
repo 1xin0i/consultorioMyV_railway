@@ -20,11 +20,19 @@ export function useTurnoActions(recargar, cerrarModal) {
       return;
     }
 
-    // Validar jornada y día laboral al registrar nuevo turno
-    if (!editando && validarTurnoHorario) {
-      const validacion = validarTurnoHorario(datosFormulario.fecha_hora_inicio);
+    const ignorarRestr = Boolean(datosFormulario.ignorarRestricciones);
+
+    // Validar jornada, día laboral y restricciones al registrar nuevo turno (salvo excepción autorizada)
+    if (!editando && validarTurnoHorario && !ignorarRestr) {
+      const validacion = validarTurnoHorario(
+        datosFormulario.fecha_hora_inicio,
+        datosFormulario.duracion_minutos,
+      );
       if (!validacion.valido) {
-        toast.error(validacion.mensaje, { id: "error-horario-invalido" });
+        toast.error(
+          `${validacion.mensaje} Confirmá la excepción de urgencia para agendarlo.`,
+          { id: "error-horario-invalido" },
+        );
         return;
       }
     }
@@ -64,6 +72,7 @@ export function useTurnoActions(recargar, cerrarModal) {
           fecha_hora_inicio: fechaInicioDate.toISOString(),
           fecha_hora_fin: fechaFinDate.toISOString(),
           notas_consulta: datosFormulario.notas_consulta?.trim() || undefined,
+          ignorarRestricciones: ignorarRestr,
           practicas: Array.isArray(datosFormulario.practicas)
             ? datosFormulario.practicas
                 .map((p) =>
@@ -100,14 +109,10 @@ export function useTurnoActions(recargar, cerrarModal) {
         practicas: practicasValidas.map((p) => ({
           id_practica: Number(p.id_practica),
           id_obra_social: p.id_obra_social ? Number(p.id_obra_social) : null,
-          dientes: Array.isArray(p.dientes) ? p.dientes : [],
         })),
         practicas_realizadas: practicasValidas.map((p) => Number(p.id_practica)),
         obras_sociales: practicasValidas.map((p) =>
           p.id_obra_social ? Number(p.id_obra_social) : null
-        ),
-        dientes_por_practica: practicasValidas.map((p) =>
-          Array.isArray(p.dientes) ? p.dientes : []
         ),
       };
 
@@ -158,10 +163,18 @@ export function useTurnoActions(recargar, cerrarModal) {
   ) => {
     if (!turnoSeleccionado) return;
 
-    if (validarTurnoHorario) {
-      const validacion = validarTurnoHorario(datosReprogramacion.fecha_hora_inicio);
+    const ignorarRestr = Boolean(datosReprogramacion.ignorarRestricciones);
+
+    if (validarTurnoHorario && !ignorarRestr) {
+      const validacion = validarTurnoHorario(
+        datosReprogramacion.fecha_hora_inicio,
+        datosReprogramacion.duracion_minutos,
+      );
       if (!validacion.valido) {
-        toast.error(validacion.mensaje, { id: "error-horario-invalido" });
+        toast.error(
+          `${validacion.mensaje} Confirmá la excepción de urgencia para reprogramarlo.`,
+          { id: "error-horario-invalido" },
+        );
         return;
       }
     }
@@ -170,6 +183,7 @@ export function useTurnoActions(recargar, cerrarModal) {
       await api.patch(`/turnos/${turnoSeleccionado.id_turno}/reprogramado`, {
         fecha_hora_inicio: new Date(datosReprogramacion.fecha_hora_inicio).toISOString(),
         fecha_hora_fin: new Date(datosReprogramacion.fecha_hora_fin).toISOString(),
+        ignorarRestricciones: ignorarRestr,
       });
 
       toast.success("Turno reprogramado correctamente");
@@ -204,21 +218,6 @@ export function useTurnoActions(recargar, cerrarModal) {
     setTurnoReprogramando,
   ) => {
     if (selectInfo && selectInfo.startStr) {
-      if (esDiaLaboral && !esDiaLaboral(selectInfo.startStr)) {
-        toast.error("No se pueden agendar turnos en días no laborales.", {
-          id: "error-dia-no-laboral",
-        });
-        return;
-      }
-
-      if (validarTurnoHorario) {
-        const validacion = validarTurnoHorario(selectInfo.startStr);
-        if (!validacion.valido) {
-          toast.error(validacion.mensaje, { id: "error-horario-invalido" });
-          return;
-        }
-      }
-
       const nuevaFechaInicio = formatDateTimeInput(selectInfo.startStr);
 
       // Calculamos la duración y la fecha fin según los bloques/celdas seleccionadas
@@ -245,6 +244,7 @@ export function useTurnoActions(recargar, cerrarModal) {
           fecha_hora_inicio: nuevaFechaInicio,
           duracion_minutos: duracionMinutos,
           fecha_hora_fin: nuevaFechaFin,
+          ignorarRestricciones: false,
         };
 
         // Abrimos el modal de reprogramar con la nueva fecha y duración calculada
@@ -261,6 +261,7 @@ export function useTurnoActions(recargar, cerrarModal) {
         fecha_hora_inicio: nuevaFechaInicio,
         duracion_minutos: duracionMinutos,
         fecha_hora_fin: nuevaFechaFin,
+        ignorarRestricciones: false,
       });
     }
   };

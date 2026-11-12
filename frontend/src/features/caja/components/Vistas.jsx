@@ -5,12 +5,10 @@ import {
   ArrowDownLeft,
   ArrowUpRight,
   Banknote,
-  Building2,
   CreditCard,
-  Package,
-  Wrench,
   Receipt,
   Check,
+  Eye,
 } from "lucide-react";
 import {
   formatFechaTabla,
@@ -150,122 +148,12 @@ export function VistaCronologica({ movimientosUnificados = [] }) {
   );
 }
 
-/* ─── VISTA 2: DETALLE DE INGRESOS (CARDS METODOS + TABLA) ─────────────────── */
-export function VistaDetalleIngresos({ cobros = [], ingresosPorMetodo = [] }) {
-  // Desglose de totales por método
-  const totalesMetodos = useMemo(() => {
-    let efectivo = { total: 0, count: 0 };
-    let transferencias = { total: 0, count: 0 };
-    let tarjetas = { total: 0, count: 0 };
-
-    cobros.forEach((c) => {
-      const modalidad = (c.modalidad || "").toLowerCase();
-      const cuotas = c.Cuotas || c.Cuota || [];
-      const montoTotalCobro = cuotas.reduce(
-        (acc, q) => acc + (Number(q.monto_cobrado) || 0),
-        0
-      ) || Number(c.monto_a_cobrar) || 0;
-
-      if (modalidad.includes("transfer")) {
-        transferencias.total += montoTotalCobro;
-        transferencias.count += 1;
-      } else if (
-        modalidad.includes("tarjeta") ||
-        modalidad.includes("posnet") ||
-        modalidad.includes("debito") ||
-        modalidad.includes("credito")
-      ) {
-        tarjetas.total += montoTotalCobro;
-        tarjetas.count += 1;
-      } else {
-        efectivo.total += montoTotalCobro;
-        efectivo.count += 1;
-      }
-    });
-
-    const sumaTotal =
-      efectivo.total + transferencias.total + tarjetas.total || 1;
-    const efectivoPct = Math.round((efectivo.total / sumaTotal) * 100);
-
-    return {
-      efectivo: { ...efectivo, pct: efectivoPct },
-      transferencias,
-      tarjetas,
-    };
-  }, [cobros]);
-
+/* ─── VISTA 2: DETALLE DE INGRESOS (TABLA) ─────────────────────────────────── */
+export function VistaDetalleIngresos({ cobros = [] }) {
   return (
-    <div className="flex flex-col gap-4">
-      {/* Resumen de 3 Tarjetas de Métodos de Pago */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-        {/* Efectivo */}
-        <div className="bg-white dark:bg-slate-900 p-4 rounded-xl border border-slate-200/90 dark:border-slate-800 shadow-sm flex items-center justify-between">
-          <div className="flex flex-col">
-            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
-              EFECTIVO ({totalesMetodos.efectivo.pct}%)
-            </span>
-            <span className="text-lg font-black text-[#0d8266] dark:text-emerald-400 mt-1 tabular-nums">
-              +$
-              {totalesMetodos.efectivo.total.toLocaleString("es-AR", {
-                minimumFractionDigits: 2,
-              })}
-            </span>
-            <span className="text-[11px] text-slate-400 dark:text-slate-500 mt-0.5">
-              {totalesMetodos.efectivo.count} cobros registrados
-            </span>
-          </div>
-          <div className="p-2.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/60 text-[#2eb086] border border-emerald-100">
-            <Banknote size={18} />
-          </div>
-        </div>
-
-        {/* Transferencias */}
-        <div className="bg-white dark:bg-slate-900 p-4 rounded-xl border border-slate-200/90 dark:border-slate-800 shadow-sm flex items-center justify-between">
-          <div className="flex flex-col">
-            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
-              TRANSFERENCIAS
-            </span>
-            <span className="text-lg font-black text-slate-900 dark:text-slate-100 mt-1 tabular-nums">
-              +$
-              {totalesMetodos.transferencias.total.toLocaleString("es-AR", {
-                minimumFractionDigits: 2,
-              })}
-            </span>
-            <span className="text-[11px] text-slate-400 dark:text-slate-500 mt-0.5">
-              {totalesMetodos.transferencias.count} operaciones
-            </span>
-          </div>
-          <div className="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 text-slate-400 border border-slate-200 dark:border-slate-700">
-            <Building2 size={18} />
-          </div>
-        </div>
-
-        {/* Tarjetas / POSNET */}
-        <div className="bg-white dark:bg-slate-900 p-4 rounded-xl border border-slate-200/90 dark:border-slate-800 shadow-sm flex items-center justify-between">
-          <div className="flex flex-col">
-            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
-              TARJETAS / POSNET
-            </span>
-            <span className="text-lg font-black text-slate-900 dark:text-slate-100 mt-1 tabular-nums">
-              +$
-              {totalesMetodos.tarjetas.total.toLocaleString("es-AR", {
-                minimumFractionDigits: 2,
-              })}
-            </span>
-            <span className="text-[11px] text-slate-400 dark:text-slate-500 mt-0.5">
-              {totalesMetodos.tarjetas.count} operaciones
-            </span>
-          </div>
-          <div className="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 text-slate-400 border border-slate-200 dark:border-slate-700">
-            <CreditCard size={18} />
-          </div>
-        </div>
-      </div>
-
-      {/* Tabla de Cobros */}
-      <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200/90 dark:border-slate-800 shadow-sm overflow-hidden flex flex-col">
-        <div className="overflow-x-auto w-full">
-          <table className="w-full text-left text-xs border-collapse">
+    <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200/90 dark:border-slate-800 shadow-sm overflow-hidden flex flex-col">
+      <div className="overflow-x-auto w-full">
+        <table className="w-full text-left text-xs border-collapse">
             <thead>
               <tr className="border-b border-slate-200 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-800/50 text-[11px] uppercase font-bold text-slate-500 dark:text-slate-400 tracking-wider">
                 <th className="px-4 py-3.5">PACIENTE</th>
@@ -280,21 +168,20 @@ export function VistaDetalleIngresos({ cobros = [], ingresosPorMetodo = [] }) {
             {cobros.length === 0 ? (
               <tr>
                 <td colSpan={6} className="text-center py-8 text-slate-400 italic">
-                  Sin ingresos registrados en este período.
+                  Sin cobros registrados en este período.
                 </td>
               </tr>
             ) : (
               cobros.map((c) => {
+                const idCobro = c.id || c.id_cobro;
                 const pacienteNombre = c.Paciente
                   ? `${c.Paciente.nombre} ${c.Paciente.apellido}`
                   : "Paciente";
-                const cuotas = c.Cuotas || c.Cuota || [];
                 const cobradoTotal =
-                  cuotas.reduce(
-                    (acc, q) => acc + (Number(q.monto_cobrado) || 0),
-                    0
-                  ) || Number(c.monto_a_cobrar) || 0;
-                const fechaObj = new Date(c.fecha_emision || c.createdAt);
+                  Number(c.monto ?? c.monto_cobrado ?? c.monto_a_cobrar) || 0;
+                const fechaObj = new Date(
+                  c.fecha_cobro || c.fecha_emision || c.created_at || c.createdAt
+                );
                 const fechaStr = !isNaN(fechaObj.getTime())
                   ? `${String(fechaObj.getDate()).padStart(2, "0")}/${String(
                       fechaObj.getMonth() + 1
@@ -308,25 +195,25 @@ export function VistaDetalleIngresos({ cobros = [], ingresosPorMetodo = [] }) {
 
                 return (
                   <tr
-                    key={c.id_cobro}
+                    key={idCobro}
                     className="hover:bg-slate-50/60 dark:hover:bg-slate-800/40 transition-colors"
                   >
                     <td className="px-4 py-3.5 font-bold text-slate-900 dark:text-slate-100">
                       {pacienteNombre}
                     </td>
                     <td className="px-4 py-3.5 text-slate-700 dark:text-slate-300">
-                      {c.concepto || "Consulta Odontológica"}
+                      {c.observaciones || c.concepto || "Consulta Odontológica"}
                     </td>
                     <td className="px-4 py-3.5 text-slate-500 whitespace-nowrap">
                       {fechaStr}
                     </td>
                     <td className="px-4 py-3.5 whitespace-nowrap">
                       <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-semibold bg-emerald-50 text-[#0d8266] border border-emerald-200/70 dark:bg-emerald-950/40 dark:text-emerald-300">
-                        {c.modalidad || "Efectivo"}
+                        {c.metodo_pago || c.modalidad || "Efectivo"}
                       </span>
                     </td>
                     <td className="px-4 py-3.5 whitespace-nowrap text-slate-600 dark:text-slate-400 font-mono text-[11px]">
-                      #{c.id_cobro}
+                      #{idCobro}
                     </td>
                     <td className="px-4 py-3.5 text-right font-bold text-[#0d8266] dark:text-emerald-400 tabular-nums whitespace-nowrap">
                       +$
@@ -342,123 +229,29 @@ export function VistaDetalleIngresos({ cobros = [], ingresosPorMetodo = [] }) {
         </table>
       </div>
     </div>
-  </div>
-);
+  );
 }
 
-/* ─── VISTA 3: DETALLE DE EGRESOS (CARDS CATEGORIAS + TABLA) ────────────────── */
-export function VistaLibroMayor({ gastos = [], egresosPorCategoria = [] }) {
-  // Destacar las 3 principales categorías para las tarjetas superiores
-  const resumenCategorias = useMemo(() => {
-    let insumos = { total: 0, count: 0 };
-    let laboratorio = { total: 0, count: 0 };
-    let servicios = { total: 0, count: 0 };
-
-    gastos.forEach((g) => {
-      const cat = (g.CategoriaGasto?.nombre || g.categoria || "").toLowerCase();
-      const monto = Number(g.monto) || 0;
-
-      if (cat.includes("insumo") || cat.includes("material")) {
-        insumos.total += monto;
-        insumos.count += 1;
-      } else if (cat.includes("lab") || cat.includes("prot")) {
-        laboratorio.total += monto;
-        laboratorio.count += 1;
-      } else {
-        servicios.total += monto;
-        servicios.count += 1;
-      }
-    });
-
-    return { insumos, laboratorio, servicios };
-  }, [gastos]);
-
+/* ─── VISTA 3: DETALLE DE EGRESOS (TABLA) ──────────────────────────────────── */
+export function VistaLibroMayor({ gastos = [] }) {
   return (
-    <div className="flex flex-col gap-4">
-      {/* Resumen de Categorías Superiores */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-        {/* Insumos */}
-        <div className="bg-white dark:bg-slate-900 p-4 rounded-xl border border-slate-200/90 dark:border-slate-800 shadow-sm flex items-center justify-between">
-          <div className="flex flex-col">
-            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
-              INSUMOS Y MATERIALES
-            </span>
-            <span className="text-lg font-black text-rose-600 dark:text-rose-400 mt-1 tabular-nums">
-              -${resumenCategorias.insumos.total.toLocaleString("es-AR", {
-                minimumFractionDigits: 2,
-              })}
-            </span>
-            <span className="text-[11px] text-slate-400 dark:text-slate-500 mt-0.5">
-              {resumenCategorias.insumos.count} compras registradas
-            </span>
-          </div>
-          <div className="p-2.5 rounded-xl bg-rose-50 dark:bg-rose-950/60 text-rose-600 border border-rose-100">
-            <Package size={18} />
-          </div>
-        </div>
-
-        {/* Laboratorio */}
-        <div className="bg-white dark:bg-slate-900 p-4 rounded-xl border border-slate-200/90 dark:border-slate-800 shadow-sm flex items-center justify-between">
-          <div className="flex flex-col">
-            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
-              LABORATORIO PROTÉSICO
-            </span>
-            <span className="text-lg font-black text-slate-900 dark:text-slate-100 mt-1 tabular-nums">
-              -${resumenCategorias.laboratorio.total.toLocaleString("es-AR", {
-                minimumFractionDigits: 2,
-              })}
-            </span>
-            <span className="text-[11px] text-slate-400 dark:text-slate-500 mt-0.5">
-              {resumenCategorias.laboratorio.count > 0
-                ? `${resumenCategorias.laboratorio.count} órdenes este mes`
-                : "Sin órdenes este mes"}
-            </span>
-          </div>
-          <div className="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 text-slate-400 border border-slate-200 dark:border-slate-700">
-            <Wrench size={18} />
-          </div>
-        </div>
-
-        {/* Servicios */}
-        <div className="bg-white dark:bg-slate-900 p-4 rounded-xl border border-slate-200/90 dark:border-slate-800 shadow-sm flex items-center justify-between">
-          <div className="flex flex-col">
-            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
-              SERVICIOS DEL CONSULTORIO
-            </span>
-            <span className="text-lg font-black text-slate-900 dark:text-slate-100 mt-1 tabular-nums">
-              -${resumenCategorias.servicios.total.toLocaleString("es-AR", {
-                minimumFractionDigits: 2,
-              })}
-            </span>
-            <span className="text-[11px] text-slate-400 dark:text-slate-500 mt-0.5">
-              Luz, alquiler, internet
-            </span>
-          </div>
-          <div className="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 text-slate-400 border border-slate-200 dark:border-slate-700">
-            <Receipt size={18} />
-          </div>
-        </div>
-      </div>
-
-      {/* Tabla de Egresos */}
-      <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200/90 dark:border-slate-800 shadow-sm overflow-hidden flex flex-col">
-        <div className="overflow-x-auto w-full">
-          <table className="w-full text-left text-xs border-collapse">
+    <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200/90 dark:border-slate-800 shadow-sm overflow-hidden flex flex-col">
+      <div className="overflow-x-auto w-full">
+        <table className="w-full text-left text-xs border-collapse">
             <thead>
               <tr className="border-b border-slate-200 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-800/50 text-[11px] uppercase font-bold text-slate-500 dark:text-slate-400 tracking-wider">
                 <th className="px-4 py-3.5">PROVEEDOR / DESTINATARIO</th>
                 <th className="px-4 py-3.5">CATEGORÍA</th>
                 <th className="px-4 py-3.5">FECHA</th>
                 <th className="px-4 py-3.5">DETALLE</th>
-                <th className="px-4 py-3.5">FACTURA</th>
                 <th className="px-4 py-3.5 text-right">IMPORTE PAGADO</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 dark:divide-slate-800/80">
             {gastos.length === 0 ? (
               <tr>
-                <td colSpan={6} className="text-center py-8 text-slate-400 italic">
-                  Sin egresos registrados en este período.
+                <td colSpan={5} className="text-center py-8 text-slate-400 italic">
+                  Sin gastos registrados en este período.
                 </td>
               </tr>
             ) : (
@@ -503,9 +296,6 @@ export function VistaLibroMayor({ gastos = [], egresosPorCategoria = [] }) {
                     <td className="px-4 py-3.5 text-slate-700 dark:text-slate-300 max-w-xs truncate">
                       {g.detalle || g.concepto || "Sin detalle adicional"}
                     </td>
-                    <td className="px-4 py-3.5 whitespace-nowrap text-slate-600 dark:text-slate-400 font-mono text-[11px]">
-                      {g.comprobante || `FC #${g.id_gasto}`}
-                    </td>
                     <td className="px-4 py-3.5 text-right font-bold text-rose-600 dark:text-rose-400 tabular-nums whitespace-nowrap">
                       -$
                       {Number(g.monto || 0).toLocaleString("es-AR", {
@@ -520,8 +310,7 @@ export function VistaLibroMayor({ gastos = [], egresosPorCategoria = [] }) {
         </table>
       </div>
     </div>
-  </div>
-);
+  );
 }
 
 /* ─── VISTA 4: POR COBRAR (TABLA CON ACCIÓN COBRAR) ────────────────────────── */
@@ -529,11 +318,12 @@ export function VistaPendientes({
   turnosPendientes = [],
   cuotasPendientes = [],
   onCobrarItem,
+  onVerTurno,
 }) {
   const itemsPorCobrar = useMemo(() => {
     const mapa = new Map();
 
-    // 1. Turnos atendidos pendientes de cobro
+    // 1. Turnos atendidos pendientes de cobro (sin solicitud aún)
     (turnosPendientes || []).forEach((t) => {
       const total = Number(t.precio_final) || 0;
       if (total <= 0) return;
@@ -541,15 +331,14 @@ export function VistaPendientes({
       mapa.set(key, {
         id: key,
         id_turno: t.id_turno,
-        id_cuota: null,
-        id_cobro: null,
+        solicitud_cobro_id: null,
         paciente: t.Paciente,
         fecha: t.fecha_hora_inicio,
         concepto:
           t.PracticaTurnos?.[0]?.Practica?.nombre_referencia ||
           t.notas_consulta ||
           "Consulta Odontológica",
-        subtitulo: "Cobro inicial",
+        subtitulo: "Cobro pendiente",
         monto_total: total,
         ya_cobrado: 0,
         saldo_pendiente: total,
@@ -558,55 +347,49 @@ export function VistaPendientes({
       });
     });
 
-    // 2. Cuotas con saldo adeudado
-    (cuotasPendientes || []).forEach((q) => {
-      const cobro = q.Cobro;
-      const montoCuota = Number(q.monto_cuota) || 0;
-      const cobradoCuota = Number(q.monto_cobrado) || 0;
-      const saldoCuota = Math.max(0, montoCuota - cobradoCuota);
-      if (saldoCuota <= 0) return;
+    // 2. Solicitudes de cobro con saldo pendiente ('pendiente' o 'parcial')
+    (cuotasPendientes || []).forEach((s) => {
+      const idSolicitud = s.id || s.id_solicitud_cobro || s.solicitud_cobro_id;
+      const idTurno = s.id_turno ?? s.turno_id ?? null;
+      const montoTotal = Number(s.monto_total ?? s.monto_a_cobrar ?? 0);
+      const yaCobrado =
+        s.ya_cobrado !== undefined
+          ? Number(s.ya_cobrado) || 0
+          : (s.Cobros || []).reduce(
+              (acc, c) => acc + (Number(c.monto) || 0),
+              0
+            );
+      const saldoPendiente =
+        s.saldo_pendiente !== undefined
+          ? Math.max(0, Number(s.saldo_pendiente) || 0)
+          : Math.max(0, montoTotal - yaCobrado);
 
-      const key = cobro?.id_turno
-        ? `turno-${cobro.id_turno}`
-        : `cobro-${q.id_cobro || q.id_cuota}`;
+      if (saldoPendiente <= 0) return;
 
-      if (mapa.has(key)) {
-        const item = mapa.get(key);
-        item.saldo_pendiente += saldoCuota;
-        item.ya_cobrado += cobradoCuota;
-        if (!item.id_cuota) item.id_cuota = q.id_cuota;
-        if (item.tipo === "cuota" && cobro?.cant_cuotas && cobro.cant_cuotas > 1) {
-          item.subtitulo = "Saldo en cuotas pendiente";
-        }
-      } else {
-        const totalCobro = Number(cobro?.monto_a_cobrar) || montoCuota;
-        mapa.set(key, {
-          id: key,
-          id_turno: cobro?.id_turno || null,
-          id_cuota: q.id_cuota,
-          id_cobro: cobro?.id_cobro || null,
-          paciente: cobro?.Paciente || q.Paciente,
-          fecha: q.fecha_vencimiento || cobro?.fecha_emision || q.createdAt,
-          concepto:
-            cobro?.concepto ||
-            `Tratamiento Planificado`,
-          subtitulo: `Cuota ${q.nro_cuota}${
-            cobro?.cant_cuotas && cobro.cant_cuotas > 1 ? ` de ${cobro.cant_cuotas}` : ""
-          }`,
-          monto_total: totalCobro,
-          ya_cobrado: cobradoCuota,
-          saldo_pendiente: saldoCuota,
-          tipo: "cuota",
-          raw: q,
-        });
-      }
-    });
+      const key = idTurno
+        ? `turno-${idTurno}`
+        : `solicitud-${idSolicitud}`;
 
-    // Consistencia contable final para items agrupados
-    mapa.forEach((item) => {
-      if (item.monto_total > 0 && item.monto_total >= item.saldo_pendiente) {
-        item.ya_cobrado = Math.max(0, item.monto_total - item.saldo_pendiente);
-      }
+      mapa.set(key, {
+        id: key,
+        id_turno: idTurno,
+        solicitud_cobro_id: idSolicitud,
+        id_solicitud_cobro: idSolicitud,
+        paciente: s.Paciente || s.Turno?.Paciente,
+        fecha: s.Turno?.fecha_hora_inicio || s.created_at || s.createdAt,
+        concepto:
+          s.observaciones ||
+          s.concepto ||
+          s.Turno?.PracticaTurnos?.[0]?.Practica?.nombre_referencia ||
+          "Tratamiento Planificado",
+        subtitulo:
+          yaCobrado > 0 ? "Saldo parcial pendiente" : "Solicitud pendiente",
+        monto_total: montoTotal,
+        ya_cobrado: yaCobrado,
+        saldo_pendiente: saldoPendiente,
+        tipo: "solicitud",
+        raw: s,
+      });
     });
 
     return Array.from(mapa.values()).sort(
@@ -618,7 +401,7 @@ export function VistaPendientes({
     return (
       <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200/90 dark:border-slate-800 p-8 text-center shadow-sm">
         <p className="text-xs text-slate-400 dark:text-slate-500 italic">
-          No hay tratamientos ni cuotas con saldos pendientes de cobro.
+          No hay turnos ni tratamientos con saldos pendientes de cobro.
         </p>
       </div>
     );
@@ -630,7 +413,7 @@ export function VistaPendientes({
         <table className="w-full text-left text-xs border-collapse">
           <thead>
             <tr className="border-b border-slate-200 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-800/50 text-[10px] uppercase font-bold text-slate-500 dark:text-slate-400 tracking-wider">
-              <th className="px-4 py-3">PACIENTE</th>
+              <th className="px-4 py-3">TURNO / PACIENTE</th>
               <th className="px-4 py-3">TRATAMIENTO / CONCEPTO</th>
               <th className="px-4 py-3">FECHA PLANIFICADA</th>
               <th className="px-4 py-3">AVANCE DE PAGO</th>
@@ -650,7 +433,7 @@ export function VistaPendientes({
                   key={item.id}
                   className="hover:bg-slate-50/70 dark:hover:bg-slate-800/40 transition-colors"
                 >
-                  {/* PACIENTE CON AVATAR */}
+                  {/* PACIENTE CON AVATAR Y BADGE DE TURNO */}
                   <td className="px-4 py-3.5">
                     <div className="flex items-center gap-2.5">
                       <div
@@ -659,9 +442,16 @@ export function VistaPendientes({
                         {ini}
                       </div>
                       <div className="flex flex-col min-w-0">
-                        <span className="font-bold text-slate-900 dark:text-slate-100 text-xs sm:text-sm truncate">
-                          {nombre}
-                        </span>
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          <span className="font-bold text-slate-900 dark:text-slate-100 text-xs sm:text-sm truncate">
+                            {nombre}
+                          </span>
+                          {item.id_turno && (
+                            <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700 shrink-0">
+                              Turno #{item.id_turno}
+                            </span>
+                          )}
+                        </div>
                         <span className="text-[11px] text-slate-400 font-medium">
                           DNI {p?.dni || "S/D"} · Tel: {p?.telefono || "S/D"}
                         </span>
@@ -710,16 +500,29 @@ export function VistaPendientes({
                     })}
                   </td>
 
-                  {/* ACCIÓN COBRAR */}
+                  {/* ACCIÓN VER TURNO / COBRAR */}
                   <td className="px-4 py-3.5 text-right whitespace-nowrap">
-                    <button
-                      type="button"
-                      onClick={() => onCobrarItem && onCobrarItem(item)}
-                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#0d8266] hover:bg-[#0b6f57] text-white font-bold text-xs shadow-xs transition-colors cursor-pointer active:scale-95"
-                    >
-                      <Check size={14} />
-                      <span>Cobrar</span>
-                    </button>
+                    <div className="inline-flex items-center gap-1.5 justify-end">
+                      {item.id_turno && onVerTurno && (
+                        <button
+                          type="button"
+                          onClick={() => onVerTurno(item.raw || item)}
+                          className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 font-semibold text-xs shadow-2xs transition-colors cursor-pointer active:scale-95"
+                          title="Ver detalle del turno"
+                        >
+                          <Eye size={14} className="text-slate-500 shrink-0" />
+                          <span className="hidden sm:inline">Ver Turno</span>
+                        </button>
+                      )}
+                      <button
+                        type="button"
+                        onClick={() => onCobrarItem && onCobrarItem(item)}
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#0d8266] hover:bg-[#0b6f57] text-white font-bold text-xs shadow-xs transition-colors cursor-pointer active:scale-95"
+                      >
+                        <Banknote size={14} />
+                        <span>Cobrar</span>
+                      </button>
+                    </div>
                   </td>
                 </tr>
               );

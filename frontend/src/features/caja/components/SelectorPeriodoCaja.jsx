@@ -1,7 +1,6 @@
 /** @format */
 
 import { useState, useRef, useEffect } from "react";
-import { createPortal } from "react-dom";
 import {
   Calendar,
   ChevronLeft,
@@ -51,52 +50,32 @@ export function SelectorPeriodoCaja({
   mesSiguiente,
 }) {
   const [abierto, setAbierto] = useState(false);
-  const [coords, setCoords] = useState({ top: 0, left: 0 });
-  const botonRef = useRef(null);
-  const popoverRef = useRef(null);
+  const containerRef = useRef(null);
 
-  useEffect(() => {
-    if (abierto && botonRef.current) {
-      const rect = botonRef.current.getBoundingClientRect();
-      const popoverWidth = 280;
-
-      const top = rect.bottom + window.scrollY + 8;
-      let left = rect.left + window.scrollX - 40;
-
-      if (left + popoverWidth > window.innerWidth - 16) {
-        left = window.innerWidth - 16 - popoverWidth;
-      }
-      if (left < 16) left = 16;
-
-      setCoords({ top, left });
-    }
-  }, [abierto]);
-
+  // Cerrar al hacer clic fuera o presionar Escape
   useEffect(() => {
     if (!abierto) return;
 
     const handleClickOutside = (e) => {
-      if (
-        popoverRef.current &&
-        !popoverRef.current.contains(e.target) &&
-        botonRef.current &&
-        !botonRef.current.contains(e.target)
-      ) {
+      if (containerRef.current && !containerRef.current.contains(e.target)) {
         setAbierto(false);
       }
     };
 
-    const handleScroll = (e) => {
-      if (popoverRef.current && popoverRef.current.contains(e.target)) return;
-      setAbierto(false);
+    const handleKeyDown = (e) => {
+      if (e.key === "Escape") {
+        setAbierto(false);
+      }
     };
 
     document.addEventListener("mousedown", handleClickOutside);
-    window.addEventListener("scroll", handleScroll, true);
+    document.addEventListener("touchstart", handleClickOutside, { passive: true });
+    document.addEventListener("keydown", handleKeyDown);
 
     return () => {
       document.removeEventListener("mousedown", handleClickOutside);
-      window.removeEventListener("scroll", handleScroll, true);
+      document.removeEventListener("touchstart", handleClickOutside);
+      document.removeEventListener("keydown", handleKeyDown);
     };
   }, [abierto]);
 
@@ -105,7 +84,7 @@ export function SelectorPeriodoCaja({
     : `${NOMBRES_MESES_LARGOS[mes - 1]} ${anio}`;
 
   return (
-    <div className="relative inline-flex items-center">
+    <div ref={containerRef} className="relative inline-flex items-center">
       {/* Navegador con Flechas y Botón Popover */}
       <div className="inline-flex items-center gap-1 bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 rounded-xl p-1 shadow-2xs">
         <button
@@ -124,14 +103,18 @@ export function SelectorPeriodoCaja({
         </button>
 
         <button
-          ref={botonRef}
           type="button"
           onClick={() => setAbierto((prev) => !prev)}
           className="inline-flex items-center gap-2 px-2.5 py-1 text-xs font-bold text-slate-800 dark:text-slate-100 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-lg transition-colors cursor-pointer"
         >
           <Calendar size={15} className="text-[#2eb086]" />
           <span>{labelPeriodo}</span>
-          <ChevronDown size={14} className="text-slate-400" />
+          <ChevronDown
+            size={14}
+            className={`text-slate-400 transition-transform duration-200 ${
+              abierto ? "rotate-180" : ""
+            }`}
+          />
         </button>
 
         <button
@@ -150,89 +133,78 @@ export function SelectorPeriodoCaja({
         </button>
       </div>
 
-      {/* Popover flotante del selector de meses y año */}
-      {abierto &&
-        createPortal(
-          <div
-            ref={popoverRef}
-            style={{
-              position: "absolute",
-              top: `${coords.top}px`,
-              left: `${coords.left}px`,
-            }}
-            className="z-[9999] w-72 bg-white dark:bg-slate-900 rounded-2xl shadow-xl border border-slate-200/90 dark:border-slate-800 p-4 flex flex-col gap-3 animate-in fade-in zoom-in-95 duration-150"
-          >
-            {/* Cabecera del año con flechas */}
-            <div className="flex items-center justify-between pb-1">
-              <button
-                type="button"
-                onClick={() => cambiarAnio(Number(anio) - 1)}
-                className="p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-500 hover:text-slate-800 dark:hover:text-slate-200 transition-colors cursor-pointer"
-              >
-                <ChevronLeft size={16} />
-              </button>
-
-              <span className="font-extrabold text-sm text-slate-900 dark:text-slate-100">
-                {anio}
-              </span>
-
-              <button
-                type="button"
-                onClick={() => cambiarAnio(Number(anio) + 1)}
-                className="p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-500 hover:text-slate-800 dark:hover:text-slate-200 transition-colors cursor-pointer"
-              >
-                <ChevronRight size={16} />
-              </button>
-            </div>
-
-            {/* Botón Ver Balance Anual Consolidado */}
+      {/* Popover flotante del selector de meses y año posicionado justo debajo del selector */}
+      {abierto && (
+        <div className="absolute top-full right-0 mt-2 z-50 w-72 max-w-[calc(100vw-2rem)] bg-white dark:bg-slate-900 rounded-2xl shadow-xl border border-slate-200/90 dark:border-slate-800 p-4 flex flex-col gap-3 animate-in fade-in zoom-in-95 duration-150">
+          {/* Cabecera del año con flechas */}
+          <div className="flex items-center justify-between pb-1">
             <button
               type="button"
-              onClick={() => {
-                setModoAnual(true);
-                setAbierto(false);
-              }}
-              className={`w-full py-2 px-3 rounded-xl text-xs font-semibold flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
-                modoAnual
-                  ? "bg-[#0d8266] text-white shadow-xs font-bold"
-                  : "bg-teal-50 dark:bg-teal-950/60 text-[#0d8266] dark:text-teal-300 border border-teal-200/60 dark:border-teal-800 hover:bg-teal-100"
-              }`}
+              onClick={() => cambiarAnio(Number(anio) - 1)}
+              className="p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-500 hover:text-slate-800 dark:hover:text-slate-200 transition-colors cursor-pointer"
             >
-              <BarChart3 size={14} />
-              <span>Ver Balance Anual Consolidado</span>
+              <ChevronLeft size={16} />
             </button>
 
-            {/* Grilla de 12 Meses */}
-            <div className="grid grid-cols-3 gap-1.5 pt-1">
-              {NOMBRES_MESES_CORTOS.map((mesCorto, idx) => {
-                const mesNum = idx + 1;
-                const esMesSeleccionado = !modoAnual && mes === mesNum;
-                return (
-                  <button
-                    key={mesCorto}
-                    type="button"
-                    onClick={() => {
-                      cambiarMes(mesNum);
-                      setModoAnual(false);
-                      setAbierto(false);
-                    }}
-                    className={`py-2 rounded-xl text-xs font-semibold transition-all cursor-pointer text-center ${
-                      esMesSeleccionado
-                        ? "bg-[#0d8266] text-white shadow-xs font-bold"
-                        : "text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900"
-                    }`}
-                  >
-                    {mesCorto}
-                  </button>
-                );
-              })}
-            </div>
-          </div>,
-          document.body
-        )}
+            <span className="font-extrabold text-sm text-slate-900 dark:text-slate-100">
+              {anio}
+            </span>
+
+            <button
+              type="button"
+              onClick={() => cambiarAnio(Number(anio) + 1)}
+              className="p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-500 hover:text-slate-800 dark:hover:text-slate-200 transition-colors cursor-pointer"
+            >
+              <ChevronRight size={16} />
+            </button>
+          </div>
+
+          {/* Botón Ver Cobros y Gastos del Año */}
+          <button
+            type="button"
+            onClick={() => {
+              setModoAnual(true);
+              setAbierto(false);
+            }}
+            className={`w-full py-2 px-3 rounded-xl text-xs font-semibold flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
+              modoAnual
+                ? "bg-[#0d8266] text-white shadow-xs font-bold"
+                : "bg-teal-50 dark:bg-teal-950/60 text-[#0d8266] dark:text-teal-300 border border-teal-200/60 dark:border-teal-800 hover:bg-teal-100"
+            }`}
+          >
+            <BarChart3 size={14} />
+            <span>Ver Cobros y Gastos del Año</span>
+          </button>
+
+          {/* Grilla de 12 Meses */}
+          <div className="grid grid-cols-3 gap-1.5 pt-1">
+            {NOMBRES_MESES_CORTOS.map((mesCorto, idx) => {
+              const mesNum = idx + 1;
+              const esMesSeleccionado = !modoAnual && mes === mesNum;
+              return (
+                <button
+                  key={mesCorto}
+                  type="button"
+                  onClick={() => {
+                    cambiarMes(mesNum);
+                    setModoAnual(false);
+                    setAbierto(false);
+                  }}
+                  className={`py-2 rounded-xl text-xs font-semibold transition-all cursor-pointer text-center ${
+                    esMesSeleccionado
+                      ? "bg-[#0d8266] text-white shadow-xs font-bold"
+                      : "text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900"
+                  }`}
+                >
+                  {mesCorto}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
 
 export default SelectorPeriodoCaja;
-

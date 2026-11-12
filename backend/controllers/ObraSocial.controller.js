@@ -22,12 +22,9 @@ export const getAllObrasSociales = async (req, res) => {
       where.activo = true;
     }
 
-    // Busqueda por nombre o código de prestador
+    // Busqueda por nombre
     if (search !== "") {
-      where[Op.or] = [
-        { nombre: { [Op.like]: `%${search}%` } },
-        { codigo_prestador: { [Op.like]: `%${search}%` } },
-      ];
+      where.nombre = { [Op.like]: `%${search}%` };
     }
 
     const { count, rows: obrasSociales } = await ObraSocial.findAndCountAll({
@@ -82,11 +79,10 @@ export const getObraSocialById = async (req, res) => {
 // Crear una nueva obra social
 export const createObraSocial = async (req, res) => {
   try {
-    const { nombre, codigo_prestador } = req.body;
+    const { nombre } = req.body;
 
     const newObraSocial = await ObraSocial.create({
       nombre,
-      codigo_prestador: codigo_prestador || null,
     });
 
     res.status(201).json({
@@ -102,13 +98,11 @@ export const createObraSocial = async (req, res) => {
 // Actualizar una obra social existente
 export const updateObraSocial = async (req, res) => {
   try {
-    const { nombre, codigo_prestador, activo } = req.body;
+    const { nombre, activo } = req.body;
     const obraSocial = req.obraSocial;
 
     const datosActualizar = {};
     if (nombre !== undefined) datosActualizar.nombre = nombre;
-    if (codigo_prestador !== undefined)
-      datosActualizar.codigo_prestador = codigo_prestador;
     if (activo !== undefined) datosActualizar.activo = activo;
 
     await obraSocial.update(datosActualizar);

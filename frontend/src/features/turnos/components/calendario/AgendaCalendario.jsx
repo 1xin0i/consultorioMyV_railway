@@ -23,12 +23,14 @@ export const AgendaCalendar = memo(function AgendaCalendar({
     slotsHoras,
     horaInicioNum,
     totalModulosDia,
+    corteBajaModulos,
+    corteMediaModulos,
     esDiaLaboral,
   } = useConfiguracion();
 
   const capacidadTotal = totalModulosDia || 24;
-  const corte60 = Math.round(capacidadTotal * 0.6);
-  const corte85 = Math.round(capacidadTotal * 0.85);
+  const corte60 = corteBajaModulos || Math.round(capacidadTotal * 0.5);
+  const corte85 = corteMediaModulos || Math.round(capacidadTotal * 0.8);
 
   const {
     restricciones,
@@ -248,13 +250,6 @@ export const AgendaCalendar = memo(function AgendaCalendar({
     (startItem, endItem) => {
       if (!startItem || !endItem) return;
 
-      if (esDiaLaboral && !esDiaLaboral(startItem.fecha)) {
-        toast.error("El consultorio no atiende en días no laborales.", {
-          id: "error-dia-no-laboral",
-        });
-        return;
-      }
-
       const inicioIndex = slotsHorasActuales.indexOf(startItem.horaStr);
       const finIndex = slotsHorasActuales.indexOf(endItem.horaStr);
 
@@ -262,21 +257,6 @@ export const AgendaCalendar = memo(function AgendaCalendar({
 
       const indexMin = Math.min(inicioIndex, finIndex);
       const indexMax = Math.max(inicioIndex, finIndex);
-
-      // Verificar si alguna franja intermedia está bloqueada por restricción
-      for (let i = indexMin; i <= indexMax; i++) {
-        const horaCheck = slotsHorasActuales[i];
-        if (esSlotBloqueado(startItem.fecha, horaCheck)) {
-          const restr = obtenerRestriccionSlot(startItem.fecha, horaCheck);
-          toast.error(
-            restr?.motivo
-              ? `Horario bloqueado: ${restr.motivo}`
-              : "El horario seleccionado incluye franjas bloqueadas.",
-            { id: "error-slot-bloqueado" },
-          );
-          return;
-        }
-      }
 
       const horaInicioStr = slotsHorasActuales[indexMin];
 
@@ -311,7 +291,7 @@ export const AgendaCalendar = memo(function AgendaCalendar({
         });
       }
     },
-    [ahora, slotsHorasActuales, configuracion, esSlotBloqueado, obtenerRestriccionSlot],
+    [ahora, slotsHorasActuales, configuracion],
   );
 
   const confirmarSeleccionRef = useRef(confirmarSeleccion);
@@ -356,17 +336,6 @@ export const AgendaCalendar = memo(function AgendaCalendar({
       return;
     }
 
-    if (esSlotBloqueado(fecha, horaStr)) {
-      const restr = obtenerRestriccionSlot(fecha, horaStr);
-      toast.error(
-        restr?.motivo
-          ? `Horario bloqueado: ${restr.motivo}`
-          : "Este horario no está disponible por restricción.",
-        { id: "error-slot-bloqueado" },
-      );
-      return;
-    }
-
     isSelectingRef.current = true;
     selectionStartRef.current = { fecha, horaStr };
     selectionEndRef.current = { fecha, horaStr };
@@ -384,7 +353,6 @@ export const AgendaCalendar = memo(function AgendaCalendar({
       )
         return;
       if (esSlotPasado(fecha, horaStr)) return;
-      if (esSlotBloqueado(fecha, horaStr)) return;
 
       selectionEndRef.current = { fecha, horaStr };
       setSelectionEnd({ fecha, horaStr });
@@ -425,20 +393,6 @@ export const AgendaCalendar = memo(function AgendaCalendar({
           return;
         }
 
-        if (esSlotBloqueado(fecha, horaStr)) {
-          if (window.navigator?.vibrate) {
-            window.navigator.vibrate([20, 50, 20]);
-          }
-          const restr = obtenerRestriccionSlot(fecha, horaStr);
-          toast.error(
-            restr?.motivo
-              ? `Horario bloqueado: ${restr.motivo}`
-              : "Este horario no está disponible por restricción.",
-            { id: "error-slot-bloqueado" },
-          );
-          return;
-        }
-
         if (window.navigator?.vibrate) {
           window.navigator.vibrate(30);
         }
@@ -472,10 +426,7 @@ export const AgendaCalendar = memo(function AgendaCalendar({
     if (slotEl) {
       const horaHover = slotEl.getAttribute("data-slot-hora");
       if (horaHover && horaHover !== selectionEnd?.horaStr) {
-        if (
-          !esSlotPasado(touchStateRef.current.fecha, horaHover) &&
-          !esSlotBloqueado(touchStateRef.current.fecha, horaHover)
-        ) {
+        if (!esSlotPasado(touchStateRef.current.fecha, horaHover)) {
           setSelectionEnd({
             fecha: touchStateRef.current.fecha,
             horaStr: horaHover,
@@ -521,24 +472,6 @@ export const AgendaCalendar = memo(function AgendaCalendar({
         toast.error("No se pueden seleccionar horarios pasados.", {
           id: "error-horario-pasado",
         });
-        setIsSelecting(false);
-        setSelectionStart(null);
-        setSelectionEnd(null);
-        return;
-      }
-      if (
-        esSlotBloqueado(touchStateRef.current.fecha, touchStateRef.current.hora)
-      ) {
-        const restr = obtenerRestriccionSlot(
-          touchStateRef.current.fecha,
-          touchStateRef.current.hora,
-        );
-        toast.error(
-          restr?.motivo
-            ? `Horario bloqueado: ${restr.motivo}`
-            : "Este horario no está disponible por restricción.",
-          { id: "error-slot-bloqueado" },
-        );
         setIsSelecting(false);
         setSelectionStart(null);
         setSelectionEnd(null);

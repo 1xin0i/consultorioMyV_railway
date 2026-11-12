@@ -52,7 +52,8 @@ export function TarjetaRegistro({ avatar, avatarClassName, titulo, subtitulo, ba
             typeof avatar === "string" ? (
               <div
                 className={`w-9 h-9 rounded-full ${
-                  avatarClassName || "bg-[#e8f7f1] text-[#2eb086] dark:bg-emerald-950/60 dark:text-emerald-300"
+                  avatarClassName ||
+                  "bg-slate-100 text-slate-600 border border-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700"
                 } flex items-center justify-center font-bold text-sm shrink-0`}
               >
                 {avatar}

@@ -53,6 +53,7 @@ const router = createBrowserRouter([
             path: "configuracion",
             children: [
               { path: "horarios", element: <GestionHorarios /> },
+              { path: "ajustes", element: <GestionHorarios /> },
               { path: "obras-sociales", element: <GestionObrasSociales /> },
               { path: "practicas", element: <GestionPracticas /> },
             ],

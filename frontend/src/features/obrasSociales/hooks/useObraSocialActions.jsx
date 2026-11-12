@@ -26,9 +26,6 @@ export function useObraSocialActions(recargar, cerrarModal) {
     guardar(
       {
         nombre: datosFormulario.nombre.trim(),
-        codigo_prestador: datosFormulario.codigo_prestador
-          ? datosFormulario.codigo_prestador.trim()
-          : null,
       },
       editando,
       obraSocialSeleccionada,

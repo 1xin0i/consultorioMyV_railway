@@ -24,12 +24,14 @@ export function useCobroActions(recargar, cerrarModal) {
         id_turno: Number(datosFormulario.id_turno),
         id_paciente: Number(datosFormulario.id_paciente),
         monto_a_cobrar: monto,
+        observaciones: datosFormulario.observaciones?.trim() || null,
       };
 
       if (editando) {
-        await api.put(`/cobros/${cobroSeleccionado.id_cobro}`, {
+        const idTarget = cobroSeleccionado.id || cobroSeleccionado.id_cobro;
+        await api.put(`/cobros/${idTarget}`, {
           ...payloadBase,
-          cant_cuotas: 1,
+          metodo_pago: datosFormulario.metodo_pago || "Efectivo",
         });
         toast.success("Cobro actualizado correctamente");
       } else {
@@ -42,13 +44,7 @@ export function useCobroActions(recargar, cerrarModal) {
             entrega_inicial: Number(datosFormulario.entrega_inicial) || 0,
             metodo_pago: datosFormulario.metodo_pago || "Efectivo",
           });
-        } else if (modalidad === "cuotas") {
-          await api.post("/cobros/cuotas", {
-            ...payloadBase,
-            cant_cuotas: Number(datosFormulario.cant_cuotas) || 3,
-          });
         } else {
-          // Por defecto y para "inmediato": Al Contado
           await api.post("/cobros/inmediato", {
             ...payloadBase,
             metodo_pago: datosFormulario.metodo_pago || "Efectivo",
@@ -71,13 +67,14 @@ export function useCobroActions(recargar, cerrarModal) {
     if (!cobroSeleccionado) return;
     setCargandoAccion(true);
     try {
-      await api.patch(`/cobros/${cobroSeleccionado.id_cobro}/delete`);
-      toast.success("Registro de cobro desactivado");
+      const idTarget = cobroSeleccionado.id || cobroSeleccionado.id_cobro;
+      await api.patch(`/cobros/${idTarget}/delete`);
+      toast.success("Registro de cobro eliminado");
       recargar();
       if (typeof cerrarModalEliminar === "function") cerrarModalEliminar();
     } catch (error) {
-      console.error("Error al desactivar cobro:", error);
-      manejarErrorApi(error, "No se pudo desactivar el cobro.");
+      console.error("Error al eliminar cobro:", error);
+      manejarErrorApi(error, "No se pudo eliminar el cobro.");
     } finally {
       setCargandoAccion(false);
     }

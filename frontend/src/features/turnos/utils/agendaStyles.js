@@ -63,8 +63,15 @@ export const OBTENER_ESTILOS_ESTADO = (estado) => {
  * Retorna los estilos visuales de ocupación diaria para la vista mensual.
  * Mantiene las celdas limpias y neutrales para no confundir con días seleccionados.
  */
-export const OBTENER_ESTILOS_OCUPACION_MES = (porcentaje) => {
-  if (porcentaje === 0) {
+export const OBTENER_ESTILOS_OCUPACION_MES = (
+  porcentaje,
+  umbralBaja = 50,
+  umbralMedia = 80,
+  modulosOcupados,
+  corteBajaModulos,
+  corteMediaModulos,
+) => {
+  if (porcentaje === 0 || modulosOcupados === 0) {
     return {
       dotColor: "bg-gray-300 dark:bg-slate-600",
       barColor: "bg-transparent",
@@ -72,7 +79,18 @@ export const OBTENER_ESTILOS_OCUPACION_MES = (porcentaje) => {
       etiqueta: "Sin turnos",
     };
   }
-  if (porcentaje < 60) {
+
+  const esBaja =
+    modulosOcupados !== undefined && corteBajaModulos !== undefined
+      ? modulosOcupados <= corteBajaModulos
+      : porcentaje <= umbralBaja;
+
+  const esMedia =
+    modulosOcupados !== undefined && corteMediaModulos !== undefined
+      ? !esBaja && modulosOcupados <= corteMediaModulos
+      : !esBaja && porcentaje <= umbralMedia;
+
+  if (esBaja) {
     return {
       dotColor: "bg-emerald-500",
       barColor: "bg-emerald-500",
@@ -80,7 +98,7 @@ export const OBTENER_ESTILOS_OCUPACION_MES = (porcentaje) => {
       etiqueta: `${porcentaje}%`,
     };
   }
-  if (porcentaje >= 60 && porcentaje < 85) {
+  if (esMedia) {
     return {
       dotColor: "bg-amber-500",
       barColor: "bg-amber-500",

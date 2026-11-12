@@ -7,25 +7,22 @@ import { parsePagination, buildPaginationMeta } from "../utils/pagination.js";
 // Obtener todos los gastos con paginación y búsqueda
 export const getAllGastos = async (req, res) => {
   try {
-    const { page, limit, offset, search, sortField, sortOrder } = parsePagination(req.query, {
-      defaultLimit: 9,
-      defaultSortField: "fecha_gasto",
-      defaultSortOrder: "DESC",
-      allowedSortFields: Object.keys(Gasto.rawAttributes),
-    });
+    const { page, limit, offset, search, sortField, sortOrder } =
+      parsePagination(req.query, {
+        defaultLimit: 9,
+        defaultSortField: "fecha_gasto",
+        defaultSortOrder: "DESC",
+        allowedSortFields: Object.keys(Gasto.rawAttributes),
+      });
     const categoria = req.query.categoria || "";
 
     const where = {
       activo: true,
     };
 
-    // Búsqueda por concepto, comprobante o notas
+    // Búsqueda por concepto
     if (search !== "") {
-      where[Op.or] = [
-        { concepto: { [Op.like]: `%${search}%` } },
-        { comprobante: { [Op.like]: `%${search}%` } },
-        { notas: { [Op.like]: `%${search}%` } },
-      ];
+      where.concepto = { [Op.like]: `%${search}%` };
     }
 
     if (categoria) {
@@ -46,7 +43,6 @@ export const getAllGastos = async (req, res) => {
       ],
     });
 
-
     res.status(200).json({
       status: "success",
       data: gastos,
@@ -65,7 +61,7 @@ export const getAllGastos = async (req, res) => {
 // Obtener un gasto por su ID
 export const getGastoById = async (req, res) => {
   try {
-    const gasto = req.gasto; // Inyectado por el middleware validarExistencia
+    const gasto = req.gasto;
 
     res.status(200).json({
       status: "success",
@@ -80,7 +76,8 @@ export const getGastoById = async (req, res) => {
 // Crear un nuevo gasto
 export const createGasto = async (req, res) => {
   try {
-    const { id_categoria_gasto, monto, concepto, fecha_gasto, metodo_pago, comprobante, notas } = req.body;
+    const { id_categoria_gasto, monto, concepto, fecha_gasto, metodo_pago } =
+      req.body;
 
     const newGasto = await Gasto.create({
       id_categoria_gasto,
@@ -88,8 +85,6 @@ export const createGasto = async (req, res) => {
       concepto,
       fecha_gasto: fecha_gasto || new Date(),
       metodo_pago: metodo_pago || "Efectivo",
-      comprobante,
-      notas,
     });
 
     res.status(201).json({
@@ -105,8 +100,9 @@ export const createGasto = async (req, res) => {
 // Actualizar un gasto existente
 export const updateGasto = async (req, res) => {
   try {
-    const { id_categoria_gasto, monto, concepto, fecha_gasto, metodo_pago, comprobante, notas } = req.body;
-    const gasto = req.gasto; // Inyectado por el middleware
+    const { id_categoria_gasto, monto, concepto, fecha_gasto, metodo_pago } =
+      req.body;
+    const gasto = req.gasto;
 
     await gasto.update({
       id_categoria_gasto: id_categoria_gasto || gasto.id_categoria_gasto,
@@ -114,8 +110,6 @@ export const updateGasto = async (req, res) => {
       concepto: concepto || gasto.concepto,
       fecha_gasto: fecha_gasto || gasto.fecha_gasto,
       metodo_pago: metodo_pago || gasto.metodo_pago,
-      comprobante: comprobante !== undefined ? comprobante : gasto.comprobante,
-      notas: notas !== undefined ? notas : gasto.notas,
     });
 
     res.status(200).json({

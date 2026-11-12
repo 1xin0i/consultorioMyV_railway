@@ -2,18 +2,25 @@
 
 import { Op } from "sequelize";
 import {
+  SolicitudCobro,
   Cobro,
+  MetodoPago,
   Gasto,
-  Cuota,
   Paciente,
   CategoriaGasto,
   Turno,
   EstadoTurno,
+  PracticaTurno,
+  Practica,
 } from "../models/index.model.js";
+import {
+  formatearCobroConDetalles,
+  formatearSolicitudConSaldos,
+} from "./Cobro.controller.js";
 
 /**
- * Obtiene de forma unificada y paginada los cobros y los gastos para la gestión de caja,
- * con filtrado por período (mes y año) y pendientes adeudados hasta hoy.
+ * Obtiene de forma unificada y paginada los cobros recibidos (criterio de lo percibido),
+ * los gastos registrados y las solicitudes/turnos pendientes de cobro.
  */
 export const getCajaConsolidada = async (req, res) => {
   try {
@@ -26,7 +33,6 @@ export const getCajaConsolidada = async (req, res) => {
     const hoy = new Date();
     if (!anio) anio = hoy.getFullYear();
 
-    // Si se solicita ver el año completo (en vez de un solo mes o histórico infinito)
     const esAnual =
       req.query.periodo === "anio" ||
       req.query.periodo === "todos" ||
@@ -35,12 +41,10 @@ export const getCajaConsolidada = async (req, res) => {
 
     if (!fechaDesde || !fechaHasta) {
       if (esAnual) {
-        // Todo el año seleccionado (del 1 de enero al 31 de diciembre)
         fechaDesde = new Date(anio, 0, 1, 0, 0, 0, 0);
         fechaHasta = new Date(anio, 11, 31, 23, 59, 59, 999);
       } else {
-        // Mes seleccionado dentro del año
-        if (!mes) mes = hoy.getMonth() + 1; // 1-12
+        if (!mes) mes = hoy.getMonth() + 1;
         fechaDesde = new Date(anio, mes - 1, 1, 0, 0, 0, 0);
         fechaHasta = new Date(anio, mes, 0, 23, 59, 59, 999);
       }
@@ -59,27 +63,40 @@ export const getCajaConsolidada = async (req, res) => {
     const searchGasto = req.query.searchGasto || "";
 
     // ─── FILTROS (WHERE) PARA COBROS ───
-    let whereCobro = { activo: true };
+    const whereCobro = {};
     if (fechaDesde && fechaHasta) {
-      whereCobro.fecha_emision = { [Op.between]: [fechaDesde, fechaHasta] };
+      whereCobro.fecha_cobro = { [Op.between]: [fechaDesde, fechaHasta] };
     }
     if (searchCobro.trim() !== "") {
       whereCobro[Op.or] = [
-        { "$Paciente.nombre$": { [Op.like]: `%${searchCobro}%` } },
-        { "$Paciente.apellido$": { [Op.like]: `%${searchCobro}%` } },
-        { "$Paciente.dni$": { [Op.like]: `%${searchCobro}%` } },
+        { observaciones: { [Op.like]: `%${searchCobro}%` } },
+        { "$SolicitudCobro.observaciones$": { [Op.like]: `%${searchCobro}%` } },
+        {
+          "$SolicitudCobro.Paciente.nombre$": {
+            [Op.like]: `%${searchCobro}%`,
+          },
+        },
+        {
+          "$SolicitudCobro.Paciente.apellido$": {
+            [Op.like]: `%${searchCobro}%`,
+          },
+        },
+        {
+          "$SolicitudCobro.Paciente.dni$": {
+            [Op.like]: `%${searchCobro}%`,
+          },
+        },
       ];
     }
 
     // ─── FILTROS (WHERE) PARA GASTOS ───
-    let whereGasto = { activo: true };
+    const whereGasto = { activo: true };
     if (fechaDesde && fechaHasta) {
       whereGasto.fecha_gasto = { [Op.between]: [fechaDesde, fechaHasta] };
     }
     if (searchGasto.trim() !== "") {
       whereGasto[Op.or] = [
         { concepto: { [Op.like]: `%${searchGasto}%` } },
-        { comprobante: { [Op.like]: `%${searchGasto}%` } },
         { "$CategoriaGasto.nombre$": { [Op.like]: `%${searchGasto}%` } },
       ];
     }
@@ -91,29 +108,60 @@ export const getCajaConsolidada = async (req, res) => {
       todosCobrosPeriodo,
       totalEgresosSuma,
       turnosPendientes,
-      cuotasPendientes,
+      solicitudesPendientesRaw,
     ] = await Promise.all([
-      // 1. Cobros paginados para tabla / vista
+      // 1. Cobros reales paginados para tabla / vista
       Cobro.findAndCountAll({
         where: whereCobro,
         limit: limitCobro,
         offset: offsetCobro,
-        order: [["fecha_emision", "DESC"]],
+        order: [
+          ["fecha_cobro", "DESC"],
+          ["id", "DESC"],
+        ],
+        subQuery: false,
+        distinct: true,
         include: [
           {
-            model: Paciente,
-            attributes: ["nombre", "apellido", "dni", "telefono"],
+            model: MetodoPago,
+            as: "MetodoPago",
+            attributes: ["id", "nombre"],
           },
           {
-            model: Cuota,
-            attributes: [
-              "id_cuota",
-              "monto_cobrado",
-              "monto_cuota",
-              "estado",
-              "metodo_pago",
-              "fecha_vencimiento",
-              "fecha_cobro",
+            model: SolicitudCobro,
+            as: "SolicitudCobro",
+            required: true,
+            include: [
+              {
+                model: Paciente,
+                attributes: [
+                  "id_paciente",
+                  "nombre",
+                  "apellido",
+                  "dni",
+                  "telefono",
+                ],
+              },
+              {
+                model: Turno,
+                attributes: [
+                  "id_turno",
+                  "fecha_hora_inicio",
+                  "fecha_hora_fin",
+                  "notas_consulta",
+                ],
+                include: [
+                  {
+                    model: PracticaTurno,
+                    include: [
+                      {
+                        model: Practica,
+                        attributes: ["nombre_referencia", "nombre_nomenclador"],
+                      },
+                    ],
+                  },
+                ],
+              },
             ],
           },
         ],
@@ -125,6 +173,7 @@ export const getCajaConsolidada = async (req, res) => {
         limit: limitGasto,
         offset: offsetGasto,
         order: [["fecha_gasto", "DESC"]],
+        subQuery: false,
         include: [
           {
             model: CategoriaGasto,
@@ -134,29 +183,26 @@ export const getCajaConsolidada = async (req, res) => {
         ],
       }),
 
-      // 3. Todos los cobros del período completo para cálculo fiel de KPI Ingresos
+      // 3. Todos los cobros del período completo para cálculo fiel de KPI Cobros Registrados
       Cobro.findAll({
-        where: whereCobro,
-        attributes: ["id_cobro"],
-        include: [
-          {
-            model: Cuota,
-            attributes: ["monto_cobrado"],
-          },
-        ],
+        where:
+          fechaDesde && fechaHasta
+            ? { fecha_cobro: { [Op.between]: [fechaDesde, fechaHasta] } }
+            : {},
+        attributes: ["id", "monto"],
       }),
 
-      // 4. Suma de egresos del período completo
+      // 4. Suma de gastos del período completo
       Gasto.sum("monto", { where: whereGasto }),
 
-      // 5. Turnos atendidos pendientes de cobro (sin cobro asociado) - NO depende del filtro de período
+      // 5. Turnos atendidos sin solicitud de cobro generada aún
       (async () => {
-        const cobrosExistentes = await Cobro.findAll({
-          where: { activo: true },
-          attributes: ["id_turno"],
+        const solicitudesExistentes = await SolicitudCobro.findAll({
+          where: { turno_id: { [Op.ne]: null } },
+          attributes: ["turno_id"],
         });
-        const turnosConCobroIds = cobrosExistentes
-          .map((c) => c.id_turno)
+        const turnosConSolicitudIds = solicitudesExistentes
+          .map((s) => s.turno_id)
           .filter(Boolean);
 
         return Turno.findAll({
@@ -165,7 +211,9 @@ export const getCajaConsolidada = async (req, res) => {
             id_estado: 2, // Atendido
             id_turno: {
               [Op.notIn]:
-                turnosConCobroIds.length > 0 ? turnosConCobroIds : [-1],
+                turnosConSolicitudIds.length > 0
+                  ? turnosConSolicitudIds
+                  : [-1],
             },
           },
           include: [
@@ -177,59 +225,91 @@ export const getCajaConsolidada = async (req, res) => {
               model: EstadoTurno,
               attributes: ["estado"],
             },
+            {
+              model: PracticaTurno,
+              include: [
+                {
+                  model: Practica,
+                  attributes: ["nombre_referencia", "nombre_nomenclador"],
+                },
+              ],
+            },
           ],
           order: [["fecha_hora_inicio", "DESC"]],
         });
       })(),
 
-      // 6. Cuotas pendientes de pago (estado != 'Pagada') - NO depende de fecha de vencimiento
-      Cuota.findAll({
+      // 6. Solicitudes de cobro con saldo pendiente ('pendiente' o 'parcial')
+      SolicitudCobro.findAll({
         where: {
-          activo: true,
-          estado: { [Op.in]: ["Pendiente", "Parcialmente pagada"] },
+          estado: { [Op.in]: ["pendiente", "parcial"] },
         },
         include: [
           {
-            model: Cobro,
-            where: { activo: true },
-            attributes: ["id_cobro", "id_turno", "id_paciente", "monto_a_cobrar"],
+            model: Paciente,
+            attributes: [
+              "id_paciente",
+              "nombre",
+              "apellido",
+              "dni",
+              "telefono",
+            ],
+          },
+          {
+            model: Turno,
+            attributes: [
+              "id_turno",
+              "fecha_hora_inicio",
+              "fecha_hora_fin",
+              "notas_consulta",
+            ],
             include: [
               {
-                model: Paciente,
-                attributes: ["nombre", "apellido", "dni", "telefono"],
+                model: PracticaTurno,
+                include: [
+                  {
+                    model: Practica,
+                    attributes: ["nombre_referencia", "nombre_nomenclador"],
+                  },
+                ],
               },
             ],
           },
+          {
+            model: Cobro,
+            as: "Cobros",
+            include: [{ model: MetodoPago, as: "MetodoPago" }],
+          },
         ],
-        order: [["id_cuota", "ASC"]],
+        order: [["created_at", "DESC"]],
       }),
     ]);
 
     // ─── CÁLCULOS DE TOTALES ───
-    let totalIngresos = 0;
-    todosCobrosPeriodo.forEach((c) => {
-      const pagado = (c.Cuotas || []).reduce(
-        (acc, q) => acc + (Number(q.monto_cobrado) || 0),
-        0,
-      );
-      totalIngresos += pagado;
-    });
+    const totalIngresos = todosCobrosPeriodo.reduce(
+      (acc, c) => acc + (Number(c.monto) || 0),
+      0,
+    );
 
     const totalEgresos = Number(totalEgresosSuma) || 0;
     const balanceNeto = totalIngresos - totalEgresos;
+
+    const solicitudesPendientes = solicitudesPendientesRaw
+      .map(formatearSolicitudConSaldos)
+      .filter((s) => s.saldo_pendiente > 0.009);
 
     const totalTurnosPendientes = turnosPendientes.reduce(
       (acc, t) => acc + (Number(t.precio_final) || 0),
       0,
     );
 
-    const totalCuotasPendientes = cuotasPendientes.reduce((acc, q) => {
-      const cuotaTotal = Number(q.monto_cuota) || 0;
-      const cuotaCobrada = Number(q.monto_cobrado) || 0;
-      return acc + Math.max(0, cuotaTotal - cuotaCobrada);
-    }, 0);
+    const totalSolicitudesPendientes = solicitudesPendientes.reduce(
+      (acc, s) => acc + (Number(s.saldo_pendiente) || 0),
+      0,
+    );
 
-    const totalPendienteCobro = totalTurnosPendientes + totalCuotasPendientes;
+    const totalPendienteCobro =
+      totalTurnosPendientes + totalSolicitudesPendientes;
 
     const totalPagesCobro = Math.ceil(resultadoCobros.count / limitCobro);
     const totalPagesGasto = Math.ceil(resultadoGastos.count / limitGasto);
@@ -238,17 +318,19 @@ export const getCajaConsolidada = async (req, res) => {
     res.status(200).json({
       status: "success",
       data: {
-        cobros: resultadoCobros.rows,
+        cobros: resultadoCobros.rows.map(formatearCobroConDetalles),
         gastos: resultadoGastos.rows,
         turnosPendientes,
-        cuotasPendientes,
+        solicitudesPendientes,
+        cuotasPendientes: solicitudesPendientes, // alias de compatibilidad
         totales: {
           totalIngresos,
           totalEgresos,
           balanceNeto,
           totalPendienteCobro,
           totalTurnosPendientes,
-          totalCuotasPendientes,
+          totalSolicitudesPendientes,
+          totalCuotasPendientes: totalSolicitudesPendientes,
         },
       },
       meta: {

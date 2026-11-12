@@ -50,14 +50,3 @@ INSERT INTO practica_turno (id_turno, id_practica) VALUES
 (2, 2),
 (1, 4),
 (3, 4);
-
-CREATE TABLE IF NOT EXISTS practica_turno_diente (
-  id INT AUTO_INCREMENT PRIMARY KEY,
-  id_practica_turno INT NOT NULL,
-  numero_fdi TINYINT NOT NULL,
-  cara VARCHAR(10) NULL,
-  FOREIGN KEY (id_practica_turno) REFERENCES practica_turno(id_practica_turno) ON DELETE CASCADE
-);
-
-INSERT INTO practica_turno_diente (id_practica_turno, numero_fdi) VALUES
-(3, 16);

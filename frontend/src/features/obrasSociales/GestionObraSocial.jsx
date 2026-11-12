@@ -1,14 +1,7 @@
 /** @format */
 
 import { useState } from "react";
-import {
-  Plus,
-  Edit,
-  Trash2,
-  Search,
-  X,
-  Users,
-} from "lucide-react";
+import { Plus, Edit, Trash2, Search, X, Users } from "lucide-react";
 import toast from "react-hot-toast";
 
 //* IMPORTACION DE COMPONENTES COMUNES REUTILIZABLES
@@ -21,6 +14,7 @@ import {
 } from "../../components/common/Tabla/TarjetaRegistro";
 import PageLayout from "../../components/layout/PageLayout";
 import api from "../../services/api";
+import { obtenerColorAvatar } from "../../utils";
 
 //* HOOKS
 import { useCRUDModal } from "../../hooks/useCRUDModal";
@@ -33,7 +27,7 @@ import {
 } from "./components/FormularioObraSocial";
 import { useObraSocialActions } from "./hooks/useObraSocialActions";
 
-const ESTADO_INICIAL = { nombre: "", codigo_prestador: "" };
+const ESTADO_INICIAL = { nombre: "" };
 
 export default function GestionObrasSociales() {
   const {
@@ -75,7 +69,7 @@ export default function GestionObrasSociales() {
       toast.success(
         os.activo
           ? `Obra social "${os.nombre}" desactivada`
-          : `Obra social "${os.nombre}" activada`
+          : `Obra social "${os.nombre}" activada`,
       );
       recargar();
     } catch (err) {
@@ -100,50 +94,19 @@ export default function GestionObrasSociales() {
 
   const { guardarObraSocial, eliminarObraSocial } = useObraSocialActions(
     recargar,
-    cerrarModal
+    cerrarModal,
   );
 
   const formatearObraSocialParaEditar = (os) => ({
     nombre: os.nombre || "",
-    codigo_prestador: os.codigo_prestador || "",
   });
-
-  // Generador de paleta sutil para avatares con iniciales
-  const obtenerColorAvatar = (nombre = "") => {
-    const hash = (nombre || "")
-      .split("")
-      .reduce((acc, char) => acc + char.charCodeAt(0), 0);
-    const colores = [
-      {
-        bg: "bg-teal-50 dark:bg-teal-950/60",
-        text: "text-[#0d8266] dark:text-emerald-300",
-        border: "border-teal-200/80 dark:border-teal-800/60",
-      },
-      {
-        bg: "bg-sky-50 dark:bg-sky-950/60",
-        text: "text-sky-600 dark:text-sky-300",
-        border: "border-sky-200/80 dark:border-sky-800/60",
-      },
-      {
-        bg: "bg-emerald-50 dark:bg-emerald-950/60",
-        text: "text-emerald-700 dark:text-emerald-300",
-        border: "border-emerald-200/80 dark:border-emerald-800/60",
-      },
-      {
-        bg: "bg-indigo-50 dark:bg-indigo-950/60",
-        text: "text-indigo-600 dark:text-indigo-300",
-        border: "border-indigo-200/80 dark:border-indigo-800/60",
-      },
-    ];
-    return colores[hash % colores.length];
-  };
 
   return (
     <PageLayout onAdd={abrirParaCrear}>
       <div className="w-full flex-1 flex flex-col gap-4">
         {/* //* HEADER CON TITULO, BADGE Y BOTÓN NUEVA OBRA SOCIAL */}
         <Header
-          titulo="Obras Sociales y Prepagas"
+          titulo="Obras Sociales"
           badge={`${total} Registradas`}
           botonAccion={
             <button
@@ -161,52 +124,58 @@ export default function GestionObrasSociales() {
         <div className="w-full px-4">
           <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm p-4 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
             {/* LADO IZQUIERDO: Filtros por estado en cápsula */}
-            <div className="bg-gray-100/80 dark:bg-slate-800/80 p-1 rounded-xl inline-flex items-center gap-1 overflow-x-auto">
+            <div className="bg-gray-100/80 dark:bg-slate-800/80 p-1 rounded-xl inline-flex items-center gap-1 overflow-x-auto scrollbar-none">
               <button
                 type="button"
                 onClick={() => cambiarFiltroEstado("todas")}
-                className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer whitespace-nowrap ${
+                className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer whitespace-nowrap shrink-0 ${
                   filtroEstado === "todas"
                     ? "bg-white dark:bg-slate-700 text-slate-900 dark:text-white font-bold shadow-xs"
                     : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
                 }`}
               >
                 <span>Todas</span>
-                <span
-                  className={`px-1.5 py-0.2 rounded-full text-[10px] font-bold ${
-                    filtroEstado === "todas"
-                      ? "bg-slate-900 text-white dark:bg-slate-100 dark:text-slate-900"
-                      : "bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300"
-                  }`}
-                >
-                  {total}
-                </span>
+                {filtroEstado === "todas" && (
+                  <span className="px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-slate-900 text-white dark:bg-slate-100 dark:text-slate-900">
+                    {total}
+                  </span>
+                )}
               </button>
 
               <button
                 type="button"
                 onClick={() => cambiarFiltroEstado("activas")}
-                className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer whitespace-nowrap ${
+                className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer whitespace-nowrap shrink-0 ${
                   filtroEstado === "activas"
-                    ? "bg-white dark:bg-slate-700 text-slate-900 dark:text-white font-bold shadow-xs"
+                    ? "bg-emerald-50 text-emerald-800 border border-emerald-200/80 dark:bg-emerald-950/50 dark:text-emerald-300 dark:border-emerald-800/60 shadow-xs font-bold"
                     : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
                 }`}
               >
                 <span className="w-2 h-2 rounded-full bg-emerald-500 shrink-0" />
                 <span>Activas</span>
+                {filtroEstado === "activas" && (
+                  <span className="px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-200/80 text-emerald-900 dark:bg-emerald-900 dark:text-emerald-200">
+                    {total}
+                  </span>
+                )}
               </button>
 
               <button
                 type="button"
                 onClick={() => cambiarFiltroEstado("inactivas")}
-                className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer whitespace-nowrap ${
+                className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer whitespace-nowrap shrink-0 ${
                   filtroEstado === "inactivas"
-                    ? "bg-white dark:bg-slate-700 text-slate-900 dark:text-white font-bold shadow-xs"
+                    ? "bg-rose-50 text-rose-800 border border-rose-200/80 dark:bg-rose-950/50 dark:text-rose-300 dark:border-rose-800/60 shadow-xs font-bold"
                     : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
                 }`}
               >
                 <span className="w-2 h-2 rounded-full bg-rose-500 shrink-0" />
                 <span>Inactivas</span>
+                {filtroEstado === "inactivas" && (
+                  <span className="px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-rose-200/80 text-rose-900 dark:bg-rose-900 dark:text-rose-200">
+                    {total}
+                  </span>
+                )}
               </button>
             </div>
 
@@ -218,7 +187,7 @@ export default function GestionObrasSociales() {
               />
               <input
                 type="text"
-                placeholder="Buscar por nombre o código..."
+                placeholder="Buscar por nombre..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 className="w-full pl-9 pr-8 py-2 bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 placeholder-gray-400 dark:placeholder-slate-400 rounded-xl text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-[#2eb086]/50 focus:border-[#2eb086] transition-all"
@@ -257,18 +226,15 @@ export default function GestionObrasSociales() {
                     totalPages={totalPages}
                   >
                     {obrasSociales.map((os) => {
-                      const coloresAvatar = obtenerColorAvatar(os.nombre || "OS");
+                      const coloresAvatar = obtenerColorAvatar(
+                        os.nombre || "OS",
+                      );
                       return (
                         <TarjetaRegistro
                           key={os.id_obra_social}
                           avatar={os.nombre?.charAt(0).toUpperCase()}
                           avatarClassName={`${coloresAvatar.bg} ${coloresAvatar.text} border ${coloresAvatar.border}`}
                           titulo={os.nombre}
-                          subtitulo={
-                            os.codigo_prestador
-                              ? `Cód. Prestador: ${os.codigo_prestador}`
-                              : "Sin código asignado"
-                          }
                           tituloSheet="Opciones de la Obra Social"
                           badge={
                             <span
@@ -291,7 +257,7 @@ export default function GestionObrasSociales() {
                               onClick: () =>
                                 abrirParaEditar(
                                   os,
-                                  formatearObraSocialParaEditar
+                                  formatearObraSocialParaEditar,
                                 ),
                             },
                             {
@@ -319,10 +285,6 @@ export default function GestionObrasSociales() {
                 }
                 columnas={[
                   { label: "OBRA SOCIAL / PREPAGA", sortField: "nombre" },
-                  {
-                    label: "CÓDIGO DE PRESTADOR",
-                    sortField: "codigo_prestador",
-                  },
                   { label: "PACIENTES ASOCIADOS" },
                   { label: "ESTADO", sortField: "activo" },
                   { label: "ACCIONES", align: "center" },
@@ -341,7 +303,9 @@ export default function GestionObrasSociales() {
                           <div
                             className={`hidden md:flex w-9 h-9 rounded-full ${coloresAvatar.bg} ${coloresAvatar.text} border ${coloresAvatar.border} items-center justify-center font-bold text-xs shrink-0 shadow-2xs`}
                           >
-                            {os.nombre ? os.nombre.charAt(0).toUpperCase() : "O"}
+                            {os.nombre
+                              ? os.nombre.charAt(0).toUpperCase()
+                              : "O"}
                           </div>
                           <span className="font-bold text-slate-900 dark:text-slate-100 text-sm tracking-tight">
                             {os.nombre}
@@ -349,20 +313,7 @@ export default function GestionObrasSociales() {
                         </div>
                       </td>
 
-                      {/* //* COLUMNA 2: CÓDIGO DE PRESTADOR */}
-                      <td className="px-6 py-4 whitespace-nowrap text-xs">
-                        {os.codigo_prestador ? (
-                          <span className="font-mono font-semibold px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200/80 dark:border-slate-700">
-                            {os.codigo_prestador}
-                          </span>
-                        ) : (
-                          <span className="text-slate-400 dark:text-slate-500 italic">
-                            —
-                          </span>
-                        )}
-                      </td>
-
-                      {/* //* COLUMNA 3: PACIENTES ASOCIADOS */}
+                      {/* //* COLUMNA 2: PACIENTES ASOCIADOS */}
                       <td className="px-6 py-4 whitespace-nowrap text-xs text-slate-600 dark:text-slate-400 font-medium">
                         <div className="flex items-center gap-1.5">
                           <Users
@@ -418,10 +369,7 @@ export default function GestionObrasSociales() {
                           <button
                             type="button"
                             onClick={() =>
-                              abrirParaEditar(
-                                os,
-                                formatearObraSocialParaEditar
-                              )
+                              abrirParaEditar(os, formatearObraSocialParaEditar)
                             }
                             className="p-2 rounded-xl text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-950/50 hover:scale-105 active:scale-95 transition-all cursor-pointer"
                             title="Editar obra social"

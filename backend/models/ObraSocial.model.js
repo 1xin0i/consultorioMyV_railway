@@ -14,11 +14,6 @@ export const ObraSocial = sequelize.define(
       type: DataTypes.STRING,
       allowNull: false,
     },
-    codigo_prestador: {
-      type: DataTypes.STRING,
-      allowNull: true,
-      defaultValue: null,
-    },
     activo: {
       type: DataTypes.BOOLEAN,
       allowNull: false,

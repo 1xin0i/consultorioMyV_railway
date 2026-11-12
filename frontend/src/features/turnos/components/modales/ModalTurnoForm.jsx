@@ -3,12 +3,7 @@
 import { useState, useEffect } from "react";
 import api from "../../../../services/api";
 import Modal from "../../../../components/common/Modal";
-import {
-  UserPlus,
-  AlertCircle,
-  Plus,
-  X,
-} from "lucide-react";
+import { UserPlus, AlertCircle, Plus, X } from "lucide-react";
 import { formatDateTimeInput } from "../../../../utils";
 import toast from "react-hot-toast";
 import { manejarErrorApi } from "../../../../utils/errorHandler";
@@ -27,7 +22,8 @@ export function ModalTurnoForm({
   actualizarDatos,
   guardarTurno,
 }) {
-  const [modalPacienteRapidoAbierto, setModalPacienteRapidoAbierto] = useState(false);
+  const [modalPacienteRapidoAbierto, setModalPacienteRapidoAbierto] =
+    useState(false);
   const [datosPacienteRapido, setDatosPacienteRapido] = useState({
     nombre: "",
     apellido: "",
@@ -40,7 +36,10 @@ export function ModalTurnoForm({
   const { validarTurnoHorario } = useConfiguracion();
   const validacionHorario =
     !editando && datosFormulario?.fecha_hora_inicio && validarTurnoHorario
-      ? validarTurnoHorario(datosFormulario.fecha_hora_inicio)
+      ? validarTurnoHorario(
+          datosFormulario.fecha_hora_inicio,
+          datosFormulario.duracion_minutos,
+        )
       : null;
 
   // Precargar prácticas si se está editando un turno programado existente
@@ -92,10 +91,21 @@ export function ModalTurnoForm({
 
   // Cálculo automático de la fecha/hora de fin al crear
   useEffect(() => {
-    if (modalAbierto && !editando && datosFormulario?.fecha_hora_inicio && datosFormulario?.duracion_minutos) {
+    if (
+      modalAbierto &&
+      !editando &&
+      datosFormulario?.fecha_hora_inicio &&
+      datosFormulario?.duracion_minutos
+    ) {
       calcularHoraFin(datosFormulario, actualizarDatos);
     }
-  }, [modalAbierto, editando, datosFormulario?.fecha_hora_inicio, datosFormulario?.duracion_minutos, actualizarDatos]);
+  }, [
+    modalAbierto,
+    editando,
+    datosFormulario?.fecha_hora_inicio,
+    datosFormulario?.duracion_minutos,
+    actualizarDatos,
+  ]);
 
   const actualizarDatosPacienteRapido = (e) => {
     const { name, value } = e.target;
@@ -173,7 +183,48 @@ export function ModalTurnoForm({
           {/* Aviso si el turno no es programado */}
           {editando && !esProgramado && (
             <div className="col-span-1 md:col-span-2 p-3 bg-amber-50 border border-amber-200 rounded-xl text-amber-800 text-xs font-medium">
-              Este turno se encuentra en estado Atendido/Cerrado. El paciente y horario están fijados para preservar el historial clínico. Solo podés modificar las notas u observaciones.
+              Este turno se encuentra en estado Atendido/Cerrado. El paciente y
+              horario están fijados para preservar el historial clínico. Solo
+              podés modificar las notas u observaciones.
+            </div>
+          )}
+
+          {/* Banner Ámbar de Excepción / Urgencia cuando cae en día no laboral o horario bloqueado */}
+          {!editando && validacionHorario && !validacionHorario.valido && (
+            <div className="col-span-1 md:col-span-2 p-3.5 bg-amber-50 dark:bg-amber-950/40 border border-amber-300 dark:border-amber-700/70 rounded-xl text-amber-900 dark:text-amber-200 flex flex-col gap-2.5 shadow-2xs">
+              <div className="flex items-start gap-2.5">
+                <AlertCircle
+                  size={18}
+                  className="text-amber-600 dark:text-amber-400 shrink-0 mt-0.5"
+                />
+                <div className="text-xs sm:text-sm leading-relaxed">
+                  <span className="font-bold">
+                    ⚠️ Este horario está bloqueado (&quot;
+                    {validacionHorario.motivo || validacionHorario.mensaje}
+                    &quot;).
+                  </span>{" "}
+                  ¿Deseás agendarlo como turno excepcional / urgencia?
+                </div>
+              </div>
+              <label className="flex items-center gap-2.5 cursor-pointer select-none bg-white/85 dark:bg-slate-900/70 px-3 py-2 rounded-lg border border-amber-200 dark:border-amber-800/60 hover:bg-amber-100/50 dark:hover:bg-amber-900/30 transition-colors">
+                <input
+                  type="checkbox"
+                  name="ignorarRestricciones"
+                  checked={Boolean(datosFormulario.ignorarRestricciones)}
+                  onChange={(e) =>
+                    actualizarDatos({
+                      target: {
+                        name: "ignorarRestricciones",
+                        value: e.target.checked,
+                      },
+                    })
+                  }
+                  className="w-4 h-4 rounded accent-amber-600 cursor-pointer"
+                />
+                <span className="text-xs font-bold text-amber-900 dark:text-amber-200">
+                  Autorizar turno excepcional / urgencia (ignorar restricción)
+                </span>
+              </label>
             </div>
           )}
 
@@ -182,7 +233,8 @@ export function ModalTurnoForm({
             <div className="col-span-1 md:col-span-2">
               <div className="flex items-center justify-between mb-1">
                 <label className="block text-sm font-semibold text-gray-700">
-                  Paciente <span className="text-rose-500 font-extrabold">*</span>
+                  Paciente{" "}
+                  <span className="text-rose-500 font-extrabold">*</span>
                 </label>
                 <button
                   type="button"
@@ -196,13 +248,24 @@ export function ModalTurnoForm({
               </div>
               <InputFiltro
                 datos={pacientes}
-                camposFiltrado={["nombre", "apellido", "dni", "telefono", "domicilio"]}
+                camposFiltrado={[
+                  "nombre",
+                  "apellido",
+                  "dni",
+                  "telefono",
+                  "domicilio",
+                ]}
                 formatoVisual={(p) =>
                   `${p.nombre} ${p.apellido} - DNI: ${p.dni || "S/D"} - Telefono: ${p.telefono || "S/D"}`
                 }
                 placeholder="Busca un paciente..."
                 alSeleccionar={(p) =>
-                  actualizarDatos({ target: { name: "id_paciente", value: p?.id_paciente || "" } })
+                  actualizarDatos({
+                    target: {
+                      name: "id_paciente",
+                      value: p?.id_paciente || "",
+                    },
+                  })
                 }
                 valorInicial={datosFormulario.id_paciente || ""}
               />
@@ -213,12 +276,15 @@ export function ModalTurnoForm({
           {!editando && (
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-1">
-                Fecha y Hora de Inicio <span className="text-rose-500 font-extrabold">*</span>
+                Fecha y Hora de Inicio{" "}
+                <span className="text-rose-500 font-extrabold">*</span>
               </label>
               <input
                 type="datetime-local"
                 name="fecha_hora_inicio"
-                value={formatDateTimeInput(datosFormulario.fecha_hora_inicio) || ""}
+                value={
+                  formatDateTimeInput(datosFormulario.fecha_hora_inicio) || ""
+                }
                 onChange={actualizarDatos}
                 required
                 className={`w-full border p-2.5 rounded-xl text-sm focus:outline-none focus:ring-2 transition-colors ${
@@ -240,7 +306,8 @@ export function ModalTurnoForm({
           {!editando && (
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-1">
-                Duración (Minutos) <span className="text-rose-500 font-extrabold">*</span>
+                Duración (Minutos){" "}
+                <span className="text-rose-500 font-extrabold">*</span>
               </label>
               <select
                 name="duracion_minutos"
@@ -280,10 +347,14 @@ export function ModalTurnoForm({
               <div className="flex items-center justify-between mb-2">
                 <div>
                   <label className="block text-sm font-semibold text-gray-700">
-                    Prácticas a Realizar <span className="text-xs font-normal text-gray-400">(Opcional)</span>
+                    Prácticas a Realizar{" "}
+                    <span className="text-xs font-normal text-gray-400">
+                      (Opcional)
+                    </span>
                   </label>
                   <p className="text-[11px] text-gray-500">
-                    Podés programar qué tratamientos se realizarán. El arancel y piezas dentales se registran al atender.
+                    Podés programar qué tratamientos se realizarán. El arancel y
+                    piezas dentales se registran al atender.
                   </p>
                 </div>
                 <button
@@ -298,12 +369,14 @@ export function ModalTurnoForm({
 
               {practicasSeleccionadas.length === 0 ? (
                 <div className="text-xs text-gray-400 italic bg-gray-50 p-3 rounded-xl border border-dashed border-gray-200">
-                  Sin prácticas programadas. Podés agregar una o más prácticas si ya se conoce el motivo del turno.
+                  Sin prácticas programadas. Podés agregar una o más prácticas
+                  si ya se conoce el motivo del turno.
                 </div>
               ) : (
                 <div className="flex flex-col gap-2.5 max-h-48 overflow-y-auto pr-1">
                   {practicasSeleccionadas.map((item, idx) => {
-                    const idActual = typeof item === "object" ? item.id_practica : item;
+                    const idActual =
+                      typeof item === "object" ? item.id_practica : item;
                     return (
                       <div
                         key={idx}
@@ -319,11 +392,14 @@ export function ModalTurnoForm({
                               "especialidad",
                             ]}
                             formatoVisual={(p) =>
-                              `${p.nombre_referencia} (${p.especialidad || p.codigo_nomenclador || "Práctica"})`
+                              `${p.codigo_nomenclador} - ${p.nombre_referencia} (${p.especialidad || p.codigo_nomenclador || "Práctica"})`
                             }
                             placeholder="Buscar práctica a realizar..."
                             alSeleccionar={(p) =>
-                              actualizarPracticaPlanificada(idx, p?.id_practica || "")
+                              actualizarPracticaPlanificada(
+                                idx,
+                                p?.id_practica || "",
+                              )
                             }
                             valorInicial={idActual || ""}
                           />
@@ -346,7 +422,9 @@ export function ModalTurnoForm({
 
           {/* Notas / Observaciones (Debajo de las prácticas) */}
           <div className="col-span-1 md:col-span-2">
-            <label className="block text-sm font-semibold text-gray-700 mb-1">Notas de la Consulta</label>
+            <label className="block text-sm font-semibold text-gray-700 mb-1">
+              Notas de la Consulta
+            </label>
             <textarea
               name="notas_consulta"
               rows={3}
@@ -371,7 +449,13 @@ export function ModalTurnoForm({
             type="submit"
             className="px-5 py-2.5 rounded-xl text-white bg-[#2eb086] hover:bg-[#259370] transition-all shadow-sm font-semibold text-sm cursor-pointer"
           >
-            {editando ? "Guardar Cambios" : "Confirmar Turno"}
+            {editando
+              ? "Guardar Cambios"
+              : validacionHorario &&
+                  !validacionHorario.valido &&
+                  datosFormulario.ignorarRestricciones
+                ? "Confirmar Turno (Urgencia)"
+                : "Confirmar Turno"}
           </button>
         </div>
       </Modal>
@@ -386,10 +470,6 @@ export function ModalTurnoForm({
           title="Crear Paciente Rápido"
         >
           <div className="flex flex-col gap-3">
-            <p className="text-xs text-gray-500">
-              Registrá los datos básicos para asociar este turno inmediatamente.
-            </p>
-
             <div>
               <label className="block text-xs font-semibold text-gray-700 mb-1">
                 Nombre <span className="text-rose-500">*</span>

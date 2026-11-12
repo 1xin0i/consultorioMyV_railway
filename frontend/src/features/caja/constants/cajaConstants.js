@@ -4,8 +4,6 @@ export const ESTADO_INICIAL_GASTO = {
   concepto: "",
   fecha_gasto: new Date().toISOString().split("T")[0],
   metodo_pago: "Efectivo",
-  comprobante: "",
-  notas: "",
 };
 
 export const ESTADO_INICIAL_COBRO = {
@@ -13,8 +11,7 @@ export const ESTADO_INICIAL_COBRO = {
   id_turno: "",
   monto_a_cobrar: "",
   modalidad: "inmediato",
-  cant_cuotas: 1,
   metodo_pago: "Efectivo",
   entrega_inicial: "",
-  notas: "",
+  observaciones: "",
 };

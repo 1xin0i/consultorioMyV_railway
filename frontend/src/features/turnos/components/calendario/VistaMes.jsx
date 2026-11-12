@@ -27,7 +27,14 @@ export const VistaMes = memo(function VistaMes({
   onDragStart,
   onDragEnd,
 }) {
-  const { totalModulosDia, duracionModuloMinutos } = useConfiguracion();
+  const {
+    totalModulosDia,
+    duracionModuloMinutos,
+    ocupacionBajaMax,
+    ocupacionMediaMax,
+    corteBajaModulos,
+    corteMediaModulos,
+  } = useConfiguracion();
   const capacidadDia = totalModulosDia || 24;
   const duracionModulo = Number(duracionModuloMinutos) || 30;
 
@@ -154,7 +161,14 @@ export const VistaMes = memo(function VistaMes({
         100,
         Math.round((modulosOcupados / capacidadDia) * 100),
       );
-      const ocupacion = OBTENER_ESTILOS_OCUPACION_MES(porcentaje);
+      const ocupacion = OBTENER_ESTILOS_OCUPACION_MES(
+        porcentaje,
+        ocupacionBajaMax,
+        ocupacionMediaMax,
+        modulosOcupados,
+        corteBajaModulos,
+        corteMediaModulos,
+      );
 
       const diaBloqueado = esDiaBloqueado ? esDiaBloqueado(d) : false;
       const restriccionDia =

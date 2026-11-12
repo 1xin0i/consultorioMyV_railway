@@ -2,7 +2,6 @@
 
 import {
   PracticaTurno,
-  PracticaTurnoDiente,
   Turno,
   Practica,
   ObraSocial,
@@ -26,11 +25,6 @@ export const getAllPracticaTurno = async (req, res) => {
         {
           model: ObraSocial,
           attributes: ["id_obra_social", "nombre"],
-        },
-        {
-          model: PracticaTurnoDiente,
-          as: "dientes",
-          attributes: ["id", "numero_fdi", "cara"],
         },
       ],
     });
@@ -80,11 +74,6 @@ export const getPracticasByTurnoId = async (req, res) => {
         {
           model: ObraSocial,
           attributes: ["id_obra_social", "nombre"],
-        },
-        {
-          model: PracticaTurnoDiente,
-          as: "dientes",
-          attributes: ["id", "numero_fdi", "cara"],
         },
       ],
     });

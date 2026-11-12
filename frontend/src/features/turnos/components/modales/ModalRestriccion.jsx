@@ -2,8 +2,9 @@
 
 import { useState, useEffect, useRef, useMemo, memo } from "react";
 import { createPortal } from "react-dom";
-import { Lock, X, Calendar, ChevronDown } from "lucide-react";
+import { Lock, Unlock, Trash2, X, Calendar, ChevronDown } from "lucide-react";
 import toast from "react-hot-toast";
+import { useRestricciones } from "../../hooks/useRestricciones";
 
 const MOTIVOS_SUGERIDOS = [
   "Día no laborable / Feriado",
@@ -35,7 +36,10 @@ export const ModalRestriccion = memo(function ModalRestriccion({
   onClose,
   rangoFechas, // { inicio: Date, fin: Date }
   onGuardar,
+  onEliminar,
 }) {
+  const { obtenerRestriccionesDeFecha, eliminarRestriccion } =
+    useRestricciones();
   const [alcance, setAlcance] = useState("franja"); // "franja" | "dia_completo"
   const [horaInicio, setHoraInicio] = useState("08:00");
   const [horaFin, setHoraFin] = useState("10:00");
@@ -118,7 +122,20 @@ export const ModalRestriccion = memo(function ModalRestriccion({
 
   const esDiaCompleto = alcance === "dia_completo";
 
-  const handleSubmit = (e) => {
+  const restriccionesExistentes = useMemo(() => {
+    if (!fechaInicioStr || !obtenerRestriccionesDeFecha) return [];
+    return obtenerRestriccionesDeFecha(fechaInicioStr);
+  }, [fechaInicioStr, obtenerRestriccionesDeFecha]);
+
+  const handleEliminar = async (id) => {
+    const fn = onEliminar || eliminarRestriccion;
+    if (fn) {
+      await fn(id);
+      toast.success("Bloqueo eliminado correctamente.", { icon: "🔓" });
+    }
+  };
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
 
     if (!esDiaCompleto && horaFin <= horaInicio) {
@@ -210,6 +227,46 @@ export const ModalRestriccion = memo(function ModalRestriccion({
               </span>
             </div>
           </div>
+
+          {/* Lista de bloqueos activos en esta fecha (con opción de desbloquear) */}
+          {restriccionesExistentes.length > 0 && (
+            <div className="flex flex-col gap-2 rounded-2xl border border-amber-200 dark:border-amber-800/60 bg-amber-50/60 dark:bg-amber-950/30 p-3">
+              <span className="text-[11px] font-bold text-amber-800 dark:text-amber-300 uppercase tracking-wider flex items-center gap-1.5">
+                <Lock size={12} />
+                <span>Bloqueos activos en esta fecha</span>
+              </span>
+              <div className="flex flex-col gap-1.5">
+                {restriccionesExistentes.map((r) => (
+                  <div
+                    key={r.id}
+                    className="flex items-center justify-between gap-2 bg-white dark:bg-slate-900 px-3 py-2 rounded-xl border border-amber-200/70 dark:border-slate-800 text-xs"
+                  >
+                    <div className="flex flex-col min-w-0">
+                      <span className="font-bold text-slate-800 dark:text-slate-100 truncate">
+                        {r.motivo}
+                      </span>
+                      <span className="text-[11px] text-slate-500 dark:text-slate-400">
+                        {r.todoElDia
+                          ? r.fechaInicio !== r.fechaFin
+                            ? `Día completo (${r.fechaInicio} al ${r.fechaFin})`
+                            : "Día completo"
+                          : `Franja: ${r.horaInicio} a ${r.horaFin} hs`}
+                      </span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => handleEliminar(r.id)}
+                      className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-bold text-rose-600 dark:text-rose-400 bg-rose-50 dark:bg-rose-950/50 hover:bg-rose-100 dark:hover:bg-rose-900/50 transition-colors cursor-pointer shrink-0"
+                      title="Quitar bloqueo"
+                    >
+                      <Unlock size={13} />
+                      <span>Desbloquear</span>
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
 
           {/* Alcance del Bloqueo: Segmented Control */}
           <div className="flex flex-col gap-1.5">

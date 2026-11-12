@@ -31,20 +31,6 @@ export function FormularioCrearEditar({
               className="w-full px-3.5 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs sm:text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-[#0d8266]/40"
             />
           </div>
-
-          <div>
-            <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
-              Código de Prestador / Coseguro
-            </label>
-            <input
-              type="text"
-              name="codigo_prestador"
-              value={datosFormulario.codigo_prestador || ""}
-              onChange={actualizarDatos}
-              placeholder="Ej: #1234-A, #345-SM..."
-              className="w-full px-3.5 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs sm:text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-[#0d8266]/40"
-            />
-          </div>
         </div>
 
         <div className="border-t border-slate-100 dark:border-slate-800 my-4" />

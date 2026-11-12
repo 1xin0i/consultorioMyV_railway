@@ -393,65 +393,23 @@ function DetalleInmediato({ datosFormulario, actualizarDatos }) {
           >
             <option value="Efectivo">Efectivo</option>
             <option value="Transferencia">Transferencia</option>
-            <option value="Tarjeta">Tarjeta Débito/Crédito</option>
+            <option value="Tarjeta">Tarjeta</option>
             <option value="Otro">Otro</option>
           </select>
         </div>
-      </div>
-    </div>
-  );
-}
 
-function DetalleCuotas({ datosFormulario, actualizarDatos }) {
-  const costoTotal = Number(datosFormulario.monto_a_cobrar) || 0;
-  const cantCuotas = Number(datosFormulario.cant_cuotas) || 3;
-  const valorCuota = cantCuotas > 0 ? (costoTotal / cantCuotas).toFixed(2) : "0.00";
-
-  return (
-    <div className="bg-gray-50/70 p-3.5 rounded-2xl border border-gray-200/80 space-y-3">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1">
-        <h4 className="text-xs font-bold uppercase tracking-wider text-gray-600 flex items-center gap-1.5">
-          <CreditCard size={15} className="text-[#2eb086]" />
-          3. Detalle del Plan de Cuotas
-        </h4>
-        <span className="text-xs font-bold bg-[#e8f7f1] text-[#2eb086] px-3 py-1 rounded-full border border-[#2eb086]/30 w-fit">
-          {cantCuotas} cuotas de ${valorCuota}
-        </span>
-      </div>
-
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-        <div>
+        <div className="col-span-1 md:col-span-2">
           <label className="block text-xs font-semibold text-gray-700 mb-1">
-            Monto Total a Financiar *
+            Observaciones (Opcional)
           </label>
           <input
-            type="number"
-            step="0.01"
-            name="monto_a_cobrar"
-            value={datosFormulario.monto_a_cobrar}
+            type="text"
+            name="observaciones"
+            value={datosFormulario.observaciones || ""}
             onChange={actualizarDatos}
-            placeholder="0.00"
-            required
+            placeholder="Ej: Pago total de consulta, Tratamiento conducto..."
             className="w-full border border-gray-300 p-2.5 rounded-xl text-xs sm:text-sm bg-white focus:ring-2 focus:ring-[#2eb086]/50"
           />
-        </div>
-
-        <div>
-          <label className="block text-xs font-semibold text-gray-700 mb-1">
-            Cantidad de Cuotas *
-          </label>
-          <select
-            name="cant_cuotas"
-            value={datosFormulario.cant_cuotas || 3}
-            onChange={actualizarDatos}
-            className="w-full border border-gray-300 p-2.5 rounded-xl text-xs sm:text-sm bg-white focus:ring-2 focus:ring-[#2eb086]/50 font-medium text-gray-800"
-          >
-            {[2, 3, 4, 5, 6, 9, 12].map((num) => (
-              <option key={num} value={num}>
-                {num} Cuotas Fijas
-              </option>
-            ))}
-          </select>
         </div>
       </div>
     </div>
@@ -515,11 +473,25 @@ function DetalleInformal({ datosFormulario, actualizarDatos }) {
             >
               <option value="Efectivo">Efectivo</option>
               <option value="Transferencia">Transferencia</option>
-              <option value="Tarjeta">Tarjeta Débito/Crédito</option>
+              <option value="Tarjeta">Tarjeta</option>
               <option value="Otro">Otro</option>
             </select>
           </div>
         )}
+
+        <div className="col-span-1 md:col-span-2">
+          <label className="block text-xs font-semibold text-gray-700 mb-1">
+            Observaciones / Detalle General (Opcional)
+          </label>
+          <input
+            type="text"
+            name="observaciones"
+            value={datosFormulario.observaciones || ""}
+            onChange={actualizarDatos}
+            placeholder="Ej. Tratamiento conducto pieza 14, entrega inicial..."
+            className="w-full border border-gray-300 p-2.5 rounded-xl text-xs sm:text-sm bg-white focus:ring-2 focus:ring-amber-500/50 text-gray-800"
+          />
+        </div>
       </div>
 
       <div className="grid grid-cols-3 gap-2 bg-white p-3 rounded-xl border border-gray-200 text-center">

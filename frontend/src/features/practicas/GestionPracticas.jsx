@@ -6,20 +6,18 @@ import {
   Plus,
   Edit,
   Trash2,
-  CheckCircle2,
-  XCircle,
-  RotateCcw,
   Tag,
-  Ban,
   Search,
   X,
 } from "lucide-react";
+import toast from "react-hot-toast";
 
 //* COMPONENTES COMUNES
 import Header from "../../components/common/Header";
 import Tabla from "../../components/common/Tabla/Tabla";
 import TablaPaginacion from "../../components/common/Tabla/TablaPaginacion";
 import { ListaTarjetas, TarjetaRegistro } from "../../components/common/Tabla/TarjetaRegistro";
+import api from "../../services/api";
 
 //* PAGELAYOUT (PARA EL BOTON)
 import PageLayout from "../../components/layout/PageLayout";
@@ -39,7 +37,6 @@ import { ESTADO_INICIAL } from "./constants/practicaConstants";
 import {
   FormularioCrearEditar,
   FormularioEliminar,
-  FormularioToggle,
 } from "./components/FormulariosPractica";
 
 export default function GestionPracticas() {
@@ -74,17 +71,30 @@ export default function GestionPracticas() {
     }));
   };
 
+  //* TOGGLE SWITCH EN TIEMPO REAL
+  const toggleEstadoEnTiempoReal = async (practica) => {
+    try {
+      await api.patch(`/practicas/${practica.id_practica}/delete`);
+      toast.success(
+        practica.activo
+          ? `Práctica "${practica.nombre_nomenclador}" desactivada`
+          : `Práctica "${practica.nombre_nomenclador}" activada`
+      );
+      recargar();
+    } catch (error) {
+      toast.error("No se pudo actualizar el estado de la práctica");
+    }
+  };
+
   //* HOOK DE CRUD MODAL
   const {
     modalAbierto,
-    modalToggle,
     modalEliminar,
     editando,
     itemSeleccionado: practicaSeleccionada,
     datosFormulario,
     abrirParaCrear,
     abrirParaEditar,
-    abrirParaToggle,
     abrirParaEliminar,
     cerrarModal,
     actualizarDatos,
@@ -115,53 +125,59 @@ export default function GestionPracticas() {
         {/* //* TOOLBAR SEPARADA: FILTROS + BUSCADOR */}
         <div className="w-full px-4">
           <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-3 sm:p-4 shadow-sm flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3.5">
-            {/* LADO IZQUIERDO: Filtros por estado */}
-            <div className="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0 scrollbar-none">
+            {/* LADO IZQUIERDO: Filtros por estado en cápsula */}
+            <div className="bg-gray-100/80 dark:bg-slate-800/80 p-1 rounded-xl inline-flex items-center gap-1 overflow-x-auto scrollbar-none">
               <button
                 type="button"
                 onClick={() => cambiarFiltroEstado("todas")}
-                className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer shrink-0 ${
+                className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer whitespace-nowrap shrink-0 ${
                   filtroEstado === "todas"
-                    ? "bg-slate-900 text-white dark:bg-slate-100 dark:text-slate-900 shadow-xs"
-                    : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-gray-100 dark:hover:bg-slate-800"
+                    ? "bg-white dark:bg-slate-700 text-slate-900 dark:text-white font-bold shadow-xs"
+                    : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
                 }`}
               >
                 <span>Todas</span>
-                <span
-                  className={`px-1.5 py-0.5 rounded-full text-[10px] font-bold ${
-                    filtroEstado === "todas"
-                      ? "bg-white/20 text-white dark:bg-slate-900/20 dark:text-slate-900"
-                      : "bg-gray-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400"
-                  }`}
-                >
-                  {total}
-                </span>
+                {filtroEstado === "todas" && (
+                  <span className="px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-slate-900 text-white dark:bg-slate-100 dark:text-slate-900">
+                    {total}
+                  </span>
+                )}
               </button>
 
               <button
                 type="button"
                 onClick={() => cambiarFiltroEstado("activas")}
-                className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer shrink-0 ${
+                className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer whitespace-nowrap shrink-0 ${
                   filtroEstado === "activas"
-                    ? "bg-emerald-50 text-emerald-800 border border-emerald-200/80 dark:bg-emerald-950/50 dark:text-emerald-300 dark:border-emerald-800/60 shadow-xs"
-                    : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-gray-100 dark:hover:bg-slate-800"
+                    ? "bg-emerald-50 text-emerald-800 border border-emerald-200/80 dark:bg-emerald-950/50 dark:text-emerald-300 dark:border-emerald-800/60 shadow-xs font-bold"
+                    : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
                 }`}
               >
                 <span className="w-2 h-2 rounded-full bg-emerald-500 shrink-0" />
                 <span>Activas</span>
+                {filtroEstado === "activas" && (
+                  <span className="px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-200/80 text-emerald-900 dark:bg-emerald-900 dark:text-emerald-200">
+                    {total}
+                  </span>
+                )}
               </button>
 
               <button
                 type="button"
                 onClick={() => cambiarFiltroEstado("inactivas")}
-                className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer shrink-0 ${
+                className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer whitespace-nowrap shrink-0 ${
                   filtroEstado === "inactivas"
-                    ? "bg-rose-50 text-rose-800 border border-rose-200/80 dark:bg-rose-950/50 dark:text-rose-300 dark:border-rose-800/60 shadow-xs"
-                    : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-gray-100 dark:hover:bg-slate-800"
+                    ? "bg-rose-50 text-rose-800 border border-rose-200/80 dark:bg-rose-950/50 dark:text-rose-300 dark:border-rose-800/60 shadow-xs font-bold"
+                    : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
                 }`}
               >
                 <span className="w-2 h-2 rounded-full bg-rose-500 shrink-0" />
                 <span>Inactivas</span>
+                {filtroEstado === "inactivas" && (
+                  <span className="px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-rose-200/80 text-rose-900 dark:bg-rose-900 dark:text-rose-200">
+                    {total}
+                  </span>
+                )}
               </button>
             </div>
 
@@ -219,40 +235,35 @@ export default function GestionPracticas() {
                         subtitulo={practica.nombre_referencia}
                         tituloSheet="Opciones de la Práctica"
                         badge={
-                          practica.activo ? (
-                            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200/60 dark:border-emerald-800/60 shrink-0">
-                              <CheckCircle2 size={13} /> Activa
-                            </span>
-                          ) : (
-                            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-gray-100 dark:bg-slate-800 text-gray-500 dark:text-slate-400 border border-gray-200 dark:border-slate-700 shrink-0">
-                              <XCircle size={13} /> Inactiva
-                            </span>
-                          )
+                          <span
+                            className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold border shrink-0 ${
+                              practica.activo
+                                ? "bg-emerald-50 text-emerald-700 border-emerald-200/60 dark:bg-emerald-950/40 dark:text-emerald-300"
+                                : "bg-gray-100 text-gray-500 border-gray-200 dark:bg-slate-800 dark:text-slate-400"
+                            }`}
+                          >
+                            {practica.activo ? "Activa" : "Inactiva"}
+                          </span>
                         }
                         acciones={[
                           {
                             key: "editar",
-                            label: "Editar",
+                            label: "Editar práctica",
                             icon: Edit,
                             tono: "azul",
                             rapida: true,
-                            onClick: () => abrirParaEditar(practica, formatearPracticaParaEditar),
-                          },
-                          {
-                            key: "toggle",
-                            label: practica.activo ? "Desactivar" : "Reactivar",
-                            icon: practica.activo ? Ban : RotateCcw,
-                            tono: practica.activo ? "rojo" : "verde",
-                            rapida: true,
-                            onClick: () => abrirParaToggle(practica),
+                            onClick: () =>
+                              abrirParaEditar(
+                                practica,
+                                formatearPracticaParaEditar
+                              ),
                           },
                           {
                             key: "eliminar",
                             label: "Eliminar práctica",
                             icon: Trash2,
                             tono: "rojo",
-                            separador: true,
-                            oculto: practica.activo,
+                            rapida: true,
                             onClick: () => abrirParaEliminar(practica),
                           },
                         ]}
@@ -322,54 +333,65 @@ export default function GestionPracticas() {
                       </span>
                     </td>
 
-                    {/* //* COLUMNAS: ESTADO */}
-                    <td className="px-6 py-4">
-                      {practica.activo ? (
-                        <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-emerald-100/70 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 border border-emerald-200/90 dark:border-emerald-800/60 shadow-2xs">
-                          <CheckCircle2 size={13} />
-                          <span>Activa</span>
-                        </span>
-                      ) : (
-                        <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-700 shadow-2xs">
-                          <XCircle size={13} />
-                          <span>Inactiva</span>
-                        </span>
-                      )}
-                    </td>
-
-                    {/* //* COLUMNAS: ACCIONES CON COLOR */}
-                    <td className="px-6 py-4">
-                      <div className="flex items-center justify-center gap-1.5">
+                    {/* //* COLUMNAS: ESTADO (Switch Toggle en tiempo real) */}
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="flex items-center gap-2">
                         <button
                           type="button"
-                          onClick={() => abrirParaEditar(practica, formatearPracticaParaEditar)}
+                          onClick={() => toggleEstadoEnTiempoReal(practica)}
+                          title={
+                            practica.activo
+                              ? "Haga clic para desactivar"
+                              : "Haga clic para activar"
+                          }
+                          className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none shadow-2xs ${
+                            practica.activo
+                              ? "bg-[#0d8266]"
+                              : "bg-slate-300 dark:bg-slate-700"
+                          }`}
+                        >
+                          <span
+                            className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow-sm ring-0 transition duration-200 ease-in-out ${
+                              practica.activo ? "translate-x-4" : "translate-x-0"
+                            }`}
+                          />
+                        </button>
+                        <span
+                          className={`text-xs font-semibold ${
+                            practica.activo
+                              ? "text-emerald-700 dark:text-emerald-400"
+                              : "text-slate-400 dark:text-slate-500"
+                          }`}
+                        >
+                          {practica.activo ? "Activa" : "Inactiva"}
+                        </span>
+                      </div>
+                    </td>
+
+                    {/* //* COLUMNAS: ACCIONES (Botón Edit azul + Botón Trash2 rojo) */}
+                    <td className="px-6 py-4 text-center whitespace-nowrap">
+                      <div className="flex items-center justify-center gap-1">
+                        <button
+                          type="button"
+                          onClick={() =>
+                            abrirParaEditar(
+                              practica,
+                              formatearPracticaParaEditar
+                            )
+                          }
                           className="p-2 rounded-xl text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-950/50 hover:scale-105 active:scale-95 transition-all cursor-pointer"
-                          title="Editar Práctica"
+                          title="Editar práctica"
                         >
                           <Edit size={18} />
                         </button>
                         <button
                           type="button"
-                          onClick={() => abrirParaToggle(practica)}
-                          className={`p-2 rounded-xl hover:scale-105 active:scale-95 transition-all cursor-pointer ${
-                            practica.activo
-                              ? "text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/50"
-                              : "text-emerald-600 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-950/50"
-                          }`}
-                          title={practica.activo ? "Desactivar Práctica" : "Reactivar Práctica"}
+                          onClick={() => abrirParaEliminar(practica)}
+                          className="p-2 rounded-xl text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/50 hover:scale-105 active:scale-95 transition-all cursor-pointer"
+                          title="Eliminar práctica"
                         >
-                          {practica.activo ? <Ban size={18} /> : <RotateCcw size={18} />}
+                          <Trash2 size={18} />
                         </button>
-                        {!practica.activo && (
-                          <button
-                            type="button"
-                            onClick={() => abrirParaEliminar(practica)}
-                            className="p-2 rounded-xl text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/50 hover:scale-105 active:scale-95 transition-all cursor-pointer"
-                            title="Eliminar Práctica"
-                          >
-                            <Trash2 size={18} />
-                          </button>
-                        )}
                       </div>
                     </td>
                   </tr>
@@ -406,15 +428,6 @@ export default function GestionPracticas() {
           />
         )}
 
-        {/* //* MODALES: TOGGLE */}
-        {modalToggle && (
-          <FormularioToggle
-            modalToggle={modalToggle}
-            cerrarModal={cerrarModal}
-            practicaSeleccionada={practicaSeleccionada}
-            togglePractica={() => togglePractica(practicaSeleccionada)}
-          />
-        )}
 
         {/* //* MODALES: ELIMINAR */}
         {modalEliminar && (

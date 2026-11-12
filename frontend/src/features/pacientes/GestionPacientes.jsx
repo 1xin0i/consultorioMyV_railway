@@ -74,10 +74,10 @@ export default function GestionPacientes() {
     inicioRegistro,
     finRegistro,
     recargar,
-  } = usePaginationSearch("/pacientes", 9);
+  } = usePaginationSearch("/pacientes", 9, { estadoFiltrado: "todos" });
 
-  // * ESTADO DE FILTRO POR ESTADO (ACTIVO/INACTIVO/TODOS)
-  const [filtroEstado, setFiltroEstado] = useState("activos");
+  // * ESTADO DE FILTRO POR ESTADO (TODOS/ACTIVO/INACTIVO)
+  const [filtroEstado, setFiltroEstado] = useState("todos");
 
   const cambiarFiltroEstado = (nuevoEstado) => {
     setFiltroEstado(nuevoEstado);
@@ -139,53 +139,62 @@ export default function GestionPacientes() {
         {/* //* TOOLBAR SEPARADA: FILTROS + BUSCADOR */}
         <div className="w-full px-4">
           <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-3 sm:p-4 shadow-sm flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3.5">
-            {/* LADO IZQUIERDO: Filtros por estado */}
-            <div className="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0 scrollbar-none">
+            {/* LADO IZQUIERDO: Filtros por estado en cápsula */}
+            <div className="bg-gray-100/80 dark:bg-slate-800/80 p-1 rounded-xl inline-flex items-center gap-1 overflow-x-auto scrollbar-none">
+              {/* 1. Todos */}
+              <button
+                type="button"
+                onClick={() => cambiarFiltroEstado("todos")}
+                className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer whitespace-nowrap shrink-0 ${
+                  filtroEstado === "todos"
+                    ? "bg-white dark:bg-slate-700 text-slate-900 dark:text-white font-bold shadow-xs"
+                    : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
+                }`}
+              >
+                <span>Todos</span>
+                {filtroEstado === "todos" && (
+                  <span className="px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-slate-900 text-white dark:bg-slate-100 dark:text-slate-900">
+                    {total}
+                  </span>
+                )}
+              </button>
+
+              {/* 2. Activos */}
               <button
                 type="button"
                 onClick={() => cambiarFiltroEstado("activos")}
-                className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer shrink-0 ${
+                className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer whitespace-nowrap shrink-0 ${
                   filtroEstado === "activos"
-                    ? "bg-emerald-50 text-emerald-800 border border-emerald-200/80 dark:bg-emerald-950/50 dark:text-emerald-300 dark:border-emerald-800/60 shadow-xs"
-                    : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-gray-100 dark:hover:bg-slate-800"
+                    ? "bg-emerald-50 text-emerald-800 border border-emerald-200/80 dark:bg-emerald-950/50 dark:text-emerald-300 dark:border-emerald-800/60 shadow-xs font-bold"
+                    : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
                 }`}
               >
                 <span className="w-2 h-2 rounded-full bg-emerald-500 shrink-0" />
                 <span>Activos</span>
+                {filtroEstado === "activos" && (
+                  <span className="px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-200/80 text-emerald-900 dark:bg-emerald-900 dark:text-emerald-200">
+                    {total}
+                  </span>
+                )}
               </button>
 
-              <button
-                type="button"
-                onClick={() => cambiarFiltroEstado("todos")}
-                className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer shrink-0 ${
-                  filtroEstado === "todos"
-                    ? "bg-slate-900 text-white dark:bg-slate-100 dark:text-slate-900 shadow-xs"
-                    : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-gray-100 dark:hover:bg-slate-800"
-                }`}
-              >
-                <span>Todos</span>
-                <span
-                  className={`px-1.5 py-0.5 rounded-full text-[10px] font-bold ${
-                    filtroEstado === "todos"
-                      ? "bg-white/20 text-white dark:bg-slate-900/20 dark:text-slate-900"
-                      : "bg-gray-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400"
-                  }`}
-                >
-                  {total}
-                </span>
-              </button>
-
+              {/* 3. Inactivos */}
               <button
                 type="button"
                 onClick={() => cambiarFiltroEstado("inactivos")}
-                className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer shrink-0 ${
+                className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer whitespace-nowrap shrink-0 ${
                   filtroEstado === "inactivos"
-                    ? "bg-rose-50 text-rose-800 border border-rose-200/80 dark:bg-rose-950/50 dark:text-rose-300 dark:border-rose-800/60 shadow-xs"
-                    : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-gray-100 dark:hover:bg-slate-800"
+                    ? "bg-rose-50 text-rose-800 border border-rose-200/80 dark:bg-rose-950/50 dark:text-rose-300 dark:border-rose-800/60 shadow-xs font-bold"
+                    : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
                 }`}
               >
                 <span className="w-2 h-2 rounded-full bg-rose-500 shrink-0" />
                 <span>Inactivos</span>
+                {filtroEstado === "inactivos" && (
+                  <span className="px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-rose-200/80 text-rose-900 dark:bg-rose-900 dark:text-rose-200">
+                    {total}
+                  </span>
+                )}
               </button>
             </div>
 

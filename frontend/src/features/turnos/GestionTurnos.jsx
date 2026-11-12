@@ -200,84 +200,100 @@ export default function GestionTurnos() {
         {/* //* TOOLBAR SEPARADA DE LA TABLA: FILTROS + BUSCADOR */}
         <div className="w-full px-4">
           <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-3 sm:p-4 shadow-sm flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-3.5">
-            {/* LADO IZQUIERDO: Filtros por estado tipo Pills */}
-            <div className="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0 scrollbar-none">
-              {/* Todos */}
+            {/* LADO IZQUIERDO: Filtros por estado en cápsula */}
+            <div className="bg-gray-100/80 dark:bg-slate-800/80 p-1 rounded-xl inline-flex items-center gap-1 overflow-x-auto scrollbar-none">
+              {/* 1. Todos */}
               <button
                 type="button"
                 onClick={() => cambiarFiltroEstado("todos")}
-                className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer shrink-0 ${
+                className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer whitespace-nowrap shrink-0 ${
                   filtroEstado === "todos"
-                    ? "bg-slate-900 text-white dark:bg-slate-100 dark:text-slate-900 shadow-xs"
-                    : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-gray-100 dark:hover:bg-slate-800"
+                    ? "bg-white dark:bg-slate-700 text-slate-900 dark:text-white font-bold shadow-xs"
+                    : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
                 }`}
               >
                 <span>Todos</span>
-                <span
-                  className={`px-1.5 py-0.5 rounded-full text-[10px] font-bold ${
-                    filtroEstado === "todos"
-                      ? "bg-white/20 text-white dark:bg-slate-900/20 dark:text-slate-900"
-                      : "bg-gray-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400"
-                  }`}
-                >
-                  {total}
-                </span>
+                {filtroEstado === "todos" && (
+                  <span className="px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-slate-900 text-white dark:bg-slate-100 dark:text-slate-900">
+                    {total}
+                  </span>
+                )}
               </button>
 
-              {/* Atendidos */}
-              <button
-                type="button"
-                onClick={() => cambiarFiltroEstado("atendidos")}
-                className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer shrink-0 ${
-                  filtroEstado === "atendidos"
-                    ? "bg-emerald-50 text-emerald-800 border border-emerald-200/80 dark:bg-emerald-950/50 dark:text-emerald-300 dark:border-emerald-800/60 shadow-xs"
-                    : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-gray-100 dark:hover:bg-slate-800"
-                }`}
-              >
-                <span className="w-2 h-2 rounded-full bg-emerald-500 shrink-0" />
-                <span>Atendidos</span>
-              </button>
-
-              {/* Programados */}
+              {/* 2. Programados */}
               <button
                 type="button"
                 onClick={() => cambiarFiltroEstado("programados")}
-                className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer shrink-0 ${
+                className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer whitespace-nowrap shrink-0 ${
                   filtroEstado === "programados"
-                    ? "bg-amber-50 text-amber-800 border border-amber-200/80 dark:bg-amber-950/50 dark:text-amber-300 dark:border-amber-800/60 shadow-xs"
-                    : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-gray-100 dark:hover:bg-slate-800"
+                    ? "bg-amber-50 text-amber-800 border border-amber-200/80 dark:bg-amber-950/50 dark:text-amber-300 dark:border-amber-800/60 shadow-xs font-bold"
+                    : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
                 }`}
               >
                 <span className="w-2 h-2 rounded-full bg-amber-500 shrink-0" />
                 <span>Programados</span>
+                {filtroEstado === "programados" && (
+                  <span className="px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-200/80 text-amber-900 dark:bg-amber-900 dark:text-amber-200">
+                    {total}
+                  </span>
+                )}
               </button>
 
-              {/* Cancelados */}
+              {/* 3. Atendidos */}
+              <button
+                type="button"
+                onClick={() => cambiarFiltroEstado("atendidos")}
+                className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer whitespace-nowrap shrink-0 ${
+                  filtroEstado === "atendidos"
+                    ? "bg-emerald-50 text-emerald-800 border border-emerald-200/80 dark:bg-emerald-950/50 dark:text-emerald-300 dark:border-emerald-800/60 shadow-xs font-bold"
+                    : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
+                }`}
+              >
+                <span className="w-2 h-2 rounded-full bg-emerald-500 shrink-0" />
+                <span>Atendidos</span>
+                {filtroEstado === "atendidos" && (
+                  <span className="px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-200/80 text-emerald-900 dark:bg-emerald-900 dark:text-emerald-200">
+                    {total}
+                  </span>
+                )}
+              </button>
+
+              {/* 4. Cancelados */}
               <button
                 type="button"
                 onClick={() => cambiarFiltroEstado("cancelados")}
-                className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer shrink-0 ${
+                className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer whitespace-nowrap shrink-0 ${
                   filtroEstado === "cancelados"
-                    ? "bg-rose-50 text-rose-800 border border-rose-200/80 dark:bg-rose-950/50 dark:text-rose-300 dark:border-rose-800/60 shadow-xs"
-                    : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-gray-100 dark:hover:bg-slate-800"
+                    ? "bg-rose-50 text-rose-800 border border-rose-200/80 dark:bg-rose-950/50 dark:text-rose-300 dark:border-rose-800/60 shadow-xs font-bold"
+                    : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
                 }`}
               >
                 <span className="w-2 h-2 rounded-full bg-rose-500 shrink-0" />
                 <span>Cancelados</span>
+                {filtroEstado === "cancelados" && (
+                  <span className="px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-rose-200/80 text-rose-900 dark:bg-rose-900 dark:text-rose-200">
+                    {total}
+                  </span>
+                )}
               </button>
 
-              {/* Inasistidos */}
+              {/* 5. Inasistidos */}
               <button
                 type="button"
                 onClick={() => cambiarFiltroEstado("inasistidos")}
-                className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer shrink-0 ${
+                className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer whitespace-nowrap shrink-0 ${
                   filtroEstado === "inasistidos"
-                    ? "bg-slate-100 text-slate-800 border border-slate-300 dark:bg-slate-800 dark:text-slate-200 dark:border-slate-700 shadow-xs"
-                    : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-gray-100 dark:hover:bg-slate-800"
+                    ? "bg-slate-200/70 text-slate-800 border border-slate-300 dark:bg-slate-700 dark:text-slate-200 dark:border-slate-600 shadow-xs font-bold"
+                    : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
                 }`}
               >
                 <span className="w-2 h-2 rounded-full bg-slate-400 shrink-0" />
                 <span>Inasistidos</span>
+                {filtroEstado === "inasistidos" && (
+                  <span className="px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-slate-300 text-slate-800 dark:bg-slate-600 dark:text-slate-200">
+                    {total}
+                  </span>
+                )}
               </button>
             </div>
 
@@ -408,28 +424,16 @@ export default function GestionTurnos() {
                     ? primerTratamiento.ObraSocial?.nombre || "Particular"
                     : "Particular";
 
-                  // Pieza dental si aplica
-                  const piezasDentales =
-                    primerTratamiento?.dientes &&
-                    primerTratamiento.dientes.length > 0
-                      ? ` Pieza #${primerTratamiento.dientes
-                          .map((d) => d.numero_fdi)
-                          .join(", #")}`
-                      : "";
-
                   // Verificación de honorarios / cobro
                   const estaCanceladoOInasistido =
                     idEstado === 3 || idEstado === 4;
-                  const cuotas = turno.Cobro?.Cuotas || [];
-                  const estaAbonado =
-                    cuotas.length > 0 &&
-                    cuotas.every(
-                      (c) =>
-                        c.estado === "Pagada" ||
-                        c.estado === "Pagado" ||
-                        (Number(c.monto_cobrado) > 0 &&
-                          Number(c.monto_cobrado) >= Number(c.monto_cuota))
-                    );
+                  const solicitudCobro = turno.SolicitudCobro || turno.Cobro;
+                  const estaAbonado = Boolean(
+                    solicitudCobro &&
+                      (solicitudCobro.estado === "saldado" ||
+                        (Number(solicitudCobro.monto_total ?? solicitudCobro.monto_a_cobrar) > 0 &&
+                          Number(solicitudCobro.saldo_pendiente) === 0))
+                  );
 
                   return (
                     <tr
@@ -468,7 +472,6 @@ export default function GestionTurnos() {
                             }`}
                           >
                             {nombreTratamiento}
-                            {piezasDentales}
                             {turno.PracticaTurnos &&
                               turno.PracticaTurnos.length > 1 &&
                               ` (+${turno.PracticaTurnos.length - 1})`}
@@ -648,6 +651,10 @@ export default function GestionTurnos() {
             abrirParaInasistente={(t) => {
               setTurnoVer(null);
               abrirParaInasistente(t);
+            }}
+            abrirParaCobrar={(t) => {
+              setTurnoVer(null);
+              abrirParaCobrar(t);
             }}
           />
         )}

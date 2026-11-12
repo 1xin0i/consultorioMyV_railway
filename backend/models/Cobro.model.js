@@ -2,55 +2,45 @@
 
 import { DataTypes } from "sequelize";
 import sequelize from "../config/database.js";
-import { Turno, Paciente } from "./index.model.js";
 
 export const Cobro = sequelize.define(
   "Cobro",
   {
-    id_cobro: {
+    id: {
       type: DataTypes.INTEGER,
       primaryKey: true,
       autoIncrement: true,
     },
-    id_turno: {
+    solicitud_cobro_id: {
       type: DataTypes.INTEGER,
       allowNull: false,
-      unique: true,
-      references: {
-        model: Turno,
-        key: "id_turno",
-      },
     },
-    id_paciente: {
-      type: DataTypes.INTEGER,
-      allowNull: false,
-      references: {
-        model: Paciente,
-        key: "id_paciente",
-      },
-    },
-    monto_a_cobrar: {
+    monto: {
       type: DataTypes.DECIMAL(10, 2),
       allowNull: false,
     },
-    cant_cuotas: {
+    metodo_pago_id: {
       type: DataTypes.INTEGER,
       allowNull: false,
       defaultValue: 1,
     },
-    fecha_emision: {
+    fecha_cobro: {
       type: DataTypes.DATE,
       allowNull: false,
       defaultValue: DataTypes.NOW,
     },
-    activo: {
-      type: DataTypes.BOOLEAN,
-      allowNull: false,
-      defaultValue: true,
+    observaciones: {
+      type: DataTypes.STRING(255),
+      allowNull: true,
+      defaultValue: null,
     },
   },
   {
-    tableName: "cobro",
-    timestamps: false,
+    tableName: "cobros",
+    timestamps: true,
+    createdAt: "created_at",
+    updatedAt: false,
   },
 );
+
+export default Cobro;

@@ -1,3 +1,5 @@
+/** @format */
+
 import { DataTypes } from "sequelize";
 import sequelize from "../config/database.js";
 import { CategoriaGasto } from "./CategoriaGasto.model.js";
@@ -36,14 +38,6 @@ export const Gasto = sequelize.define(
       type: DataTypes.ENUM("Efectivo", "Transferencia", "Tarjeta", "Otro"),
       allowNull: false,
       defaultValue: "Efectivo",
-    },
-    comprobante: {
-      type: DataTypes.STRING(255),
-      allowNull: true,
-    },
-    notas: {
-      type: DataTypes.TEXT,
-      allowNull: true,
     },
     activo: {
       type: DataTypes.BOOLEAN,

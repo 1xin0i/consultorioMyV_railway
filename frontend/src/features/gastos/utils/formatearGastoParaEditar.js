@@ -8,6 +8,4 @@ export const formatearGastoParaEditar = (item) => ({
   concepto: item.concepto || "",
   fecha_gasto: item.fecha_gasto ? formatFechaInput(item.fecha_gasto) : "",
   metodo_pago: item.metodo_pago || "Efectivo",
-  comprobante: item.comprobante || "",
-  notas: item.notas || "",
 });

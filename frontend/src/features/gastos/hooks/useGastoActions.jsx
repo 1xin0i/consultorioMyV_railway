@@ -26,10 +26,6 @@ export function useGastoActions(recargar, cerrarModal) {
         concepto: datosFormulario.concepto.trim(),
         fecha_gasto: datosFormulario.fecha_gasto || new Date().toISOString(),
         metodo_pago: datosFormulario.metodo_pago || "Efectivo",
-        comprobante: datosFormulario.comprobante
-          ? datosFormulario.comprobante.trim()
-          : null,
-        notas: datosFormulario.notas ? datosFormulario.notas.trim() : null,
       },
       editando,
       gastoSeleccionado,
