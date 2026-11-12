@@ -104,21 +104,24 @@ const sincronizarModelos = async () => {
         include: [{ model: Cuota, attributes: ["id_cuota"] }],
       });
       const pendientesReparar = cobrosSinCuota.filter(
-        (c) => !c.Cuotas || c.Cuotas.length === 0
+        (c) => (!c.Cuotas || c.Cuotas.length === 0) && (!c.Cuota || c.Cuota.length === 0)
       );
       if (pendientesReparar.length > 0) {
         const hoy = new Date().toISOString().split("T")[0];
         for (const c of pendientesReparar) {
-          await Cuota.create({
-            id_cobro: c.id_cobro,
-            nro_cuota: 1,
-            monto_cuota: Number(c.monto_a_cobrar) || 0,
-            monto_cobrado: 0,
-            fecha_vencimiento: hoy,
-            fecha_cobro: null,
-            metodo_pago: "Efectivo",
-            estado: "Pendiente",
-          });
+          const yaTieneCuota = await Cuota.count({ where: { id_cobro: c.id_cobro } });
+          if (yaTieneCuota === 0) {
+            await Cuota.create({
+              id_cobro: c.id_cobro,
+              nro_cuota: 1,
+              monto_cuota: Number(c.monto_a_cobrar) || 0,
+              monto_cobrado: 0,
+              fecha_vencimiento: hoy,
+              fecha_cobro: null,
+              metodo_pago: "Efectivo",
+              estado: "Pendiente",
+            });
+          }
         }
       }
     } catch {

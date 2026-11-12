@@ -575,6 +575,9 @@ export function VistaPendientes({
         item.saldo_pendiente += saldoCuota;
         item.ya_cobrado += cobradoCuota;
         if (!item.id_cuota) item.id_cuota = q.id_cuota;
+        if (item.tipo === "cuota" && cobro?.cant_cuotas && cobro.cant_cuotas > 1) {
+          item.subtitulo = "Saldo en cuotas pendiente";
+        }
       } else {
         const totalCobro = Number(cobro?.monto_a_cobrar) || montoCuota;
         mapa.set(key, {
@@ -588,14 +591,21 @@ export function VistaPendientes({
             cobro?.concepto ||
             `Tratamiento Planificado`,
           subtitulo: `Cuota ${q.nro_cuota}${
-            cobro?.cant_cuotas ? ` de ${cobro.cant_cuotas}` : ""
+            cobro?.cant_cuotas && cobro.cant_cuotas > 1 ? ` de ${cobro.cant_cuotas}` : ""
           }`,
           monto_total: totalCobro,
-          ya_cobrado: Math.max(0, totalCobro - saldoCuota),
+          ya_cobrado: cobradoCuota,
           saldo_pendiente: saldoCuota,
           tipo: "cuota",
           raw: q,
         });
+      }
+    });
+
+    // Consistencia contable final para items agrupados
+    mapa.forEach((item) => {
+      if (item.monto_total > 0 && item.monto_total >= item.saldo_pendiente) {
+        item.ya_cobrado = Math.max(0, item.monto_total - item.saldo_pendiente);
       }
     });
 

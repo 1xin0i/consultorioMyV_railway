@@ -67,15 +67,18 @@ export default function ModalRegistrarPago({
       api
         .get(`/cobros/${turno.id_turno}/cobros`)
         .then((res) => {
-          const cobro = res.data?.data;
-          if (cobro && cobro.Cuotas && cobro.Cuotas.length > 0) {
+          const raw = res.data?.data;
+          const cobro = Array.isArray(raw) ? raw[0] : raw;
+          const cuotas = cobro?.Cuotas || cobro?.Cuota || [];
+
+          if (cobro && cuotas.length > 0) {
             const totalCobro = Number(cobro.monto_a_cobrar) || totalTurno;
-            const cobradoCuotas = cobro.Cuotas.reduce(
+            const cobradoCuotas = cuotas.reduce(
               (acc, q) => acc + (Number(q.monto_cobrado) || 0),
               0
             );
             const saldo = Math.max(0, totalCobro - cobradoCuotas);
-            const cuotaPendiente = cobro.Cuotas.find(
+            const cuotaPendiente = cuotas.find(
               (q) => q.estado !== "Pagada"
             );
 
@@ -84,6 +87,13 @@ export default function ModalRegistrarPago({
             setSaldoPendiente(saldo);
             setMontoACobrar(saldo > 0 ? saldo.toString() : "");
             setIdCuota(cuotaPendiente?.id_cuota || null);
+          } else if (cobro) {
+            const totalCobro = Number(cobro.monto_a_cobrar) || totalTurno;
+            setMontoTotal(totalCobro);
+            setYaCobrado(0);
+            setSaldoPendiente(totalCobro);
+            setMontoACobrar(totalCobro > 0 ? totalCobro.toString() : "");
+            setIdCuota(null);
           } else {
             setMontoTotal(totalTurno);
             setYaCobrado(0);
@@ -151,12 +161,19 @@ export default function ModalRegistrarPago({
     ? `${pacienteInfo.apellido || ""}, ${pacienteInfo.nombre || ""}`.trim()
     : "Paciente";
 
+  const subtituloModal = [
+    nombrePaciente !== "Paciente" ? `Paciente: ${nombrePaciente}` : null,
+    idTurno ? `Turno #${idTurno}` : null,
+  ]
+    .filter(Boolean)
+    .join(" · ");
+
   return (
     <Modal
       isOpen={isOpen}
       onClose={onClose}
       title="Registrar Cobro"
-      subtitle={nombrePaciente !== "Paciente" ? `Paciente: ${nombrePaciente}` : null}
+      subtitle={subtituloModal || null}
     >
       <form onSubmit={handleSubmit} className="space-y-4">
         {/* RESUMEN FINANCIERO */}

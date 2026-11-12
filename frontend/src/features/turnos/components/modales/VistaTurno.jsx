@@ -264,13 +264,16 @@ export const VistaTurno = memo(function VistaTurno({
 
   return createPortal(
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-900/45"
+      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-slate-900/45 backdrop-blur-[2px]"
       onClick={onClose}
     >
       <div
-        className="relative w-full max-w-xl bg-white dark:bg-slate-900 rounded-3xl shadow-2xl border border-slate-200/90 dark:border-slate-800 p-5 sm:p-6 flex flex-col gap-4 max-h-[92vh] overflow-y-auto scrollbar-none"
+        className="relative w-full sm:max-w-xl bg-white dark:bg-slate-900 rounded-t-3xl sm:rounded-2xl shadow-2xl border border-slate-200/90 dark:border-slate-800 p-4 sm:p-6 flex flex-col gap-4 max-h-[92vh] overflow-y-auto scrollbar-none animate-in fade-in slide-in-from-bottom sm:slide-in-from-bottom-0 sm:zoom-in-95 duration-200"
         onClick={(e) => e.stopPropagation()}
       >
+        {/* Handle visual de Bottom Sheet en mobile */}
+        <div className="w-10 h-1 bg-slate-300 dark:bg-slate-700 rounded-full mx-auto sm:hidden -mt-1 mb-1 shrink-0" />
+
         {/* ─── HEADER DEL MODAL: Jerarquía limpia con Nombre del Paciente y Práctica ─── */}
         <div className="flex items-start justify-between gap-3">
           <div className="flex items-center gap-3 min-w-0">
@@ -281,7 +284,7 @@ export const VistaTurno = memo(function VistaTurno({
               <h2 className="text-base sm:text-lg font-bold text-slate-900 dark:text-slate-100 leading-snug truncate">
                 {tituloModal}
               </h2>
-              <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">
+              <p className="text-xs text-slate-500 dark:text-slate-400 font-medium truncate">
                 {subtituloFecha}
               </p>
             </div>
@@ -330,14 +333,14 @@ export const VistaTurno = memo(function VistaTurno({
           </div>
 
           {/* Acciones directas de contacto (WhatsApp y Llamada) */}
-          <div className="flex items-center gap-2 shrink-0">
+          <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
             {paciente.telefono ? (
               <>
                 <a
                   href={`https://wa.me/${telLimpio}`}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="p-2 sm:px-2.5 sm:py-2 rounded-xl bg-white dark:bg-slate-800 border border-emerald-200 dark:border-emerald-800 text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 transition-colors shadow-2xs flex items-center gap-1.5 cursor-pointer"
+                  className="p-2 sm:px-2.5 sm:py-2 rounded-full sm:rounded-xl bg-white dark:bg-slate-800 border border-emerald-200 dark:border-emerald-800 text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 transition-colors shadow-2xs flex items-center justify-center gap-1.5 cursor-pointer shrink-0"
                   title="Contactar por WhatsApp"
                 >
                   <MessageCircle size={16} />
@@ -347,7 +350,7 @@ export const VistaTurno = memo(function VistaTurno({
                 </a>
                 <a
                   href={`tel:${paciente.telefono}`}
-                  className="p-2 sm:px-2.5 sm:py-2 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors shadow-2xs flex items-center gap-1.5 cursor-pointer"
+                  className="p-2 sm:px-2.5 sm:py-2 rounded-full sm:rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors shadow-2xs flex items-center justify-center gap-1.5 cursor-pointer shrink-0"
                   title="Llamar al paciente"
                 >
                   <Phone size={16} />
@@ -472,70 +475,74 @@ export const VistaTurno = memo(function VistaTurno({
           </div>
         </div>
 
-        {/* ─── FOOTER CON BOTONES DE ACCIÓN: EN UNA SOLA LÍNEA ─── */}
-        <div className="flex items-center justify-between gap-2 pt-3 border-t border-slate-200/90 dark:border-slate-800 overflow-x-auto">
-          {/* Lado izquierdo: Reprogramar, Inasistido, Cancelar */}
-          <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
-            {esProgramado && (
-              <>
-                <button
-                  type="button"
-                  onClick={() => {
-                    if (abrirParaReprogramar) abrirParaReprogramar(turno);
-                  }}
-                  className="inline-flex items-center gap-1.5 px-2.5 sm:px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 font-semibold text-xs whitespace-nowrap transition-colors shadow-2xs active:scale-95 cursor-pointer"
-                  title="Reprogramar Turno"
-                >
-                  <CalendarDays size={14} className="text-slate-500" />
-                  <span>Reprogramar</span>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => {
-                    if (abrirParaInasistente) abrirParaInasistente(turno);
-                  }}
-                  className="inline-flex items-center gap-1.5 px-2.5 sm:px-3 py-2 rounded-xl border border-rose-200/90 dark:border-rose-800/60 bg-rose-50/50 dark:bg-rose-950/40 hover:bg-rose-100/60 text-rose-700 dark:text-rose-300 font-semibold text-xs whitespace-nowrap transition-colors shadow-2xs active:scale-95 cursor-pointer"
-                  title="Marcar Inasistido"
-                >
-                  <UserRoundX size={14} className="text-rose-500" />
-                  <span>Inasistido</span>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => {
-                    if (abrirParaCancelar) abrirParaCancelar(turno);
-                  }}
-                  className="inline-flex items-center gap-1.5 px-2.5 sm:px-3 py-2 rounded-xl border border-rose-200/90 dark:border-rose-800/60 bg-rose-50/50 dark:bg-rose-950/40 hover:bg-rose-100/60 text-rose-700 dark:text-rose-300 font-semibold text-xs whitespace-nowrap transition-colors shadow-2xs active:scale-95 cursor-pointer"
-                  title="Cancelar Turno"
-                >
-                  <XCircle size={14} className="text-rose-500" />
-                  <span>Cancelar</span>
-                </button>
-              </>
-            )}
-
-            {estaCanceladoOInasistido && (
+        {/* ─── FOOTER CON BOTONES DE ACCIÓN: RESPONSIVE BOTTOM SHEET / MODAL ─── */}
+        <div className="pt-3 border-t border-slate-200/90 dark:border-slate-800 flex flex-col-reverse sm:flex-row sm:items-center sm:justify-between gap-3">
+          {/* Acciones secundarias: en mobile van en una fila de 3 botones proporcionales debajo del botón primario */}
+          {esProgramado && (
+            <div className="grid grid-cols-3 sm:flex items-center gap-2 w-full sm:w-auto">
               <button
                 type="button"
                 onClick={() => {
                   if (abrirParaReprogramar) abrirParaReprogramar(turno);
                 }}
-                className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-slate-50 text-slate-700 dark:text-slate-200 font-semibold text-xs whitespace-nowrap transition-colors shadow-2xs active:scale-95 cursor-pointer"
+                className="px-2.5 py-2 text-xs font-semibold text-slate-700 dark:text-slate-200 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg sm:rounded-xl hover:bg-slate-50 dark:hover:bg-slate-700 text-center flex items-center justify-center gap-1 sm:gap-1.5 transition-colors shadow-2xs active:scale-95 cursor-pointer"
+                title="Reprogramar Turno"
+              >
+                <CalendarDays size={14} className="text-slate-500 shrink-0" />
+                <span>Reprogramar</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  if (abrirParaInasistente) abrirParaInasistente(turno);
+                }}
+                className="px-2.5 py-2 text-xs font-semibold text-amber-700 dark:text-amber-400 bg-amber-50/60 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800/60 rounded-lg sm:rounded-xl hover:bg-amber-100 dark:hover:bg-amber-900/40 text-center flex items-center justify-center gap-1 sm:gap-1.5 transition-colors shadow-2xs active:scale-95 cursor-pointer"
+                title="Marcar Inasistido"
+              >
+                <UserRoundX size={14} className="text-amber-600 dark:text-amber-400 shrink-0" />
+                <span>Inasistido</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  if (abrirParaCancelar) abrirParaCancelar(turno);
+                }}
+                className="px-2.5 py-2 text-xs font-semibold text-rose-700 dark:text-rose-400 bg-rose-50/60 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800/60 rounded-lg sm:rounded-xl hover:bg-rose-100 dark:hover:bg-rose-900/40 text-center flex items-center justify-center gap-1 sm:gap-1.5 transition-colors shadow-2xs active:scale-95 cursor-pointer"
+                title="Cancelar Turno"
+              >
+                <XCircle size={14} className="text-rose-600 dark:text-rose-400 shrink-0" />
+                <span>Cancelar</span>
+              </button>
+            </div>
+          )}
+
+          {estaCanceladoOInasistido && (
+            <div className="w-full sm:w-auto">
+              <button
+                type="button"
+                onClick={() => {
+                  if (abrirParaReprogramar) abrirParaReprogramar(turno);
+                }}
+                className="w-full sm:w-auto inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-slate-50 text-slate-700 dark:text-slate-200 font-semibold text-xs whitespace-nowrap transition-colors shadow-2xs active:scale-95 cursor-pointer"
               >
                 <CalendarDays size={14} className="text-slate-500" />
                 <span>Reagendar</span>
               </button>
-            )}
-          </div>
+            </div>
+          )}
 
-          {/* Lado derecho: Cerrar (neutral) y Atender (verde) en una sola línea */}
-          <div className="flex items-center justify-end gap-2 shrink-0">
+          {/* Lado derecho: Cerrar (oculto en mobile si esProgramado) y Atender (ancho completo en mobile) */}
+          <div className="flex items-center justify-end gap-2 w-full sm:w-auto">
             <button
               type="button"
               onClick={onClose}
-              className="px-3 py-2 text-xs font-semibold text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl transition-colors cursor-pointer whitespace-nowrap"
+              className={`${
+                esProgramado
+                  ? "hidden sm:inline-flex"
+                  : "w-full sm:w-auto inline-flex justify-center"
+              } px-3 py-2 text-xs font-semibold text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl transition-colors cursor-pointer whitespace-nowrap`}
             >
               Cerrar
             </button>
@@ -546,9 +553,9 @@ export const VistaTurno = memo(function VistaTurno({
                 onClick={() => {
                   if (abrirParaAtender) abrirParaAtender(turno);
                 }}
-                className="inline-flex items-center gap-1.5 px-4 py-2 bg-[#0d8266] hover:bg-[#0b6f57] text-white text-xs font-bold rounded-xl shadow-xs active:scale-95 transition-colors cursor-pointer whitespace-nowrap"
+                className="w-full sm:w-auto px-5 py-2.5 text-xs sm:text-sm font-bold text-white bg-[#0d8266] hover:bg-[#0b6f57] rounded-xl shadow-xs active:scale-95 transition-all cursor-pointer flex items-center justify-center gap-2 whitespace-nowrap"
               >
-                <CheckCircle2 size={15} />
+                <CheckCircle2 size={16} />
                 <span>Atender</span>
               </button>
             )}

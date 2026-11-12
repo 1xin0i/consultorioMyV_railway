@@ -16,16 +16,16 @@ const sumarMeses = (fecha, meses) => {
   return d;
 };
 
-// Obtener una cobro por turno ID
+// Obtener un cobro por turno ID
 export const getCobroByTurnoId = async (req, res) => {
   try {
     const { turnoId } = req.params;
-    const cobros = await Cobro.findAll({
+    const cobro = await Cobro.findOne({
       where: { id_turno: turnoId, activo: true },
       include: [
         {
           model: Turno,
-          attributes: ["fecha_hora_inicio", "fecha_hora_fin"],
+          attributes: ["fecha_hora_inicio", "fecha_hora_fin", "precio_final"],
         },
         {
           model: Paciente,
@@ -33,11 +33,14 @@ export const getCobroByTurnoId = async (req, res) => {
         },
         {
           model: Cuota,
+          where: { activo: true },
+          required: false,
         },
       ],
+      order: [[Cuota, "nro_cuota", "ASC"]],
     });
 
-    if (!cobros || cobros.length === 0) {
+    if (!cobro) {
       return res.status(404).json({
         status: "error",
         message: "No se encontraron cobros para el turno especificado",
@@ -46,7 +49,7 @@ export const getCobroByTurnoId = async (req, res) => {
 
     res.status(200).json({
       status: "success",
-      data: cobros,
+      data: cobro,
     });
   } catch (error) {
     console.error("Error al obtener cobros por turno:", error);
@@ -420,71 +423,46 @@ export const registrarPagoTurno = async (req, res) => {
     const hoyStr = new Date().toISOString().split("T")[0];
     const ahora = new Date();
 
-    // Opción A: Cobro directo sobre una Cuota existente (id_cuota)
-    if (id_cuota) {
-      const cuota = await Cuota.findByPk(id_cuota, {
-        include: [{ model: Cobro, include: [Paciente, Turno] }],
-      });
-      if (!cuota) {
-        return res.status(404).json({ status: "error", message: "Cuota no encontrada." });
+    const resultado = await sequelize.transaction(async (t) => {
+      let cobro = null;
+
+      // 1. Localizar el Cobro objetivo
+      if (id_cuota) {
+        const cuotaBase = await Cuota.findByPk(id_cuota, {
+          include: [{ model: Cobro }],
+          transaction: t,
+        });
+        if (cuotaBase && cuotaBase.Cobro) {
+          cobro = cuotaBase.Cobro;
+        }
       }
 
-      const montoCuota = Number(cuota.monto_cuota) || 0;
-      const yaCobrado = Number(cuota.monto_cobrado) || 0;
-      const nuevoCobrado = Math.min(montoCuota, yaCobrado + montoPago);
-      const estaPagada = nuevoCobrado >= montoCuota;
+      if (!cobro && id_turno) {
+        cobro = await Cobro.findOne({
+          where: { id_turno, activo: true },
+          transaction: t,
+        });
+      }
 
-      await cuota.update({
-        monto_cobrado: nuevoCobrado,
-        fecha_cobro: ahora,
-        metodo_pago: metodo,
-        estado: estaPagada ? "Pagada" : "Parcialmente pagada",
-      });
-
-      return res.status(200).json({
-        status: "success",
-        message: estaPagada ? "Cobro completado exitosamente." : "Pago parcial registrado.",
-        data: {
-          id_cuota,
-          id_cobro: cuota.id_cobro,
-          id_turno: cuota.Cobro?.id_turno,
-          monto_cobrado: nuevoCobrado,
-          saldo_pendiente: Math.max(0, montoCuota - nuevoCobrado),
-          pagado_completo: estaPagada,
-        },
-      });
-    }
-
-    // Opción B: Cobro sobre un Turno (id_turno)
-    if (!id_turno) {
-      return res.status(400).json({
-        status: "error",
-        message: "Se requiere id_turno o id_cuota para procesar el cobro.",
-      });
-    }
-
-    const turno = await Turno.findByPk(id_turno, {
-      include: [Paciente],
-    });
-    if (!turno) {
-      return res.status(404).json({ status: "error", message: "El turno especificado no existe." });
-    }
-
-    let cobro = await Cobro.findOne({
-      where: { id_turno, activo: true },
-      include: [{ model: Cuota }],
-    });
-
-    const resultado = await sequelize.transaction(async (t) => {
-      let saldoRestante = 0;
-      let pagadoCompleto = false;
-
+      // 2. Si aún no existe Cobro previo para el turno, crearlo con su primera cuota
       if (!cobro) {
-        // Primera vez que se cobra este turno
+        if (!id_turno) {
+          const err = new Error("Se requiere id_turno o id_cuota válido para procesar el cobro.");
+          err.statusCode = 400;
+          throw err;
+        }
+
+        const turno = await Turno.findByPk(id_turno, { transaction: t });
+        if (!turno) {
+          const err = new Error("El turno especificado no existe.");
+          err.statusCode = 404;
+          throw err;
+        }
+
         const totalTratamiento = Number(turno.precio_final) || montoPago;
         const cobradoAhora = Math.min(totalTratamiento, montoPago);
-        pagadoCompleto = cobradoAhora >= totalTratamiento;
-        saldoRestante = Math.max(0, totalTratamiento - cobradoAhora);
+        const estaPagada = cobradoAhora >= totalTratamiento;
+        const saldoRestante = Math.max(0, totalTratamiento - cobradoAhora);
 
         cobro = await Cobro.create(
           {
@@ -505,51 +483,120 @@ export const registrarPagoTurno = async (req, res) => {
             fecha_vencimiento: hoyStr,
             fecha_cobro: ahora,
             metodo_pago: metodo,
-            estado: pagadoCompleto ? "Pagada" : "Parcialmente pagada",
+            estado: estaPagada ? "Pagada" : "Parcialmente pagada",
           },
           { transaction: t }
         );
-      } else {
-        // Ya existía un cobro previo para este turno
-        const totalTratamiento = Number(cobro.monto_a_cobrar) || montoPago;
-        const cuotas = cobro.Cuotas || [];
 
-        // Buscar la cuota pendiente (o la primera activa)
-        let cuotaTarget = cuotas.find((q) => q.estado !== "Pagada");
-
-        if (!cuotaTarget) {
-          cuotaTarget = await Cuota.create(
-            {
-              id_cobro: cobro.id_cobro,
-              nro_cuota: cuotas.length + 1,
-              monto_cuota: totalTratamiento,
-              monto_cobrado: 0,
-              fecha_vencimiento: hoyStr,
-              metodo_pago: metodo,
-              estado: "Pendiente",
-            },
-            { transaction: t }
-          );
-        }
-
-        const yaCobrado = Number(cuotaTarget.monto_cobrado) || 0;
-        const montoCuota = Number(cuotaTarget.monto_cuota) || totalTratamiento;
-        const nuevoCobrado = Math.min(montoCuota, yaCobrado + montoPago);
-        pagadoCompleto = nuevoCobrado >= montoCuota;
-        saldoRestante = Math.max(0, montoCuota - nuevoCobrado);
-
-        await cuotaTarget.update(
-          {
-            monto_cobrado: nuevoCobrado,
-            fecha_cobro: ahora,
-            metodo_pago: metodo,
-            estado: pagadoCompleto ? "Pagada" : "Parcialmente pagada",
-          },
-          { transaction: t }
-        );
+        return {
+          id_cobro: cobro.id_cobro,
+          id_turno,
+          saldoRestante,
+          pagadoCompleto: estaPagada,
+        };
       }
 
-      return { saldoRestante, pagadoCompleto, id_cobro: cobro.id_cobro };
+      // 3. Si ya existe un Cobro previo: obtener todas sus cuotas activas ordenadas
+      let cuotas = await Cuota.findAll({
+        where: { id_cobro: cobro.id_cobro, activo: true },
+        order: [
+          ["nro_cuota", "ASC"],
+          ["id_cuota", "ASC"],
+        ],
+        transaction: t,
+      });
+
+      // Si no tuviera cuotas, crear la cuota 1 correspondiente al total
+      if (!cuotas || cuotas.length === 0) {
+        const totalTratamiento = Number(cobro.monto_a_cobrar) || montoPago;
+        const nuevaQ = await Cuota.create(
+          {
+            id_cobro: cobro.id_cobro,
+            nro_cuota: 1,
+            monto_cuota: totalTratamiento,
+            monto_cobrado: 0,
+            fecha_vencimiento: hoyStr,
+            metodo_pago: metodo,
+            estado: "Pendiente",
+          },
+          { transaction: t }
+        );
+        cuotas = [nuevaQ];
+      }
+
+      // Ordenar las cuotas a pagar: si se pasó id_cuota, priorizarla; luego las siguientes pendientes
+      let cuotasPendientes = cuotas.filter((q) => q.estado !== "Pagada");
+      if (id_cuota) {
+        const idxTarget = cuotasPendientes.findIndex((q) => Number(q.id_cuota) === Number(id_cuota));
+        if (idxTarget > 0) {
+          const target = cuotasPendientes.splice(idxTarget, 1)[0];
+          cuotasPendientes.unshift(target);
+        }
+      }
+
+      // Si todas ya estaban pagadas y el cobro permite registrar pago adicional, crear nueva cuota
+      if (cuotasPendientes.length === 0) {
+        const nuevaCuota = await Cuota.create(
+          {
+            id_cobro: cobro.id_cobro,
+            nro_cuota: cuotas.length + 1,
+            monto_cuota: montoPago,
+            monto_cobrado: montoPago,
+            fecha_vencimiento: hoyStr,
+            fecha_cobro: ahora,
+            metodo_pago: metodo,
+            estado: "Pagada",
+          },
+          { transaction: t }
+        );
+        cuotas.push(nuevaCuota);
+      } else {
+        // Distribuir el montoPago en cascada entre las cuotas pendientes
+        let remanente = montoPago;
+        for (const q of cuotasPendientes) {
+          if (remanente <= 0) break;
+          const montoQ = Number(q.monto_cuota) || 0;
+          const yaCobradoQ = Number(q.monto_cobrado) || 0;
+          const saldoQ = Math.max(0, montoQ - yaCobradoQ);
+
+          if (saldoQ > 0) {
+            const aporte = Math.min(saldoQ, remanente);
+            const nuevoCobrado = yaCobradoQ + aporte;
+            const estaPagada = nuevoCobrado >= montoQ - 0.009;
+
+            await q.update(
+              {
+                monto_cobrado: nuevoCobrado,
+                fecha_cobro: ahora,
+                metodo_pago: metodo,
+                estado: estaPagada ? "Pagada" : "Parcialmente pagada",
+              },
+              { transaction: t }
+            );
+
+            // Reflejar el cambio en la lista local para el balance final
+            q.monto_cobrado = nuevoCobrado;
+            q.estado = estaPagada ? "Pagada" : "Parcialmente pagada";
+            remanente -= aporte;
+          }
+        }
+      }
+
+      // 4. Calcular saldo pendiente total real del Cobro
+      const totalTratamiento = Number(cobro.monto_a_cobrar) || 0;
+      const totalCobradoEnCuotas = cuotas.reduce(
+        (acc, q) => acc + (Number(q.monto_cobrado) || 0),
+        0
+      );
+      const saldoRestante = Math.max(0, totalTratamiento - totalCobradoEnCuotas);
+      const pagadoCompleto = saldoRestante <= 0.01;
+
+      return {
+        id_cobro: cobro.id_cobro,
+        id_turno: cobro.id_turno,
+        saldoRestante,
+        pagadoCompleto,
+      };
     });
 
     return res.status(200).json({
@@ -558,7 +605,7 @@ export const registrarPagoTurno = async (req, res) => {
         ? "Turno pagado completamente."
         : "Pago parcial registrado. Saldo pendiente actualizado.",
       data: {
-        id_turno,
+        id_turno: resultado.id_turno,
         id_cobro: resultado.id_cobro,
         monto_cobrado: montoPago,
         saldo_pendiente: resultado.saldoRestante,
@@ -566,6 +613,9 @@ export const registrarPagoTurno = async (req, res) => {
       },
     });
   } catch (error) {
+    if (error.statusCode) {
+      return res.status(error.statusCode).json({ status: "error", message: error.message });
+    }
     console.error("Error al registrar pago de turno:", error);
     return res.status(500).json({
       status: "error",
