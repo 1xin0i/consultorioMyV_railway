@@ -50,6 +50,16 @@ export const incluirPracticas = ({ conPrecio = true } = {}) => ({
   ],
 });
 
+export const incluirPracticasNombre = () => ({
+  model: PracticaTurno,
+  include: [
+    {
+      model: Practica,
+      attributes: ["nombre_referencia", "nombre_nomenclador"],
+    },
+  ],
+});
+
 const ATRIBUTOS_COBRO = [
   "id",
   "monto",

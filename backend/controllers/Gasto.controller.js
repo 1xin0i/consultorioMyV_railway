@@ -1,56 +1,14 @@
 /** @format */
 
-import { Gasto, CategoriaGasto } from "../models/index.model.js";
-import { Op } from "sequelize";
-import { parsePagination, buildPaginationMeta } from "../utils/pagination.js";
+import { responderError } from "../errors/AppError.js";
+import * as gastoService from "../services/gastos/gasto.service.js";
 
-// Obtener todos los gastos con paginación y búsqueda
 export const getAllGastos = async (req, res) => {
   try {
-    const { page, limit, offset, search, sortField, sortOrder } =
-      parsePagination(req.query, {
-        defaultLimit: 9,
-        defaultSortField: "fecha_gasto",
-        defaultSortOrder: "DESC",
-        allowedSortFields: Object.keys(Gasto.rawAttributes),
-      });
-    const categoria = req.query.categoria || "";
-
-    const where = {
-      activo: true,
-    };
-
-    // Búsqueda por concepto
-    if (search !== "") {
-      where.concepto = { [Op.like]: `%${search}%` };
-    }
-
-    if (categoria) {
-      where.id_categoria_gasto = categoria;
-    }
-
-    const { count, rows: gastos } = await Gasto.findAndCountAll({
-      where,
-      limit,
-      offset,
-      order: [[sortField, sortOrder]],
-      include: [
-        {
-          model: CategoriaGasto,
-          as: "CategoriaGasto",
-          attributes: ["id_categoria_gasto", "nombre"],
-        },
-      ],
-    });
-
-    res.status(200).json({
-      status: "success",
-      data: gastos,
-      meta: buildPaginationMeta(count, page, limit),
-    });
+    const { data, meta } = await gastoService.listarPaginado(req.query);
+    res.status(200).json({ status: "success", data, meta });
   } catch (error) {
-    console.error("Error al obtener los gastos:", error);
-    res.status(500).json({
+    responderError(res, error, "Error al obtener los gastos:", {
       status: "error",
       message: "Error al obtener los gastos",
       error: error.message,
@@ -58,82 +16,45 @@ export const getAllGastos = async (req, res) => {
   }
 };
 
-// Obtener un gasto por su ID
 export const getGastoById = async (req, res) => {
   try {
-    const gasto = req.gasto;
-
-    res.status(200).json({
-      status: "success",
-      data: gasto,
-    });
+    res.status(200).json({ status: "success", data: req.gasto });
   } catch (error) {
-    console.error("Error al obtener el gasto:", error);
-    res.status(500).json({ error: "Error al obtener el gasto" });
+    responderError(res, error, "Error al obtener el gasto:", {
+      error: "Error al obtener el gasto",
+    });
   }
 };
 
-// Crear un nuevo gasto
 export const createGasto = async (req, res) => {
   try {
-    const { id_categoria_gasto, monto, concepto, fecha_gasto, metodo_pago } =
-      req.body;
-
-    const newGasto = await Gasto.create({
-      id_categoria_gasto,
-      monto,
-      concepto,
-      fecha_gasto: fecha_gasto || new Date(),
-      metodo_pago: metodo_pago || "Efectivo",
-    });
-
-    res.status(201).json({
-      status: "success",
-      data: newGasto,
-    });
+    const data = await gastoService.crear(req.body);
+    res.status(201).json({ status: "success", data });
   } catch (error) {
-    console.error("Error al crear el gasto:", error);
-    res.status(500).json({ error: "Error al crear el gasto" });
+    responderError(res, error, "Error al crear el gasto:", {
+      error: "Error al crear el gasto",
+    });
   }
 };
 
-// Actualizar un gasto existente
 export const updateGasto = async (req, res) => {
   try {
-    const { id_categoria_gasto, monto, concepto, fecha_gasto, metodo_pago } =
-      req.body;
-    const gasto = req.gasto;
-
-    await gasto.update({
-      id_categoria_gasto: id_categoria_gasto || gasto.id_categoria_gasto,
-      monto: monto !== undefined ? monto : gasto.monto,
-      concepto: concepto || gasto.concepto,
-      fecha_gasto: fecha_gasto || gasto.fecha_gasto,
-      metodo_pago: metodo_pago || gasto.metodo_pago,
-    });
-
-    res.status(200).json({
-      status: "success",
-      data: gasto,
-    });
+    const data = await gastoService.actualizar(req.gasto, req.body);
+    res.status(200).json({ status: "success", data });
   } catch (error) {
-    console.error("Error al actualizar el gasto:", error);
-    res.status(500).json({ error: "Error al actualizar el gasto" });
+    responderError(res, error, "Error al actualizar el gasto:", {
+      error: "Error al actualizar el gasto",
+    });
   }
 };
 
-// Baja lógica de un gasto
 export const deleteGasto = async (req, res) => {
   try {
-    const gasto = req.gasto;
-
-    await gasto.update({
-      activo: !gasto.activo,
-    });
-
+    await gastoService.alternarActivo(req.gasto);
     res.status(200).json({ message: "Gasto actualizado correctamente" });
   } catch (error) {
-    console.error("Error al eliminar el gasto:", error);
-    res.status(500).json({ error: "Error al eliminar el gasto" });
+    responderError(res, error, "Error al eliminar el gasto:", {
+      error: "Error al eliminar el gasto",
+    });
   }
 };

@@ -1,6 +1,6 @@
 /** @format */
 
-import { MAPA_ID_A_METODO } from "../constants/MetodosPago.js";
+import { MAPA_ID_A_METODO } from "../services/cobros/metodoPago.helper.js";
 
 export const formatearSolicitudConSaldos = (solicitudInstance) => {
   const plain = solicitudInstance.get
