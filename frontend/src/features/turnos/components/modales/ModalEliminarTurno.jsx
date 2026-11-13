@@ -1,7 +1,7 @@
 /** @format */
 
 import { AlertTriangle } from "lucide-react";
-import Modal from "../../../../components/common/Modal";
+import Modal from "@/shared/components/ui/Modal";
 
 export function ModalEliminarTurno({
   modalEliminar,
@@ -35,7 +35,10 @@ export function ModalEliminarTurno({
               #{turnoSeleccionado?.id_turno}
             </span>{" "}
             asignado al paciente{" "}
-            <strong className="text-slate-900 font-bold">{nombrePaciente}</strong>. Esta acción es irreversible.
+            <strong className="text-slate-900 font-bold">
+              {nombrePaciente}
+            </strong>
+            . Esta acción es irreversible.
           </p>
         </div>
       </div>
@@ -63,4 +66,3 @@ export function ModalEliminarTurno({
 }
 
 export default ModalEliminarTurno;
-

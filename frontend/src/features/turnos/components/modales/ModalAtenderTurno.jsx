@@ -1,10 +1,12 @@
 /** @format */
+
 import { useState, useEffect, useCallback } from "react";
-import Modal from "../../../../components/common/Modal";
+import Modal from "@/shared/components/ui/Modal";
 import { Plus, X, CheckSquare } from "lucide-react";
-import InputFiltro from "../../../../components/common/InputFiltro";
-import api from "../../../../services/api";
+import InputFiltro from "@/shared/components/ui/InputFiltro";
 import toast from "react-hot-toast";
+import { pacientesApi } from "@/features/pacientes";
+import turnosApi from "../../services/turnos.api";
 
 const ESTADO_INICIAL_ATENCION = {
   notas_consulta: "",
@@ -14,14 +16,13 @@ const ESTADO_INICIAL_ATENCION = {
 
 export function ModalAtenderTurno({
   isOpen,
-  modalAtenderAbierto, // compatibilidad
+  modalAtenderAbierto,
   onClose,
-  cerrarModal, // compatibilidad
+  cerrarModal,
   turno,
-  turnoSeleccionado, // compatibilidad
+  turnoSeleccionado,
   practicasLista = [],
   onConfirm,
-  // Props heredadas para compatibilidad retroactiva:
   datosAtencion: datosExternos,
   pacientesObrasSociales: osExternas,
   agregarPracticaAtencion: fnAgregarExt,
@@ -34,15 +35,13 @@ export function ModalAtenderTurno({
   const cerrar = onClose || cerrarModal;
   const turnoTarget = turno || turnoSeleccionado;
 
-  // Estado interno
   const [datosInternos, setDatosInternos] = useState(ESTADO_INICIAL_ATENCION);
   const [obrasSocialesInternas, setObrasSocialesInternas] = useState([]);
 
-  // Cargar obras sociales del paciente al abrir modal si no vienen por props
   useEffect(() => {
     if (abierto && turnoTarget?.id_paciente && !osExternas) {
-      api
-        .get(`/pacientes-por-obras-sociales/${turnoTarget.id_paciente}`)
+      pacientesApi
+        .listarObrasSocialesDePaciente(turnoTarget.id_paciente)
         .then((res) => {
           setObrasSocialesInternas(res.data.data || []);
         })
@@ -58,21 +57,20 @@ export function ModalAtenderTurno({
       return practicas.reduce((total, item) => {
         if (item.id_practica) {
           const encontrada = practicasLista.find(
-            (p) => Number(p.id_practica) === Number(item.id_practica)
+            (p) => Number(p.id_practica) === Number(item.id_practica),
           );
-          if (encontrada) return total + Number(encontrada.precio_referencia || 0);
+          if (encontrada)
+            return total + Number(encontrada.precio_referencia || 0);
         }
         return total;
       }, 0);
     },
-    [practicasLista]
+    [practicasLista],
   );
 
-  // Inicializar formulario al abrir y precargar prácticas del turno (si ya tenía programadas)
   useEffect(() => {
     if (abierto && turnoTarget) {
       if (!datosExternos) {
-        // Extraer prácticas asociadas si ya vienen en el objeto
         const fuentesPracticas =
           turnoTarget.PracticaTurnos || turnoTarget.practicas || [];
 
@@ -90,10 +88,9 @@ export function ModalAtenderTurno({
           practicas: practicasPrevias,
         });
 
-        // Si no vinieron incrustadas pero tiene id_turno, intentar cargarlas de la API
         if (practicasPrevias.length === 0 && turnoTarget.id_turno) {
-          api
-            .get(`/practicas-turnos/${turnoTarget.id_turno}`)
+          turnosApi
+            .obtenerPracticasDeTurno(turnoTarget.id_turno)
             .then((res) => {
               const lista = res.data.data || [];
               if (lista.length > 0) {
@@ -105,7 +102,9 @@ export function ModalAtenderTurno({
                   ...prev,
                   practicas: formateadas,
                   precio_final:
-                    prev.precio_final > 0 ? prev.precio_final : calcularTotal(formateadas),
+                    prev.precio_final > 0
+                      ? prev.precio_final
+                      : calcularTotal(formateadas),
                 }));
               }
             })
@@ -125,16 +124,13 @@ export function ModalAtenderTurno({
     }
     setDatosInternos((prev) => ({
       ...prev,
-      practicas: [
-        ...prev.practicas,
-        { id_practica: "", id_obra_social: "" },
-      ],
+      practicas: [...prev.practicas, { id_practica: "", id_obra_social: "" }],
     }));
   };
 
   const actualizarDatos = (campo, valor) => {
-    if (typeof fnActualDatosExt === "function") {
-      fnActualDatosExt(campo, valor);
+    if (typeof fnActualizarDatosExt === "function") {
+      fnActualizarDatosExt(campo, valor);
       return;
     }
     setDatosInternos((prev) => ({ ...prev, [campo]: valor }));
@@ -148,7 +144,7 @@ export function ModalAtenderTurno({
     setDatosInternos((prev) => {
       if (campo === "id_practica" && valor) {
         const yaExiste = prev.practicas.some(
-          (p, i) => i !== index && String(p.id_practica) === String(valor)
+          (p, i) => i !== index && String(p.id_practica) === String(valor),
         );
         if (yaExiste) {
           toast.error("Esta práctica ya fue seleccionada en este turno", {
@@ -181,7 +177,9 @@ export function ModalAtenderTurno({
       return;
     }
     setDatosInternos((prev) => {
-      const practicasActualizadas = prev.practicas.filter((_, i) => i !== index);
+      const practicasActualizadas = prev.practicas.filter(
+        (_, i) => i !== index,
+      );
       return {
         ...prev,
         practicas: practicasActualizadas,
@@ -214,7 +212,6 @@ export function ModalAtenderTurno({
         }`}
       >
         <div className="flex flex-col gap-4">
-          {/* Precio Base Calculado */}
           <div className="bg-emerald-50/70 border border-emerald-200/80 p-4 rounded-2xl flex items-center justify-between shadow-xs">
             <div className="w-full flex flex-col gap-1.5">
               <label className="block text-xs font-bold text-emerald-800 uppercase tracking-wider">
@@ -231,7 +228,7 @@ export function ModalAtenderTurno({
                   onChange={(e) =>
                     actualizarDatos(
                       "precio_final",
-                      e.target.value === "" ? "" : Number(e.target.value)
+                      e.target.value === "" ? "" : Number(e.target.value),
                     )
                   }
                   placeholder="0.00"
@@ -242,7 +239,6 @@ export function ModalAtenderTurno({
             </div>
           </div>
 
-          {/* Sección de Prácticas Realizadas y Cobertura */}
           <div className="border-t border-gray-200 pt-4">
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-2">
@@ -285,7 +281,7 @@ export function ModalAtenderTurno({
                           ]}
                           formatoVisual={(p) =>
                             `${p.nombre_referencia} ($ ${Number(
-                              p.precio_referencia
+                              p.precio_referencia,
                             ).toLocaleString("es-AR")})`
                           }
                           placeholder="Buscar práctica realizada..."
@@ -293,7 +289,7 @@ export function ModalAtenderTurno({
                             actualizarPractica(
                               index,
                               "id_practica",
-                              p?.id_practica || ""
+                              p?.id_practica || "",
                             )
                           }
                           valorInicial={practicaItem.id_practica || ""}
@@ -319,7 +315,7 @@ export function ModalAtenderTurno({
                             actualizarPractica(
                               index,
                               "id_obra_social",
-                              os?.id_obra_social || ""
+                              os?.id_obra_social || "",
                             )
                           }
                           valorInicial={practicaItem.id_obra_social || ""}
@@ -341,7 +337,6 @@ export function ModalAtenderTurno({
             )}
           </div>
 
-          {/* Notas de la Consulta */}
           <div>
             <label className="block text-sm font-semibold text-gray-700 mb-1">
               Notas de la Consulta / Diagnóstico
@@ -352,7 +347,7 @@ export function ModalAtenderTurno({
               onChange={(e) =>
                 actualizarDatos(
                   "notas_consulta",
-                  e.target.value === "" ? "" : e.target.value
+                  e.target.value === "" ? "" : e.target.value,
                 )
               }
               placeholder="Detalles sobre la atención, diagnóstico, indicaciones médicas..."

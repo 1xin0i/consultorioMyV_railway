@@ -1,16 +1,29 @@
-export const formatearPacienteParaEditar = (item) => ({
-  nombre: item.nombre,
-  apellido: item.apellido,
-  dni: item.dni,
-  fecha_nacimiento: item.fecha_nacimiento,
-  telefono: item.telefono,
-  domicilio: item.domicilio,
-  obrasSociales:
-    item.PacienteObraSocials?.map((relacion) => ({
-      id_obra_social: relacion.id_obra_social,
-      nro_afiliado: relacion.nro_afiliado || "",
-      guardadoEnBD: true,
-      id_relacion: relacion.id_paciente_obra_social,
-    })) || [],
-  obrasSocialesEliminadas: [],
-});
+/** @format */
+
+import { formatDateInput } from "@/shared/utils";
+
+export const formatearPacienteParaEditar = (paciente) => {
+  const relaciones =
+    paciente.ObraSocials || paciente.PacientesPorObrasSociales || [];
+
+  const obrasSocialesFormateadas = relaciones.map((os) => ({
+    id_relacion:
+      os.PacientesPorObrasSociales?.id_relacion || os.id_relacion || null,
+    id_obra_social:
+      os.id_obra_social || os.ObraSocial?.id_obra_social || "",
+    nro_afiliado:
+      os.PacientesPorObrasSociales?.nro_afiliado || os.nro_afiliado || "",
+  }));
+
+  return {
+    id_paciente: paciente.id_paciente,
+    nombre: paciente.nombre || "",
+    apellido: paciente.apellido || "",
+    dni: paciente.dni || "",
+    telefono: paciente.telefono || "",
+    fecha_nacimiento: formatDateInput(paciente.fecha_nacimiento),
+    domicilio: paciente.domicilio || "",
+    activo: paciente.activo !== undefined ? paciente.activo : true,
+    obras_sociales: obrasSocialesFormateadas,
+  };
+};

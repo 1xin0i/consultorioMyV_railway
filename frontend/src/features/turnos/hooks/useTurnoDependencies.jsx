@@ -1,6 +1,8 @@
 /** @format */
+
 import { useState, useEffect } from "react";
-import api from "../../../services/api";
+import { pacientesApi } from "@/features/pacientes";
+import { practicasApi } from "@/features/practicas";
 
 export function useTurnoDependencies() {
   const [pacientes, setPacientes] = useState([]);
@@ -10,8 +12,8 @@ export function useTurnoDependencies() {
   const fetchCatalogos = async () => {
     try {
       const [resPacientes, resPracticas] = await Promise.all([
-        api.get("/pacientes", { params: { limit: 1000 } }),
-        api.get("/practicas", { params: { limit: 1000 } }),
+        pacientesApi.listar({ limit: 1000 }),
+        practicasApi.listar({ limit: 1000 }),
       ]);
       setPacientes(resPacientes.data.data || []);
       setPracticasLista(resPracticas.data.data || []);
@@ -23,7 +25,8 @@ export function useTurnoDependencies() {
   const fetchObrasSocialesPaciente = async (id_paciente) => {
     if (!id_paciente) return;
     try {
-      const respuesta = await api.get(`/pacientes-por-obras-sociales/${id_paciente}`);
+      const respuesta =
+        await pacientesApi.listarObrasSocialesDePaciente(id_paciente);
       setObrasSocialesPaciente(respuesta.data.data || []);
     } catch (error) {
       console.error("Error al cargar las obras sociales del paciente:", error);

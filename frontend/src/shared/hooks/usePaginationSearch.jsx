@@ -1,0 +1,171 @@
+/** @format */
+
+import { useState, useEffect, useCallback, useMemo, useRef } from "react";
+import httpClient from "@/shared/services/httpClient";
+import toast from "react-hot-toast";
+import { manejarErrorApi } from "@/shared/utils/errorHandler";
+
+export function usePaginationSearch(endpoint, opciones = {}) {
+  const {
+    limitInicial = 8,
+    ordenPorDefecto = "id",
+    direccionPorDefecto = "ASC",
+    filtrosIniciales = {},
+  } = opciones;
+
+  const [datos, setDatos] = useState([]);
+  const [cargando, setCargando] = useState(false);
+
+  const [paginaActual, setPaginaActual] = useState(1);
+  const [totalPaginas, setTotalPaginas] = useState(1);
+  const [totalRegistros, setTotalRegistros] = useState(0);
+
+  const [busqueda, setBusqueda] = useState("");
+  const [busquedaDebounced, setBusquedaDebounced] = useState("");
+
+  const [filtros, setFiltros] = useState(filtrosIniciales);
+
+  const [ordenarPor, setOrdenarPor] = useState(ordenPorDefecto);
+  const [direccion, setDireccion] = useState(direccionPorDefecto);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setBusquedaDebounced(busqueda);
+      setPaginaActual(1);
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [busqueda]);
+
+  const abortControllerRef = useRef(null);
+
+  const fetchDatos = useCallback(async () => {
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
+    const controller = new AbortController();
+    abortControllerRef.current = controller;
+
+    setCargando(true);
+    try {
+      const params = {
+        page: paginaActual,
+        limit: limitInicial,
+        search: busquedaDebounced,
+        sortBy: ordenarPor,
+        order: direccion,
+        ...filtros,
+      };
+
+      const respuesta = await httpClient.get(endpoint, {
+        params,
+        signal: controller.signal,
+      });
+
+      if (respuesta.data && respuesta.data.pagination) {
+        setDatos(respuesta.data.data);
+        setTotalPaginas(respuesta.data.pagination.totalPages || 1);
+        setTotalRegistros(respuesta.data.pagination.totalItems || 0);
+      } else {
+        const arrayFallback = respuesta.data.data || respuesta.data || [];
+        setDatos(arrayFallback);
+        setTotalPaginas(1);
+        setTotalRegistros(arrayFallback.length);
+      }
+    } catch (error) {
+      if (error.name === "CanceledError" || error.code === "ERR_CANCELED") {
+        return;
+      }
+      console.error(`Error cargando datos de ${endpoint}:`, error);
+      manejarErrorApi(error, `Error cargando datos de ${endpoint}`);
+      toast.error(`Error al cargar los datos.`);
+    } finally {
+      if (abortControllerRef.current === controller) {
+        setCargando(false);
+      }
+    }
+  }, [
+    endpoint,
+    paginaActual,
+    limitInicial,
+    busquedaDebounced,
+    ordenarPor,
+    direccion,
+    filtros,
+  ]);
+
+  useEffect(() => {
+    fetchDatos();
+  }, [fetchDatos]);
+
+  const irAPagina = useCallback(
+    (nuevaPagina) => {
+      if (nuevaPagina >= 1 && nuevaPagina <= totalPaginas) {
+        setPaginaActual(nuevaPagina);
+      }
+    },
+    [totalPaginas],
+  );
+
+  const manejarOrden = useCallback((columna) => {
+    setOrdenarPor((prevColumna) => {
+      if (prevColumna === columna) {
+        setDireccion((prevDir) => (prevDir === "ASC" ? "DESC" : "ASC"));
+        return prevColumna;
+      }
+      setDireccion("ASC");
+      return columna;
+    });
+    setPaginaActual(1);
+  }, []);
+
+  const actualizarFiltro = useCallback((nombreFiltro, valor) => {
+    setFiltros((prev) => ({
+      ...prev,
+      [nombreFiltro]: valor,
+    }));
+    setPaginaActual(1);
+  }, []);
+
+  const limpiarFiltros = useCallback(() => {
+    setFiltros(filtrosIniciales);
+    setBusqueda("");
+    setPaginaActual(1);
+  }, [filtrosIniciales]);
+
+  const propsPaginacion = useMemo(
+    () => ({
+      paginaActual,
+      totalPaginas,
+      totalRegistros,
+      irAPagina,
+      limitInicial,
+      busqueda,
+      setBusqueda,
+      ordenarPor,
+      direccion,
+      manejarOrden,
+    }),
+    [
+      paginaActual,
+      totalPaginas,
+      totalRegistros,
+      irAPagina,
+      limitInicial,
+      busqueda,
+      ordenarPor,
+      direccion,
+      manejarOrden,
+    ],
+  );
+
+  return {
+    datos,
+    cargando,
+    recargar: fetchDatos,
+    propsPaginacion,
+    filtros,
+    actualizarFiltro,
+    limpiarFiltros,
+  };
+}
+

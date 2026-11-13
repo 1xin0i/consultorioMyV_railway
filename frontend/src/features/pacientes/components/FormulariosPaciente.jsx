@@ -1,22 +1,33 @@
 /** @format */
-import Modal from "../../../components/common/Modal";
-import { CreditCard, ShieldPlus, X } from "lucide-react";
-import InputFiltro from "../../../components/common/InputFiltro";
+
+import Modal from "@/shared/components/ui/Modal";
+import {
+  AlertTriangle,
+  Plus,
+  X,
+  Building2,
+  UserRound,
+  ShieldCheck,
+} from "lucide-react";
+import InputFiltro from "@/shared/components/ui/InputFiltro";
+
+const LABEL_CLASS =
+  "block text-[11px] font-bold text-slate-700 uppercase tracking-wider mb-1";
+const INPUT_CLASS =
+  "w-full border border-teal-100 bg-slate-50/60 p-2.5 rounded-xl text-sm text-slate-800 placeholder:text-slate-400 focus:outline-none focus:bg-white focus:ring-2 focus:ring-teal-500/30 focus:border-teal-500 transition-all shadow-2xs";
 
 export function FormularioCrearEditar({
-  guardarPaciente,
   modalAbierto,
   cerrarModal,
   editando,
+  obrasSocialesCatalogo = [],
   datosFormulario,
   actualizarDatos,
-  agregarObraSocialForm,
-  obrasSocialesLista,
-  actualizarObraSocialForm,
-  eliminarObraSocialForm,
+  agregarObraSocial,
+  actualizarObraSocial,
+  eliminarObraSocial,
+  guardarPaciente,
 }) {
-  const esDatoFaltante = (valor) => editando && (!valor || valor === "" || valor === null);
-
   return (
     <Modal
       isOpen={modalAbierto}
@@ -25,265 +36,304 @@ export function FormularioCrearEditar({
       width="max-w-2xl"
       title={editando ? "Editar Paciente" : "Registrar Nuevo Paciente"}
     >
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pb-8 sm:pb-6">
-          {/* //* NOMBRE */}
+      <div className="flex flex-col gap-4">
+        <div className="bg-gradient-to-br from-teal-50/70 to-emerald-50/40 border border-teal-200/80 rounded-2xl p-3.5 flex items-center gap-3 shadow-2xs">
+          <div className="w-10 h-10 rounded-xl bg-[#0d8266] text-white flex items-center justify-center shrink-0 shadow-xs">
+            <UserRound size={20} />
+          </div>
+          <div className="flex flex-col">
+            <span className="text-xs font-extrabold text-teal-950">
+              Ficha Personal del Paciente
+            </span>
+            <span className="text-[11px] text-teal-800/80">
+              Completá los datos personales y de contacto para la historia
+              clínica.
+            </span>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
           <div>
-            <label className="block text-sm font-bold text-gray-800 mb-1">
-              Nombre <span className="text-rose-500 font-extrabold">*</span>
-            </label>
+            <label className={LABEL_CLASS}>Nombre *</label>
             <input
               type="text"
               name="nombre"
-              value={datosFormulario.nombre}
-              onChange={actualizarDatos}
-              placeholder="Ej: Juan"
               required
-              className="w-full border border-gray-300 p-2.5 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#2eb086]/50 focus:border-[#2eb086]"
+              placeholder="Ej. María"
+              value={datosFormulario?.nombre || ""}
+              onChange={actualizarDatos}
+              className={INPUT_CLASS}
             />
           </div>
 
-          {/* //* APELLIDO */}
           <div>
-            <label className="block text-sm font-bold text-gray-800 mb-1">
-              Apellido <span className="text-rose-500 font-extrabold">*</span>
-            </label>
+            <label className={LABEL_CLASS}>Apellido *</label>
             <input
               type="text"
               name="apellido"
-              value={datosFormulario.apellido}
-              onChange={actualizarDatos}
-              placeholder="Ej: Pérez"
               required
-              className="w-full border border-gray-300 p-2.5 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#2eb086]/50 focus:border-[#2eb086]"
+              placeholder="Ej. González"
+              value={datosFormulario?.apellido || ""}
+              onChange={actualizarDatos}
+              className={INPUT_CLASS}
             />
           </div>
 
-          {/* //* DNI */}
           <div>
-            <div className="flex items-center justify-between mb-1">
-              <label className="block text-sm font-bold text-gray-800">DNI</label>
-              {esDatoFaltante(datosFormulario.dni) && (
-                <span className="text-[10px] text-amber-700 font-bold bg-amber-100 px-1.5 py-0.5 rounded border border-amber-200">
-                  Dato faltante
-                </span>
-              )}
-            </div>
+            <label className={LABEL_CLASS}>DNI</label>
             <input
               type="text"
               name="dni"
-              value={datosFormulario.dni || ""}
+              placeholder="Ej. 38123456"
+              value={datosFormulario?.dni || ""}
               onChange={actualizarDatos}
-              placeholder="Ej: 38123456"
-              className={`w-full border p-2.5 rounded-xl text-sm focus:outline-none focus:ring-2 transition-colors ${
-                esDatoFaltante(datosFormulario.dni)
-                  ? "border-amber-400 bg-amber-50/40 text-amber-950 focus:ring-amber-400/50"
-                  : "border-gray-300 focus:ring-[#2eb086]/50 focus:border-[#2eb086]"
-              }`}
+              className={INPUT_CLASS}
             />
           </div>
 
-          {/* //* TELEFONO */}
           <div>
-            <label className="block text-sm font-bold text-gray-800 mb-1">
-              Teléfono / Celular <span className="text-rose-500 font-extrabold">*</span>
-            </label>
+            <label className={LABEL_CLASS}>Teléfono *</label>
             <input
               type="text"
               name="telefono"
-              value={datosFormulario.telefono}
-              onChange={actualizarDatos}
-              placeholder="Ej: 3515551234"
               required
-              className="w-full border border-gray-300 p-2.5 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#2eb086]/50 focus:border-[#2eb086]"
+              placeholder="Ej. 3514567890"
+              value={datosFormulario?.telefono || ""}
+              onChange={actualizarDatos}
+              className={INPUT_CLASS}
             />
           </div>
 
-          {/* //* FECHA NACIMIENTO */}
           <div>
-            <div className="flex items-center justify-between mb-1">
-              <label className="block text-sm font-bold text-gray-800">Fecha de Nacimiento</label>
-              {esDatoFaltante(datosFormulario.fecha_nacimiento) && (
-                <span className="text-[10px] text-amber-700 font-bold bg-amber-100 px-1.5 py-0.5 rounded border border-amber-200">
-                  Dato faltante
-                </span>
-              )}
-            </div>
+            <label className={LABEL_CLASS}>Fecha de Nacimiento</label>
             <input
               type="date"
               name="fecha_nacimiento"
-              value={datosFormulario.fecha_nacimiento || ""}
+              value={datosFormulario?.fecha_nacimiento || ""}
               onChange={actualizarDatos}
-              className={`w-full border p-2.5 rounded-xl text-sm focus:outline-none focus:ring-2 transition-colors ${
-                esDatoFaltante(datosFormulario.fecha_nacimiento)
-                  ? "border-amber-400 bg-amber-50/40 text-amber-950 focus:ring-amber-400/50"
-                  : "border-gray-300 focus:ring-[#2eb086]/50 focus:border-[#2eb086]"
-              }`}
+              className={INPUT_CLASS}
             />
           </div>
 
-          {/* //* DOMICILIO */}
           <div>
-            <div className="flex items-center justify-between mb-1">
-              <label className="block text-sm font-bold text-gray-800">Domicilio</label>
-              {esDatoFaltante(datosFormulario.domicilio) && (
-                <span className="text-[10px] text-amber-700 font-bold bg-amber-100 px-1.5 py-0.5 rounded border border-amber-200">
-                  Dato faltante
-                </span>
-              )}
-            </div>
+            <label className={LABEL_CLASS}>Domicilio</label>
             <input
               type="text"
               name="domicilio"
-              value={datosFormulario.domicilio || ""}
+              placeholder="Ej. Av. Colón 1234"
+              value={datosFormulario?.domicilio || ""}
               onChange={actualizarDatos}
-              placeholder="Ej: Av. Colón 1234"
-              className={`w-full border p-2.5 rounded-xl text-sm focus:outline-none focus:ring-2 transition-colors ${
-                esDatoFaltante(datosFormulario.domicilio)
-                  ? "border-amber-400 bg-amber-50/40 text-amber-950 focus:ring-amber-400/50"
-                  : "border-gray-300 focus:ring-[#2eb086]/50 focus:border-[#2eb086]"
-              }`}
+              className={INPUT_CLASS}
             />
           </div>
 
-          {/* //* SECCION: OBRAS SOCIALES */}
-          <div className="col-span-1 md:col-span-2 mt-2 pt-4 border-t border-gray-200 pb-6">
-            <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
+          {editando && (
+            <div className="col-span-1 md:col-span-2">
+              <label className="flex items-center justify-between gap-3 p-3.5 bg-teal-50/50 border border-teal-200/70 rounded-xl cursor-pointer hover:bg-teal-50/80 transition-colors">
+                <div className="flex items-center gap-2.5">
+                  <ShieldCheck size={18} className="text-[#0d8266] shrink-0" />
+                  <div className="flex flex-col">
+                    <span className="text-xs font-bold text-slate-900">
+                      Estado del Paciente (Activo)
+                    </span>
+                    <span className="text-[11px] text-slate-500">
+                      Los pacientes activos aparecen en los selectores de turnos
+                      y caja.
+                    </span>
+                  </div>
+                </div>
+                <input
+                  type="checkbox"
+                  name="activo"
+                  checked={
+                    datosFormulario.activo !== undefined
+                      ? datosFormulario.activo
+                      : true
+                  }
+                  onChange={(e) =>
+                    actualizarDatos({
+                      target: { name: "activo", value: e.target.checked },
+                    })
+                  }
+                  className="w-4.5 h-4.5 text-[#0d8266] rounded border-teal-300 focus:ring-teal-500 cursor-pointer accent-[#0d8266]"
+                />
+              </label>
+            </div>
+          )}
+
+          {/* Sección de Obras Sociales */}
+          <div className="col-span-1 md:col-span-2 border-t border-teal-100 pt-4 mt-1">
+            <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-2">
-                <CreditCard size={18} className="text-[#2eb086]" />
-                <h3 className="text-sm font-bold text-gray-800">Cobertura de Obra Social</h3>
+                <div className="w-7 h-7 rounded-lg bg-teal-100/80 text-[#0d8266] flex items-center justify-center">
+                  <Building2 size={15} />
+                </div>
+                <h3 className="text-xs font-extrabold text-teal-950 uppercase tracking-wider">
+                  Obras Sociales Asociadas
+                </h3>
               </div>
               <button
                 type="button"
-                onClick={agregarObraSocialForm}
-                className="flex items-center gap-1 text-xs font-semibold text-[#2eb086] hover:text-[#259370] bg-[#e8f7f1] px-3 py-1.5 rounded-lg transition-colors cursor-pointer"
+                onClick={agregarObraSocial}
+                className="flex items-center gap-1 text-xs font-bold text-[#0d8266] hover:text-[#09664f] bg-teal-50 hover:bg-teal-100/80 border border-teal-200/70 px-3 py-1.5 rounded-xl transition-colors cursor-pointer"
               >
-                <ShieldPlus size={14} />
+                <Plus size={14} />
                 <span>Agregar Obra Social</span>
               </button>
             </div>
 
-            {datosFormulario.obrasSociales.length === 0 ? (
-              <p className="text-xs text-gray-500 italic py-2">
-                Sin obras sociales asociadas. El paciente se registrará como Particular.
+            {(!datosFormulario.obras_sociales ||
+              datosFormulario.obras_sociales.length === 0) && (
+              <p className="text-xs text-slate-500 italic bg-teal-50/30 p-3.5 rounded-xl border border-dashed border-teal-200 text-center">
+                El paciente no tiene obras sociales asignadas (Atención
+                Particular).
               </p>
-            ) : (
-              <div className="flex flex-col gap-3">
-                {datosFormulario.obrasSociales.map((osItem, index) => (
-                  <div
-                    key={index}
-                    className="grid grid-cols-1 sm:grid-cols-2 gap-2 bg-gray-50 p-3 rounded-xl border border-gray-200 items-center relative"
-                  >
-                    {/* //* SELECTOR DE OBRA SOCIAL */}
-                    <InputFiltro
-                      datos={obrasSocialesLista}
-                      camposFiltrado={["nombre"]}
-                      formatoVisual={(os) => `${os.nombre}`}
-                      placeholder="Busca una obra social..."
-                      alSeleccionar={(os) => {
-                        if (os && os.id_obra_social) {
-                          actualizarObraSocialForm(index, "id_obra_social", os.id_obra_social);
-                        }
-                      }}
-                      valorInicial={osItem.id_obra_social || ""}
-                      mitad="true"
-                    />
-
-                    <div className="flex items-center gap-2 w-full sm:w-auto sm:flex-1">
-                      {/* //* NRO AFILIADO */}
-                      <input
-                        type="text"
-                        placeholder="N° de Afiliado *"
-                        value={osItem.nro_afiliado}
-                        onChange={(e) => actualizarObraSocialForm(index, "nro_afiliado", e.target.value)}
-                        required
-                        className="w-full border border-gray-300 p-2.5 rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[#2eb086]/50"
-                      />
-
-                      {/* //* ELIMINAR OBRA SOCIAL */}
-                      <button
-                        type="button"
-                        onClick={() => eliminarObraSocialForm(index)}
-                        className="p-2 text-gray-400 hover:text-red-500 rounded-lg hover:bg-gray-200 transition-colors shrink-0"
-                        title="Quitar obra social"
-                      >
-                        <X size={18} />
-                      </button>
-                    </div>
-                  </div>
-                ))}
-              </div>
             )}
+
+            <div className="flex flex-col gap-2.5 max-h-48 overflow-y-auto pr-1">
+              {datosFormulario.obras_sociales?.map((os, index) => (
+                <div
+                  key={index}
+                  className="flex flex-col sm:flex-row items-center gap-2 bg-teal-50/35 p-2.5 rounded-xl border border-teal-100"
+                >
+                  <div className="flex-1 w-full">
+                    <InputFiltro
+                      datos={obrasSocialesCatalogo}
+                      camposFiltrado={["nombre"]}
+                      formatoVisual={(item) => item.nombre}
+                      placeholder="Buscar obra social..."
+                      alSeleccionar={(item) =>
+                        actualizarObraSocial(
+                          index,
+                          "id_obra_social",
+                          item?.id_obra_social || "",
+                        )
+                      }
+                      valorInicial={os.id_obra_social}
+                    />
+                  </div>
+
+                  <div className="w-full sm:w-48">
+                    <input
+                      type="text"
+                      placeholder="Nro. de Afiliado"
+                      value={os.nro_afiliado || ""}
+                      onChange={(e) =>
+                        actualizarObraSocial(
+                          index,
+                          "nro_afiliado",
+                          e.target.value,
+                        )
+                      }
+                      className="w-full border border-teal-100 bg-white p-2.5 rounded-xl text-xs font-semibold text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-teal-500/30 focus:border-teal-500"
+                    />
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => eliminarObraSocial(index)}
+                    className="p-2 text-slate-400 hover:text-rose-600 rounded-lg hover:bg-rose-50 transition-colors self-end sm:self-center cursor-pointer"
+                    title="Quitar obra social"
+                  >
+                    <X size={16} />
+                  </button>
+                </div>
+              ))}
+            </div>
           </div>
         </div>
-
-        {/* //* ACCIONES MODAL FIJAS AL PIE */}
-        <div className="sticky bottom-0 -mx-5 -mb-5 sm:-mx-6 sm:-mb-6 mt-6 p-4 bg-white/95 backdrop-blur-xs border-t border-gray-200 flex justify-end gap-3 z-20 shadow-xs">
-          <button
-            type="button"
-            onClick={cerrarModal}
-            className="px-4 py-2 rounded-xl text-gray-600 bg-gray-100 hover:bg-gray-200 transition-colors font-medium text-xs sm:text-sm cursor-pointer"
-          >
-            Cancelar
-          </button>
-          <button
-            type="submit"
-            className="px-5 py-2 rounded-xl text-white bg-[#2eb086] hover:bg-[#259370] transition-all shadow-sm font-semibold text-xs sm:text-sm cursor-pointer"
-          >
-            {editando ? "Guardar Cambios" : "Registrar Paciente"}
-          </button>
-        </div>
-      </Modal>
-  );
-}
-
-export function FormularioToggle({ modalToggle, cerrarModal, pacienteSeleccionado, togglePaciente }) {
-  const esBaja = pacienteSeleccionado?.activo;
-  return (
-    <Modal
-      isOpen={modalToggle}
-      onClose={cerrarModal}
-      width="max-w-md"
-      title={esBaja ? "Eliminar Paciente" : "Reactivar Paciente"}
-      variant={esBaja ? "danger" : "default"}
-    >
-      <div className="flex flex-col gap-3">
-        <p className="text-sm text-gray-700">
-          ¿Estás seguro de que deseas {esBaja ? "eliminar" : "reactivar"} a{" "}
-          <strong className="text-gray-900 font-bold">
-            {pacienteSeleccionado?.nombre} {pacienteSeleccionado?.apellido}
-          </strong>
-          ?
-        </p>
-
-        {esBaja && (
-          <div className="bg-amber-50 border border-amber-200/90 p-3 rounded-xl text-xs text-amber-900 flex items-start gap-2">
-            <span className="font-bold shrink-0">ℹ️ Aclaración:</span>
-            <span>
-              El paciente dejará de figurar en la lista activa, pero{" "}
-              <strong>sus registros clínicos, historia de turnos y comprobantes contables no se borrarán</strong> y quedarán resguardados en el sistema.
-            </span>
-          </div>
-        )}
       </div>
 
-      <div className="border-t border-gray-200 my-4" />
+      <div className="border-t border-teal-100 my-4" />
 
-      <div className="flex justify-end gap-3">
+      <div className="flex justify-end items-center gap-2.5">
         <button
           type="button"
           onClick={cerrarModal}
-          className="px-4 py-2 rounded-xl text-gray-600 bg-gray-100 hover:bg-gray-200 font-medium text-sm cursor-pointer"
+          className="px-4 py-2.5 rounded-xl text-slate-700 bg-slate-100 hover:bg-slate-200/80 font-bold text-xs transition-colors cursor-pointer"
+        >
+          Cancelar
+        </button>
+        <button
+          type="submit"
+          className="px-5 py-2.5 rounded-xl text-white bg-[#0d8266] hover:bg-[#09664f] font-bold text-xs transition-all shadow-sm shadow-teal-900/20 cursor-pointer"
+        >
+          {editando ? "Guardar Cambios" : "Registrar Paciente"}
+        </button>
+      </div>
+    </Modal>
+  );
+}
+
+export function FormularioEliminar({
+  modalEliminar,
+  cerrarModal,
+  pacienteSeleccionado,
+  ejecutarEliminacion,
+}) {
+  const estaActivo = pacienteSeleccionado?.activo !== false;
+
+  return (
+    <Modal
+      isOpen={modalEliminar}
+      onClose={cerrarModal}
+      width="max-w-md"
+      variant={estaActivo ? "danger" : "teal"}
+      title={estaActivo ? "Dar de Baja Paciente" : "Reactivar Paciente"}
+    >
+      <div
+        className={`rounded-2xl p-4 flex items-start gap-3.5 border shadow-2xs ${
+          estaActivo
+            ? "bg-gradient-to-br from-rose-50/80 to-rose-100/30 border-rose-200/90"
+            : "bg-gradient-to-br from-teal-50/80 to-emerald-50/40 border-teal-200/90"
+        }`}
+      >
+        <div
+          className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 border shadow-2xs ${
+            estaActivo
+              ? "bg-rose-100 text-rose-600 border-rose-200"
+              : "bg-teal-100 text-[#0d8266] border-teal-200"
+          }`}
+        >
+          <AlertTriangle size={20} />
+        </div>
+        <div className="flex flex-col gap-1.5">
+          <h3 className="text-sm font-bold text-slate-900">
+            {estaActivo
+              ? "¿Estás seguro de dar de baja a este paciente?"
+              : "¿Deseas reactivar a este paciente?"}
+          </h3>
+          <p className="text-xs text-slate-600 leading-relaxed">
+            {estaActivo ? "Se desactivará" : "Se volverá a habilitar"} al
+            paciente{" "}
+            <strong className="text-slate-900 font-bold">
+              {pacienteSeleccionado?.nombre} {pacienteSeleccionado?.apellido}
+            </strong>
+            . Su historial clínico y turnos previos se conservarán intactos.
+          </p>
+        </div>
+      </div>
+
+      <div className="border-t border-slate-100 my-4" />
+
+      <div className="flex justify-end items-center gap-2.5">
+        <button
+          type="button"
+          onClick={cerrarModal}
+          className="px-4 py-2.5 rounded-xl text-slate-700 bg-slate-100 hover:bg-slate-200/80 font-bold text-xs transition-colors cursor-pointer"
         >
           Cancelar
         </button>
         <button
           type="button"
-          onClick={togglePaciente}
-          className={`px-4 py-2 rounded-xl text-white font-semibold text-sm transition-colors shadow-sm cursor-pointer ${
-            esBaja ? "bg-rose-600 hover:bg-rose-700" : "bg-[#2eb086] hover:bg-[#259370]"
-          }`}
+          onClick={ejecutarEliminacion}
+          className={`px-4 py-2.5 rounded-xl text-white ${
+            estaActivo
+              ? "bg-rose-600 hover:bg-rose-700 shadow-rose-500/30"
+              : "bg-[#0d8266] hover:bg-[#09664f] shadow-teal-900/20"
+          } font-bold text-xs transition-colors shadow-sm cursor-pointer`}
         >
-          {esBaja ? "Sí, Eliminar Paciente" : "Sí, Reactivar Paciente"}
+          {estaActivo ? "Sí, Dar de Baja" : "Sí, Reactivar"}
         </button>
       </div>
     </Modal>

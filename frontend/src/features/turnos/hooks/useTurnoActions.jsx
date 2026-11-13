@@ -1,16 +1,22 @@
+/** @format */
+
 import { useState } from "react";
-import api from "../../../services/api";
 import toast from "react-hot-toast";
-import { manejarErrorApi } from "../../../utils/errorHandler";
-import { formatDateTimeInput } from "../../../utils";
+import { manejarErrorApi } from "@/shared/utils/errorHandler";
+import { formatDateTimeInput } from "@/shared/utils";
 import { formatearTurnoParaReprogramar } from "../utils/formatTurnoParaReprogramar";
-import { useConfiguracion } from "../../../context/ConfiguracionContext";
+import { useConfiguracion } from "@/features/configuracion";
+import turnosApi from "../services/turnos.api";
 
 export function useTurnoActions(recargar, cerrarModal) {
   const [cargandoAccion, setCargandoAccion] = useState(false);
-  const { validarTurnoHorario, esDiaLaboral } = useConfiguracion();
+  const { validarTurnoHorario } = useConfiguracion();
 
-  const guardarTurno = async (datosFormulario, editando, turnoSeleccionadoCRUD) => {
+  const guardarTurno = async (
+    datosFormulario,
+    editando,
+    turnoSeleccionadoCRUD,
+  ) => {
     if (!datosFormulario?.id_paciente) {
       toast.error("Por favor, selecciona un paciente para el turno.");
       return;
@@ -22,7 +28,6 @@ export function useTurnoActions(recargar, cerrarModal) {
 
     const ignorarRestr = Boolean(datosFormulario.ignorarRestricciones);
 
-    // Validar jornada, día laboral y restricciones al registrar nuevo turno (salvo excepción autorizada)
     if (!editando && validarTurnoHorario && !ignorarRestr) {
       const validacion = validarTurnoHorario(
         datosFormulario.fecha_hora_inicio,
@@ -50,19 +55,19 @@ export function useTurnoActions(recargar, cerrarModal) {
           practicas: Array.isArray(datosFormulario.practicas)
             ? datosFormulario.practicas
                 .map((p) =>
-                  typeof p === "object" ? Number(p.id_practica) : Number(p)
+                  typeof p === "object" ? Number(p.id_practica) : Number(p),
                 )
                 .filter(Boolean)
             : undefined,
         };
 
-        await api.put(`/turnos/${turnoSeleccionadoCRUD.id_turno}`, payload);
+        await turnosApi.actualizar(turnoSeleccionadoCRUD.id_turno, payload);
       } else {
-        // Al crear, sí requerimos las fechas y la duración completa
         const duracionMin = Number(datosFormulario.duracion_minutos) || 30;
         const fechaInicioDate = new Date(datosFormulario.fecha_hora_inicio);
         const fechaFinDate =
-          datosFormulario.fecha_hora_fin && !isNaN(new Date(datosFormulario.fecha_hora_fin).getTime())
+          datosFormulario.fecha_hora_fin &&
+          !isNaN(new Date(datosFormulario.fecha_hora_fin).getTime())
             ? new Date(datosFormulario.fecha_hora_fin)
             : new Date(fechaInicioDate.getTime() + duracionMin * 60000);
 
@@ -76,16 +81,20 @@ export function useTurnoActions(recargar, cerrarModal) {
           practicas: Array.isArray(datosFormulario.practicas)
             ? datosFormulario.practicas
                 .map((p) =>
-                  typeof p === "object" ? Number(p.id_practica) : Number(p)
+                  typeof p === "object" ? Number(p.id_practica) : Number(p),
                 )
                 .filter(Boolean)
             : [],
         };
 
-        await api.post("/turnos", payload);
+        await turnosApi.crear(payload);
       }
 
-      toast.success(editando ? "Turno actualizado correctamente" : "Turno registrado correctamente");
+      toast.success(
+        editando
+          ? "Turno actualizado correctamente"
+          : "Turno registrado correctamente",
+      );
       recargar();
       cerrarModal();
     } catch (error) {
@@ -96,11 +105,15 @@ export function useTurnoActions(recargar, cerrarModal) {
     }
   };
 
-  const procesarAtencionTurno = async (datosAtencion, turnoSeleccionado, cerrarModalAtender) => {
+  const procesarAtencionTurno = async (
+    datosAtencion,
+    turnoSeleccionado,
+    cerrarModalAtender,
+  ) => {
     if (!turnoSeleccionado) return;
     try {
       const practicasValidas = (datosAtencion.practicas || []).filter(
-        (p) => p && p.id_practica
+        (p) => p && p.id_practica,
       );
 
       const payloadAtencion = {
@@ -110,13 +123,15 @@ export function useTurnoActions(recargar, cerrarModal) {
           id_practica: Number(p.id_practica),
           id_obra_social: p.id_obra_social ? Number(p.id_obra_social) : null,
         })),
-        practicas_realizadas: practicasValidas.map((p) => Number(p.id_practica)),
+        practicas_realizadas: practicasValidas.map((p) =>
+          Number(p.id_practica),
+        ),
         obras_sociales: practicasValidas.map((p) =>
-          p.id_obra_social ? Number(p.id_obra_social) : null
+          p.id_obra_social ? Number(p.id_obra_social) : null,
         ),
       };
 
-      await api.patch(`/turnos/${turnoSeleccionado.id_turno}/atender`, payloadAtencion);
+      await turnosApi.atender(turnoSeleccionado.id_turno, payloadAtencion);
 
       toast.success("Turno atendido correctamente");
       recargar();
@@ -135,15 +150,25 @@ export function useTurnoActions(recargar, cerrarModal) {
   ) => {
     if (!turnoSeleccionadoCancelar) return;
     try {
-      const payloadAtencion = { notas_consulta: datosCancelacion.notas_consulta.trim() };
+      const payloadAtencion = {
+        notas_consulta: datosCancelacion.notas_consulta.trim(),
+      };
       if (inasistente) {
-        await api.patch(`/turnos/${turnoSeleccionadoCancelar.id_turno}/inasistente`, payloadAtencion);
+        await turnosApi.marcarInasistente(
+          turnoSeleccionadoCancelar.id_turno,
+          payloadAtencion,
+        );
       } else {
-        await api.patch(`/turnos/${turnoSeleccionadoCancelar.id_turno}/cancelar`, payloadAtencion);
+        await turnosApi.cancelar(
+          turnoSeleccionadoCancelar.id_turno,
+          payloadAtencion,
+        );
       }
 
       toast.success(
-        inasistente ? "Turno marcado como inasistido correctamente" : "Turno cancelado correctamente",
+        inasistente
+          ? "Turno marcado como inasistido correctamente"
+          : "Turno cancelado correctamente",
       );
       recargar();
       cerrarModalCancelar();
@@ -151,7 +176,9 @@ export function useTurnoActions(recargar, cerrarModal) {
       console.error("Error al registrar la cancelación:", error);
       manejarErrorApi(
         error,
-        inasistente ? "No se pudo marcar como inasistido" : "No se pudo cancelar el turno.",
+        inasistente
+          ? "No se pudo marcar como inasistido"
+          : "No se pudo cancelar el turno.",
       );
     }
   };
@@ -180,9 +207,13 @@ export function useTurnoActions(recargar, cerrarModal) {
     }
 
     try {
-      await api.patch(`/turnos/${turnoSeleccionado.id_turno}/reprogramado`, {
-        fecha_hora_inicio: new Date(datosReprogramacion.fecha_hora_inicio).toISOString(),
-        fecha_hora_fin: new Date(datosReprogramacion.fecha_hora_fin).toISOString(),
+      await turnosApi.reprogramar(turnoSeleccionado.id_turno, {
+        fecha_hora_inicio: new Date(
+          datosReprogramacion.fecha_hora_inicio,
+        ).toISOString(),
+        fecha_hora_fin: new Date(
+          datosReprogramacion.fecha_hora_fin,
+        ).toISOString(),
         ignorarRestricciones: ignorarRestr,
       });
 
@@ -198,7 +229,7 @@ export function useTurnoActions(recargar, cerrarModal) {
   const ejecutarEliminacion = async (turnoSeleccionado) => {
     if (!turnoSeleccionado) return;
     try {
-      await api.patch(`/turnos/${turnoSeleccionado.id_turno}/delete`);
+      await turnosApi.eliminar(turnoSeleccionado.id_turno);
 
       toast.success("Turno eliminado correctamente");
       recargar();
@@ -220,7 +251,6 @@ export function useTurnoActions(recargar, cerrarModal) {
     if (selectInfo && selectInfo.startStr) {
       const nuevaFechaInicio = formatDateTimeInput(selectInfo.startStr);
 
-      // Calculamos la duración y la fecha fin según los bloques/celdas seleccionadas
       let duracionMinutos = 30;
       let nuevaFechaFin;
 
@@ -237,7 +267,6 @@ export function useTurnoActions(recargar, cerrarModal) {
         nuevaFechaFin = formatDateTimeInput(fechaFinObj);
       }
 
-      // Si había un turno esperando ser reprogramado:
       if (turnoReprogramando) {
         const turnoConNuevaFecha = {
           ...turnoReprogramando,
@@ -247,16 +276,13 @@ export function useTurnoActions(recargar, cerrarModal) {
           ignorarRestricciones: false,
         };
 
-        // Abrimos el modal de reprogramar con la nueva fecha y duración calculada
         abrirParaReprogramar(turnoConNuevaFecha, formatearTurnoParaReprogramar);
 
-        // Limpiamos el estado y el toast
         setTurnoReprogramando(null);
         toast.dismiss();
         return;
       }
 
-      // Si no había ningún turno para reprogramar, abrimos el modal de creación con los datos iniciales
       abrirParaCrear({
         fecha_hora_inicio: nuevaFechaInicio,
         duracion_minutos: duracionMinutos,

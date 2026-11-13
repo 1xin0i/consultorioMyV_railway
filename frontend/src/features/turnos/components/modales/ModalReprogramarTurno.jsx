@@ -1,22 +1,23 @@
 /** @format */
+
 import { useState, useEffect } from "react";
 import { AlertCircle } from "lucide-react";
-import Modal from "../../../../components/common/Modal";
-import { formatDateTimeInput } from "../../../../utils";
+import Modal from "@/shared/components/ui/Modal";
+import { formatDateTimeInput } from "@/shared/utils";
 import { calcularHoraFin } from "../../utils/calcularHoraFin";
-import { useConfiguracion } from "../../../../context/ConfiguracionContext";
+import { useConfiguracion } from "@/features/configuracion";
 
 export function ModalReprogramarTurno({
   isOpen,
-  modalReprogramarAbierto, // compatibilidad
+  modalReprogramarAbierto,
   onClose,
-  cerrarModal, // compatibilidad
+  cerrarModal,
   turno,
-  turnoSeleccionado, // compatibilidad
+  turnoSeleccionado,
   onConfirm,
-  datosReprogramacion: datosExternos, // compatibilidad
-  actualizarDatosReprogramacion, // compatibilidad
-  procesarReprogramacionTurno, // compatibilidad
+  datosReprogramacion: datosExternos,
+  actualizarDatosReprogramacion,
+  procesarReprogramacionTurno,
 }) {
   const abierto = isOpen ?? modalReprogramarAbierto;
   const cerrar = onClose || cerrarModal;
@@ -50,7 +51,6 @@ export function ModalReprogramarTurno({
     }
   }, [abierto, turnoTarget, datosExternos]);
 
-  // Recalcular hora fin automáticamente al cambiar inicio o duración
   useEffect(() => {
     if (datosInternos.fecha_hora_inicio && datosInternos.duracion_minutos) {
       calcularHoraFin(datosInternos, (e) => {
@@ -79,7 +79,9 @@ export function ModalReprogramarTurno({
     }
   };
 
-  const datos = datosExternos?.fecha_hora_inicio ? datosExternos : datosInternos;
+  const datos = datosExternos?.fecha_hora_inicio
+    ? datosExternos
+    : datosInternos;
 
   const validacionHorario =
     datos?.fecha_hora_inicio && validarTurnoHorario
@@ -95,7 +97,6 @@ export function ModalReprogramarTurno({
         title={`Reprogramar Turno #${turnoTarget?.id_turno || ""}`}
       >
         <div className="flex flex-col gap-4">
-          {/* Banner Ámbar de Excepción / Urgencia */}
           {validacionHorario && !validacionHorario.valido && (
             <div className="p-3 bg-amber-50 dark:bg-amber-950/40 border border-amber-300 dark:border-amber-700/70 rounded-xl text-amber-900 dark:text-amber-200 flex flex-col gap-2">
               <div className="flex items-start gap-2">
@@ -134,7 +135,6 @@ export function ModalReprogramarTurno({
             </div>
           )}
 
-          {/* Fecha y Hora de Inicio */}
           <div>
             <label className="block text-sm font-semibold text-gray-700 mb-1">
               Nueva Fecha y Hora de Inicio *
@@ -149,7 +149,6 @@ export function ModalReprogramarTurno({
             />
           </div>
 
-          {/* Duración (Minutos) */}
           <div>
             <label className="block text-sm font-semibold text-gray-700 mb-1">
               Duración (Minutos)
@@ -177,7 +176,6 @@ export function ModalReprogramarTurno({
             </select>
           </div>
 
-          {/* Fecha y Hora de Fin (Calculado) */}
           <div className="bg-gray-50 p-3 rounded-xl border border-gray-200">
             <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">
               Nueva Fecha y Hora de Fin (Calculado automáticamente)

@@ -1,6 +1,6 @@
 /** @format */
 
-import { useConfiguracion } from "../../../context/ConfiguracionContext";
+import { useConfiguracion } from "@/features/configuracion";
 
 /**
  * Hook para gestionar las restricciones / bloqueos de agenda

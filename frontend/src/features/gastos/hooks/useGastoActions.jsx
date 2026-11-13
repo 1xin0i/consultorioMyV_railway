@@ -1,40 +1,44 @@
 /** @format */
-import { useCrudActions } from "../../../hooks/useCrudActions";
+
+import { useCrudActions } from "@/shared/hooks/useCrudActions";
 
 export function useGastoActions(recargar, cerrarModal) {
-  const { guardar, toggle, eliminar, cargandoAccion } = useCrudActions({
+  const { guardar, eliminar, cargandoAccion } = useCrudActions({
     endpoint: "/gastos",
     idKey: "id_gasto",
     recargar,
     cerrarModal,
+    metodoEliminar: "patch_delete",
+    validar: (datosFormulario) => {
+      if (!datosFormulario.id_categoria) {
+        return "Debes seleccionar una categoría de gasto.";
+      }
+      if (!datosFormulario.monto || Number(datosFormulario.monto) <= 0) {
+        return "El monto del gasto debe ser mayor a 0.";
+      }
+      if (!datosFormulario.fecha_gasto) {
+        return "La fecha del gasto es obligatoria.";
+      }
+      return null;
+    },
+    formatearPayload: (datosFormulario) => ({
+      id_categoria: Number(datosFormulario.id_categoria),
+      monto: parseFloat(datosFormulario.monto),
+      fecha_gasto: datosFormulario.fecha_gasto,
+      detalle: datosFormulario.detalle?.trim() || null,
+    }),
     mensajes: {
+      creado: "Gasto registrado correctamente",
       actualizado: "Gasto actualizado correctamente",
-      registrado: "Gasto registrado correctamente",
-      toggle: "Estado del gasto actualizado",
-      eliminado: "Gasto eliminado definitivamente",
+      eliminado: "Gasto eliminado correctamente",
       errorGuardar: "No se pudo guardar el gasto.",
-      errorToggle: "No se pudo actualizar el estado del gasto.",
       errorEliminar: "No se pudo eliminar el gasto.",
     },
   });
 
-  const guardarGasto = (datosFormulario, editando, gastoSeleccionado) =>
-    guardar(
-      {
-        id_categoria_gasto: Number(datosFormulario.id_categoria_gasto),
-        monto: parseFloat(datosFormulario.monto),
-        concepto: datosFormulario.concepto.trim(),
-        fecha_gasto: datosFormulario.fecha_gasto || new Date().toISOString(),
-        metodo_pago: datosFormulario.metodo_pago || "Efectivo",
-      },
-      editando,
-      gastoSeleccionado,
-    );
-
   return {
-    guardarGasto,
-    toggleGasto: toggle,
-    eliminarGasto: eliminar,
+    guardarGasto: guardar,
+    ejecutarEliminacion: eliminar,
     cargandoAccion,
   };
 }

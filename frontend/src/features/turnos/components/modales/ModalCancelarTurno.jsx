@@ -1,19 +1,20 @@
 /** @format */
+
 import { useState, useEffect } from "react";
-import Modal from "../../../../components/common/Modal";
+import Modal from "@/shared/components/ui/Modal";
 
 export function ModalCancelarTurno({
   isOpen,
-  modalCancelarAbierto, // compatibilidad
+  modalCancelarAbierto,
   onClose,
-  cerrarModal, // compatibilidad
+  cerrarModal,
   turno,
-  turnoSeleccionado, // compatibilidad
+  turnoSeleccionado,
   inasistente = false,
   onConfirm,
-  notasCanceladoInasistente, // compatibilidad
-  actualizarDatosCancelacion, // compatibilidad
-  procesarCancelacionTurno, // compatibilidad
+  notasCanceladoInasistente,
+  actualizarDatosCancelacion,
+  procesarCancelacionTurno,
 }) {
   const abierto = isOpen ?? modalCancelarAbierto;
   const cerrar = onClose || cerrarModal;
@@ -60,15 +61,19 @@ export function ModalCancelarTurno({
         }`}
       >
         <div className="flex flex-col gap-4">
-          {/* Tarjeta interna de contexto clínico */}
-          <div className={`p-4 rounded-2xl border ${
-            inasistente
-              ? "bg-gradient-to-br from-amber-50/80 to-amber-100/30 border-amber-200/80"
-              : "bg-gradient-to-br from-rose-50/80 to-rose-100/30 border-rose-200/80"
-          } shadow-2xs`}>
+          <div
+            className={`p-4 rounded-2xl border ${
+              inasistente
+                ? "bg-gradient-to-br from-amber-50/80 to-amber-100/30 border-amber-200/80"
+                : "bg-gradient-to-br from-rose-50/80 to-rose-100/30 border-rose-200/80"
+            } shadow-2xs`}
+          >
             <div className="flex items-center justify-between mb-2">
               <span className="text-xs font-bold text-slate-800">
-                Paciente: <span className="text-teal-900 font-extrabold">{nombrePaciente || "Sin especificar"}</span>
+                Paciente:{" "}
+                <span className="text-teal-900 font-extrabold">
+                  {nombrePaciente || "Sin especificar"}
+                </span>
               </span>
               <span className="inline-flex px-2 py-0.5 rounded-md font-mono font-bold text-xs bg-white/80 border border-slate-200/80">
                 Turno #{turnoTarget?.id_turno}
@@ -83,7 +88,8 @@ export function ModalCancelarTurno({
 
           <div>
             <label className="block text-xs font-bold text-slate-800 mb-1.5">
-              Motivo u observaciones {inasistente ? "de inasistencia" : "de cancelación"}
+              Motivo u observaciones{" "}
+              {inasistente ? "de inasistencia" : "de cancelación"}
             </label>
             <textarea
               rows={3}
@@ -108,7 +114,9 @@ export function ModalCancelarTurno({
           <button
             type="submit"
             className={`px-4 py-2.5 rounded-xl text-white ${
-              inasistente ? "bg-amber-600 hover:bg-amber-700 shadow-amber-500/30" : "bg-rose-600 hover:bg-rose-700 shadow-rose-500/30"
+              inasistente
+                ? "bg-amber-600 hover:bg-amber-700 shadow-amber-500/30"
+                : "bg-rose-600 hover:bg-rose-700 shadow-rose-500/30"
             } transition-all shadow-sm font-bold text-xs cursor-pointer`}
           >
             Confirmar {inasistente ? "Inasistido" : "Cancelación"}

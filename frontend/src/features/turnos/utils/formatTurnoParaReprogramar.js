@@ -1,6 +1,6 @@
-//* FUNCION QUE FORMATEA LA FECHA PARA LA REPROGRAMACION DEL TURNO
+/** @format */
 
-import { formatDateTimeInput } from "../../../utils";
+import { formatDateTimeInput } from "@/shared/utils";
 
 export const formatearTurnoParaReprogramar = (item) => ({
   fecha_hora_inicio: formatDateTimeInput(item.fecha_hora_inicio),

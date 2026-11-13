@@ -1,149 +1,87 @@
 /** @format */
-import { useState, useEffect, useRef } from "react";
-import {
-  MoreVertical,
-  Edit,
-  CalendarPlus,
-  PauseCircle,
-  RotateCcw,
-  Trash2,
-} from "lucide-react";
-import MenuFlotantePortal from "../../../components/common/MenuFlotantePortal";
+
+import { Eye, Edit, UserCheck, UserX, MoreVertical } from "lucide-react";
+import { MenuFlotantePortal } from "@/shared/components/ui/MenuFlotantePortal";
 
 export function BotonAccionesPaciente({
   paciente,
-  menuAbiertoId: menuAbiertoIdProp,
-  setMenuAbiertoId: setMenuAbiertoIdProp,
+  abrirParaVer,
   abrirParaEditar,
-  abrirParaAgendarTurno,
-  abrirParaToggle,
   abrirParaEliminar,
+  formatearPacienteParaEditar,
 }) {
-  const [menuAbiertoIdLocal, setMenuAbiertoIdLocal] = useState(null);
-  const menuAbiertoId =
-    menuAbiertoIdProp !== undefined ? menuAbiertoIdProp : menuAbiertoIdLocal;
-  const setMenuAbiertoId = setMenuAbiertoIdProp || setMenuAbiertoIdLocal;
-
-  const botonRef = useRef(null);
-  const menuRef = useRef(null);
-
-  const estaAbierto = menuAbiertoId === paciente?.id_paciente;
-
-  useEffect(() => {
-    if (!estaAbierto) return;
-
-    const handleClickOutside = (event) => {
-      if (botonRef.current && botonRef.current.contains(event.target)) {
-        return;
-      }
-      if (menuRef.current && menuRef.current.contains(event.target)) {
-        return;
-      }
-      setMenuAbiertoId(null);
-    };
-
-    const handleScroll = (event) => {
-      if (menuRef.current && menuRef.current.contains(event.target)) {
-        return;
-      }
-      setMenuAbiertoId(null);
-    };
-
-    document.addEventListener("mousedown", handleClickOutside);
-    window.addEventListener("scroll", handleScroll, true);
-
-    return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
-      window.removeEventListener("scroll", handleScroll, true);
-    };
-  }, [estaAbierto, setMenuAbiertoId]);
-
-  if (!paciente) return null;
-
-  const ejecutarAccion = (e, callback) => {
-    e.stopPropagation();
-    setMenuAbiertoId(null);
-    setTimeout(() => {
-      if (typeof callback === "function") {
-        callback(paciente);
-      }
-    }, 0);
-  };
-
-  const esActivo = Boolean(paciente.activo);
-
   return (
-    <div className="relative">
-      <button
-        ref={botonRef}
-        type="button"
-        aria-label="Más opciones del paciente"
-        title="Más opciones del paciente"
-        onClick={(e) => {
-          e.stopPropagation();
-          setMenuAbiertoId(estaAbierto ? null : paciente.id_paciente);
-        }}
-        className="p-2 rounded-xl text-teal-800/70 hover:bg-teal-50 dark:hover:bg-slate-800 hover:text-teal-900 dark:hover:text-teal-300 transition-colors cursor-pointer"
-      >
-        <MoreVertical size={18} />
-      </button>
-
-      <MenuFlotantePortal ref={menuRef} targetRef={botonRef} isOpen={estaAbierto}>
-        {/* ✏️ Editar datos personales */}
+    <MenuFlotantePortal
+      ancho={192}
+      trigger={({ abierto, toggleMenu }) => (
         <button
           type="button"
-          onClick={(e) => ejecutarAccion(e, abrirParaEditar)}
-          className="flex items-center gap-2.5 px-4 py-2.5 text-xs font-semibold text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700/50 text-left transition-colors cursor-pointer w-full"
+          onClick={toggleMenu}
+          className={`p-2 rounded-xl transition-colors cursor-pointer ${
+            abierto
+              ? "bg-teal-100 text-teal-900"
+              : "text-slate-500 hover:text-teal-900 hover:bg-teal-50"
+          }`}
+          title="Acciones del paciente"
         >
-          <Edit size={16} className="text-blue-600" />
-          <span>Editar datos personales</span>
+          <MoreVertical size={18} />
         </button>
+      )}
+    >
+      {({ cerrarMenu }) => (
+        <div className="flex flex-col text-xs font-semibold text-slate-700">
+          <button
+            type="button"
+            onClick={() => {
+              cerrarMenu();
+              abrirParaVer(paciente);
+            }}
+            className="flex items-center gap-2.5 px-3.5 py-2 hover:bg-teal-50/70 text-slate-700 hover:text-teal-900 transition-colors cursor-pointer text-left"
+          >
+            <Eye size={15} className="text-[#0d8266] shrink-0" />
+            <span>Ver Ficha Clínica</span>
+          </button>
 
-        {/* 📅 Agendar nuevo turno */}
-        <button
-          type="button"
-          onClick={(e) => ejecutarAccion(e, abrirParaAgendarTurno)}
-          className="flex items-center gap-2.5 px-4 py-2.5 text-xs font-semibold text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700/50 text-left transition-colors cursor-pointer w-full"
-        >
-          <CalendarPlus size={16} className="text-[#2eb086]" />
-          <span>Agendar nuevo turno</span>
-        </button>
+          <button
+            type="button"
+            onClick={() => {
+              cerrarMenu();
+              abrirParaEditar(paciente, formatearPacienteParaEditar);
+            }}
+            className="flex items-center gap-2.5 px-3.5 py-2 hover:bg-amber-50/80 text-slate-700 hover:text-amber-800 transition-colors cursor-pointer text-left"
+          >
+            <Edit size={15} className="text-amber-600 shrink-0" />
+            <span>Editar Datos</span>
+          </button>
 
-        {/* ⏸️ Marcar como inactivo o Reactivar */}
-        <button
-          type="button"
-          onClick={(e) => ejecutarAccion(e, abrirParaToggle)}
-          className="flex items-center gap-2.5 px-4 py-2.5 text-xs font-semibold text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700/50 text-left transition-colors cursor-pointer w-full"
-        >
-          {esActivo ? (
-            <>
-              <PauseCircle size={16} className="text-amber-600" />
-              <span>Marcar como inactivo</span>
-            </>
-          ) : (
-            <>
-              <RotateCcw size={16} className="text-emerald-600" />
-              <span>Reactivar paciente</span>
-            </>
-          )}
-        </button>
+          <div className="my-1 border-t border-slate-100" />
 
-        {/* Separador */}
-        <div className="my-1 border-t border-gray-100 dark:border-slate-700/60" />
-
-        {/* 🗑️ Eliminar paciente */}
-        <button
-          type="button"
-          onClick={(e) => ejecutarAccion(e, abrirParaEliminar || abrirParaToggle)}
-          className="flex items-center gap-2.5 px-4 py-2.5 text-xs font-semibold text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 text-left transition-colors cursor-pointer w-full"
-        >
-          <Trash2 size={16} className="text-rose-500" />
-          <span>Eliminar paciente</span>
-        </button>
-      </MenuFlotantePortal>
-    </div>
+          <button
+            type="button"
+            onClick={() => {
+              cerrarMenu();
+              abrirParaEliminar(paciente);
+            }}
+            className={`flex items-center gap-2.5 px-3.5 py-2 transition-colors cursor-pointer text-left ${
+              paciente.activo !== false
+                ? "hover:bg-rose-50 text-rose-600"
+                : "hover:bg-emerald-50 text-emerald-700"
+            }`}
+          >
+            {paciente.activo !== false ? (
+              <>
+                <UserX size={15} className="shrink-0" />
+                <span>Dar de Baja</span>
+              </>
+            ) : (
+              <>
+                <UserCheck size={15} className="shrink-0" />
+                <span>Reactivar Paciente</span>
+              </>
+            )}
+          </button>
+        </div>
+      )}
+    </MenuFlotantePortal>
   );
 }
-
-export default BotonAccionesPaciente;
-

@@ -1,40 +1,26 @@
-import api from "../../../services/api";
-import { formatearPacienteParaEditar } from "./formatearPacienteParaEditar";
+/** @format */
 
-export const verificarCompletarPaciente = (
-  cargando,
+import pacientesApi from "../services/pacientes.api";
+
+export const verificarCompletarPaciente = async (
   searchParams,
-  pacientes,
-  abrirParaEditar,
   setSearchParams,
+  abrirParaEditar,
+  formatearPacienteParaEditar,
 ) => {
-  const editarId = searchParams.get("editarId");
+  const editarId = searchParams.get("editar");
   if (!editarId) return;
 
-  const abrirEdicionPorParametro = async () => {
-    // 1. Intentamos buscarlo en los pacientes ya cargados
-    let pacienteEncontrado = pacientes.find((p) => String(p.id_paciente) === String(editarId));
-
-    // 2. Si no está en la página actual, lo buscamos directamente en la API
-    if (!pacienteEncontrado) {
-      try {
-        const res = await api.get(`/pacientes/${editarId}`);
-        pacienteEncontrado = res.data.data || res.data;
-      } catch (error) {
-        console.error("Error al obtener paciente para editar:", error);
-      }
-    }
-
-    // 3. Si lo encontramos, abrimos el modal y limpiamos el parámetro URL
+  try {
+    const respuesta = await pacientesApi.obtenerPorId(editarId);
+    const pacienteEncontrado = respuesta.data.data || respuesta.data;
     if (pacienteEncontrado) {
       abrirParaEditar(pacienteEncontrado, formatearPacienteParaEditar);
-      // Limpiar query param para que no reabra el modal si se refresca/cierra
-      searchParams.delete("editarId");
-      setSearchParams(searchParams, { replace: true });
     }
-  };
-
-  if (!cargando) {
-    abrirEdicionPorParametro();
+  } catch (error) {
+    console.error("Error al buscar el paciente para completar ficha:", error);
+  } finally {
+    searchParams.delete("editar");
+    setSearchParams(searchParams, { replace: true });
   }
 };

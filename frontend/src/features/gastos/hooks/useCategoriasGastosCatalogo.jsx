@@ -1,21 +1,17 @@
 /** @format */
 
 import { useState, useEffect, useCallback } from "react";
-import api from "../../../services/api";
+import gastosApi from "../services/gastos.api";
 
 export function useCategoriasGastosCatalogo() {
   const [categorias, setCategorias] = useState([]);
-  const [cargandoCategorias, setCargandoCategorias] = useState(false);
 
   const fetchCategorias = useCallback(async () => {
-    setCargandoCategorias(true);
     try {
-      const res = await api.get("/categorias-gastos", { params: { limit: 1000 } });
-      setCategorias(res.data.data || []);
+      const respuesta = await gastosApi.listarCategorias({ limit: 1000 });
+      setCategorias(respuesta.data.data || []);
     } catch (error) {
       console.error("Error al cargar categorías de gastos:", error);
-    } finally {
-      setCargandoCategorias(false);
     }
   }, []);
 
@@ -23,9 +19,5 @@ export function useCategoriasGastosCatalogo() {
     fetchCategorias();
   }, [fetchCategorias]);
 
-  return {
-    categorias,
-    cargandoCategorias,
-    recargarCategorias: fetchCategorias,
-  };
+  return { categorias, setCategorias, recargarCategorias: fetchCategorias };
 }

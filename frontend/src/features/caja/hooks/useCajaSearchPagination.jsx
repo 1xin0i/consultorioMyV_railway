@@ -1,209 +1,126 @@
 /** @format */
-import { useState, useEffect, useRef, useCallback } from "react";
-import api from "../../../services/api";
 
-export function useCajaSearchPagination(limitPorDefecto = 9) {
-  // * DEFINICIÓN DE ESTADOS GENERALES
+import { useState, useEffect, useCallback, useMemo } from "react";
+import { manejarErrorApi } from "@/shared/utils/errorHandler";
+import cajaApi from "../services/caja.api";
+
+export function useCajaSearchPagination(endpoint, opciones = {}) {
+  const {
+    limitInicial = 8,
+    ordenPorDefecto = "fecha",
+    direccionPorDefecto = "DESC",
+    filtrosIniciales = {},
+  } = opciones;
+
+  const [datosCrudos, setDatosCrudos] = useState({
+    cobros: [],
+    gastos: [],
+    turnos: [],
+    resumen: null,
+  });
   const [cargando, setCargando] = useState(false);
-  const [search, setSearchState] = useState("");
 
-  //* PERÍODO (MES Y AÑO / MODO ANUAL)
-  const fechaHoy = new Date();
-  const [mes, setMesState] = useState(fechaHoy.getMonth() + 1);
-  const [anio, setAnioState] = useState(fechaHoy.getFullYear());
-  const [modoAnual, setModoAnualState] = useState(false);
+  const [paginaActual, setPaginaActual] = useState(1);
+  const [busqueda, setBusqueda] = useState("");
+  const [busquedaDebounced, setBusquedaDebounced] = useState("");
+  const [filtros, setFiltros] = useState(filtrosIniciales);
 
-  //* DATOS COBRO
-  const [cobros, setCobros] = useState([]);
-  const [pageCobro, setPageCobro] = useState(1);
-  const [totalCobro, setTotalCobro] = useState(0);
-  const [totalPagesCobro, setTotalPagesCobro] = useState(1);
+  const [ordenarPor, setOrdenarPor] = useState(ordenPorDefecto);
+  const [direccion, setDireccion] = useState(direccionPorDefecto);
 
-  //* DATOS GASTO
-  const [gastos, setGastos] = useState([]);
-  const [pageGasto, setPageGasto] = useState(1);
-  const [totalGasto, setTotalGasto] = useState(0);
-  const [totalPagesGasto, setTotalPagesGasto] = useState(1);
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setBusquedaDebounced(busqueda);
+      setPaginaActual(1);
+    }, 350);
+    return () => clearTimeout(timer);
+  }, [busqueda]);
 
-  //* DATOS PENDIENTES Y TOTALES
-  const [turnosPendientes, setTurnosPendientes] = useState([]);
-  const [cuotasPendientes, setCuotasPendientes] = useState([]);
-  const [totalesBackend, setTotalesBackend] = useState(null);
-
-  // Identifica la última petición lanzada: las respuestas anteriores se descartan
-  const ultimaPeticion = useRef(0);
-
-  // * BUSCAR DATOS UTILIZANDO LA RUTA UNIFICADA DE CAJA
-  const fetchData = useCallback(async () => {
-    const idPeticion = ++ultimaPeticion.current;
+  const fetchCaja = useCallback(async () => {
     setCargando(true);
     try {
-      const params = {
-        pageCobro,
-        limitCobro: limitPorDefecto,
-        pageGasto,
-        limitGasto: limitPorDefecto,
-        searchCobro: search,
-        searchGasto: search,
-      };
+      const params = {};
+      if (filtros.fechaInicio) params.fechaInicio = filtros.fechaInicio;
+      if (filtros.fechaFin) params.fechaFin = filtros.fechaFin;
+      if (filtros.medio_pago) params.medio_pago = filtros.medio_pago;
 
-      if (modoAnual) {
-        params.periodo = "anio";
-        params.anio = anio;
-      } else {
-        params.mes = mes;
-        params.anio = anio;
-      }
+      const respuesta = await cajaApi.listar(params);
+      const data = respuesta.data.data || respuesta.data || {};
 
-      const respuesta = await api.get("/caja", { params });
-      if (idPeticion !== ultimaPeticion.current) return;
-
-      const { data, meta } = respuesta.data;
-
-      // 1. Asignación de cobros y sus metadatos
-      setCobros(data.cobros || []);
-      setPageCobro(meta.cobros.page || pageCobro);
-      setTotalPagesCobro(meta.cobros.totalPages || 1);
-      setTotalCobro(meta.cobros.total || 0);
-
-      // 2. Asignación de gastos y sus metadatos
-      setGastos(data.gastos || []);
-      setPageGasto(meta.gastos.page || pageGasto);
-      setTotalPagesGasto(meta.gastos.totalPages || 1);
-      setTotalGasto(meta.gastos.total || 0);
-
-      // 3. Pendientes (turnos sin cobro y cuotas adeudadas hasta hoy)
-      setTurnosPendientes(data.turnosPendientes || []);
-      setCuotasPendientes(data.cuotasPendientes || []);
-
-      // 4. Totales globales del período calculados en el backend
-      if (data.totales) {
-        setTotalesBackend(data.totales);
-      }
+      setDatosCrudos({
+        cobros: data.cobros || [],
+        gastos: data.gastos || [],
+        turnos: data.turnos || [],
+        resumen: data.resumen || null,
+      });
     } catch (error) {
-      console.error("Error al cargar los datos consolidados de caja:", error);
+      console.error("Error cargando datos de Caja:", error);
+      manejarErrorApi(error, "No se pudieron cargar los movimientos de caja.");
     } finally {
-      if (idPeticion === ultimaPeticion.current) setCargando(false);
+      setCargando(false);
     }
-  }, [pageCobro, limitPorDefecto, pageGasto, search, mes, anio, modoAnual]);
+  }, [filtros]);
 
-  // * RECARGAR DATOS CUANDO CAMBIA DE PÁGINA, BÚSQUEDA O PERÍODO
   useEffect(() => {
-    fetchData();
-  }, [fetchData]);
+    fetchCaja();
+  }, [fetchCaja]);
 
-  // * NAVEGACIÓN DE PERÍODOS
-  const mesAnterior = () => {
-    setModoAnualState(false);
-    setPageCobro(1);
-    setPageGasto(1);
-    if (mes === 1) {
-      setMesState(12);
-      setAnioState((a) => a - 1);
-    } else {
-      setMesState((m) => m - 1);
-    }
-  };
+  const manejarOrden = useCallback((columna) => {
+    setOrdenarPor((prevColumna) => {
+      if (prevColumna === columna) {
+        setDireccion((prevDir) => (prevDir === "ASC" ? "DESC" : "ASC"));
+        return prevColumna;
+      }
+      setDireccion("ASC");
+      return columna;
+    });
+    setPaginaActual(1);
+  }, []);
 
-  const mesSiguiente = () => {
-    setModoAnualState(false);
-    setPageCobro(1);
-    setPageGasto(1);
-    if (mes === 12) {
-      setMesState(1);
-      setAnioState((a) => a + 1);
-    } else {
-      setMesState((m) => m + 1);
-    }
-  };
+  const actualizarFiltro = useCallback((nombreFiltro, valor) => {
+    setFiltros((prev) => ({
+      ...prev,
+      [nombreFiltro]: valor,
+    }));
+    setPaginaActual(1);
+  }, []);
 
-  const irAMesActual = () => {
-    setModoAnualState(false);
-    setPageCobro(1);
-    setPageGasto(1);
-    const now = new Date();
-    setMesState(now.getMonth() + 1);
-    setAnioState(now.getFullYear());
-  };
+  const limpiarFiltros = useCallback(() => {
+    setFiltros(filtrosIniciales);
+    setBusqueda("");
+    setPaginaActual(1);
+  }, [filtrosIniciales]);
 
-  const cambiarMes = (nuevoMes) => {
-    setModoAnualState(false);
-    setPageCobro(1);
-    setPageGasto(1);
-    setMesState(Number(nuevoMes));
-  };
-
-  const cambiarAnio = (nuevoAnio) => {
-    setPageCobro(1);
-    setPageGasto(1);
-    setAnioState(Number(nuevoAnio));
-  };
-
-  const setModoAnual = (valor) => {
-    setPageCobro(1);
-    setPageGasto(1);
-    setModoAnualState(Boolean(valor));
-  };
-
-  const toggleModoAnual = () => {
-    setPageCobro(1);
-    setPageGasto(1);
-    setModoAnualState((prev) => !prev);
-  };
-
-  // * SETEA LA BÚSQUEDA
-  const setSearch = (nuevoTermino) => {
-    setSearchState(nuevoTermino);
-    setPageCobro(1);
-    setPageGasto(1);
-  };
-
-  // * CÁLCULOS PARA LOS REGISTROS MOSTRADOS EN HEADER
-  const inicioRegistroCobro = totalCobro === 0 ? 0 : (pageCobro - 1) * limitPorDefecto + 1;
-  const finRegistroCobro =
-    totalCobro === 0 ? 0 : pageCobro === totalPagesCobro ? totalCobro : pageCobro * limitPorDefecto;
-
-  const inicioRegistroGasto = totalGasto === 0 ? 0 : (pageGasto - 1) * limitPorDefecto + 1;
-  const finRegistroGasto =
-    totalGasto === 0 ? 0 : pageGasto === totalPagesGasto ? totalGasto : pageGasto * limitPorDefecto;
+  const propsPaginacion = useMemo(
+    () => ({
+      paginaActual,
+      setPaginaActual,
+      limitInicial,
+      busqueda,
+      setBusqueda,
+       busquedaDebounced,
+      ordenarPor,
+      direccion,
+      manejarOrden,
+    }),
+    [
+      paginaActual,
+      limitInicial,
+      busqueda,
+      busquedaDebounced,
+      ordenarPor,
+      direccion,
+      manejarOrden,
+    ],
+  );
 
   return {
-    cobros,
-    gastos,
-    turnosPendientes,
-    cuotasPendientes,
-    totalesBackend,
+    datosCrudos,
     cargando,
-
-    mes,
-    anio,
-    modoAnual,
-    periodoTodos: modoAnual,
-    mesAnterior,
-    mesSiguiente,
-    irAMesActual,
-    cambiarMes,
-    cambiarAnio,
-    setModoAnual,
-    toggleModoAnual,
-    setPeriodoTodos: setModoAnual,
-
-    pageCobro,
-    setPageCobro,
-    totalCobro,
-    totalPagesCobro,
-    pageGasto,
-    setPageGasto,
-    totalGasto,
-    totalPagesGasto,
-
-    search,
-    setSearch,
-
-    inicioRegistroCobro,
-    finRegistroCobro,
-    inicioRegistroGasto,
-    finRegistroGasto,
-    recargar: fetchData,
+    recargar: fetchCaja,
+    propsPaginacion,
+    filtros,
+    actualizarFiltro,
+    limpiarFiltros,
   };
 }

@@ -1,40 +1,44 @@
 /** @format */
-import { useCrudActions } from "../../../hooks/useCrudActions";
+
+import { useCrudActions } from "@/shared/hooks/useCrudActions";
 
 export function useObraSocialActions(recargar, cerrarModal) {
-  const { guardar, toggle, eliminar, cargandoAccion } = useCrudActions({
+  const { guardar, eliminar, cargandoAccion } = useCrudActions({
     endpoint: "/obras-sociales",
     idKey: "id_obra_social",
     recargar,
     cerrarModal,
+    metodoEliminar: "put_toggle",
+    validar: (datosFormulario) => {
+      if (!datosFormulario.nombre?.trim()) {
+        return "El nombre de la obra social es obligatorio.";
+      }
+      return null;
+    },
+    formatearPayload: (datosFormulario) => ({
+      nombre: datosFormulario.nombre.trim(),
+      activo:
+        datosFormulario.activo !== undefined ? datosFormulario.activo : true,
+    }),
     mensajes: {
-      actualizado: "Obra Social actualizada correctamente",
-      registrado: "Obra Social registrada correctamente",
-      toggle: "Estado de la obra social actualizada",
-      eliminado: "Obra Social eliminada correctamente",
+      creado: "Obra social registrada correctamente",
+      actualizado: "Obra social actualizada correctamente",
+      eliminado: "Estado actualizado correctamente",
       errorGuardar: "No se pudo guardar la obra social.",
-      errorToggle: "No se pudo actualizar el estado la obra social.",
-      errorEliminar: "No se pudo eliminar la obra social.",
+      errorEliminar: "No se pudo cambiar el estado de la obra social.",
     },
   });
 
-  const guardarObraSocial = (
-    datosFormulario,
-    editando,
-    obraSocialSeleccionada,
-  ) =>
-    guardar(
-      {
-        nombre: datosFormulario.nombre.trim(),
-      },
-      editando,
-      obraSocialSeleccionada,
-    );
+  const cambiarEstadoObraSocial = (obraSocialSeleccionada) => {
+    if (!obraSocialSeleccionada) return;
+    return eliminar(obraSocialSeleccionada, {
+      activo: !obraSocialSeleccionada.activo,
+    });
+  };
 
   return {
-    guardarObraSocial,
-    toggleObraSocial: toggle,
-    eliminarObraSocial: eliminar,
+    guardarObraSocial: guardar,
+    cambiarEstadoObraSocial,
     cargandoAccion,
   };
 }

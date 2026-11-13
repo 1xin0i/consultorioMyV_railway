@@ -1,11 +1,10 @@
 /** @format */
 
-import { formatFechaInput } from "../../../utils";
+import { formatDateInput } from "@/shared/utils";
 
-export const formatearGastoParaEditar = (item) => ({
-  id_categoria_gasto: item.id_categoria_gasto || "",
-  monto: item.monto || "",
-  concepto: item.concepto || "",
-  fecha_gasto: item.fecha_gasto ? formatFechaInput(item.fecha_gasto) : "",
-  metodo_pago: item.metodo_pago || "Efectivo",
+export const formatearGastoParaEditar = (gasto) => ({
+  id_categoria: gasto.id_categoria || gasto.CategoriaGasto?.id_categoria || "",
+  monto: gasto.monto || "",
+  fecha_gasto: formatDateInput(gasto.fecha_gasto),
+  detalle: gasto.detalle || "",
 });

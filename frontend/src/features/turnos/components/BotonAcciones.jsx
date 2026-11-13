@@ -1,204 +1,175 @@
 /** @format */
-import { useState, useEffect, useRef } from "react";
-import {
-  MoreVertical,
-  Edit,
-  CheckSquare,
-  CalendarDays,
-  X,
-  UserRoundX,
-  Banknote,
-  Trash2,
-} from "lucide-react";
-import MenuFlotantePortal from "../../../components/common/MenuFlotantePortal";
 
-export function BotonAccionesTurno({
+import {
+  Edit,
+  Trash2,
+  CheckCircle,
+  XCircle,
+  CalendarClock,
+  MoreVertical,
+  UserX,
+  Banknote,
+  Eye,
+} from "lucide-react";
+import { MenuFlotantePortal } from "@/shared/components/ui/MenuFlotantePortal";
+
+export function BotonAcciones({
   turno,
-  menuAbiertoId: menuAbiertoIdProp,
-  setMenuAbiertoId: setMenuAbiertoIdProp,
-  abrirParaEditar,
+  abrirParaVer,
   abrirParaAtender,
   abrirParaReprogramar,
   abrirParaCancelar,
   abrirParaInasistente,
-  abrirParaCobrar,
+  abrirParaEditar,
   abrirParaEliminar,
+  abrirParaCobrar,
+  formatearTurnoParaReprogramar,
 }) {
-  const [menuAbiertoIdLocal, setMenuAbiertoIdLocal] = useState(null);
-  const menuAbiertoId =
-    menuAbiertoIdProp !== undefined ? menuAbiertoIdProp : menuAbiertoIdLocal;
-  const setMenuAbiertoId = setMenuAbiertoIdProp || setMenuAbiertoIdLocal;
-
-  const botonRef = useRef(null);
-  const menuRef = useRef(null);
-
-  // Saber si este menú específico está abierto
-  const estaAbierto = menuAbiertoId === turno?.id_turno;
-
-  useEffect(() => {
-    if (!estaAbierto) return;
-
-    const handleClickOutside = (event) => {
-      // Si el clic fue en este botón, el onClick del botón se encarga de alternar
-      if (botonRef.current && botonRef.current.contains(event.target)) {
-        return;
-      }
-      // Si el clic fue dentro de este menú flotante, no cerramos
-      if (menuRef.current && menuRef.current.contains(event.target)) {
-        return;
-      }
-      // Si fue en cualquier otro botón o elemento exterior, cerramos este menú
-      setMenuAbiertoId(null);
-    };
-
-    const handleScroll = (event) => {
-      // Si se scrollea fuera del menú flotante, cerramos
-      if (menuRef.current && menuRef.current.contains(event.target)) {
-        return;
-      }
-      setMenuAbiertoId(null);
-    };
-
-    document.addEventListener("mousedown", handleClickOutside);
-    window.addEventListener("scroll", handleScroll, true);
-
-    return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
-      window.removeEventListener("scroll", handleScroll, true);
-    };
-  }, [estaAbierto, setMenuAbiertoId]);
-
-  if (!turno) return null;
-
-  const ejecutarAccion = (e, callback) => {
-    e.stopPropagation();
-    setMenuAbiertoId(null);
-    setTimeout(() => {
-      if (typeof callback === "function") {
-        callback(turno);
-      }
-    }, 0);
-  };
-
   const idEstado = Number(turno.id_estado || turno.EstadoTurno?.id_estado);
-  const estadoNombre = turno.EstadoTurno?.estado || "";
+  const estadoNombre = turno.EstadoTurno?.estado;
 
   const esProgramado = idEstado === 1 || estadoNombre === "Programado";
   const esAtendido = idEstado === 2 || estadoNombre === "Atendido";
-  const esCancelado = idEstado === 3 || estadoNombre === "Cancelado";
-  const esInasistente =
-    idEstado === 4 ||
-    estadoNombre === "Inasistente" ||
-    estadoNombre === "Inasistido";
+
+  const solicitudCobro = turno.SolicitudCobro || turno.Cobro;
+  const tieneSaldoPendiente =
+    esAtendido &&
+    (!solicitudCobro ||
+      (solicitudCobro.estado !== "saldado" &&
+        Number(
+          solicitudCobro.saldo_pendiente ?? turno.precio_final ?? 0,
+        ) > 0));
 
   return (
-    <div className="relative">
-      <button
-        ref={botonRef}
-        type="button"
-        aria-label="Más opciones de turno"
-        title="Más opciones de turno"
-        onClick={(e) => {
-          e.stopPropagation();
-          setMenuAbiertoId(estaAbierto ? null : turno.id_turno);
-        }}
-        className="p-2 rounded-xl text-teal-800/70 hover:bg-teal-50 hover:text-teal-900 transition-colors cursor-pointer"
-      >
-        <MoreVertical size={18} />
-      </button>
-
-      <MenuFlotantePortal ref={menuRef} targetRef={botonRef} isOpen={estaAbierto}>
-        {/* Si está PROGRAMADO: editar, atender, cancelar, inasistido y reprogramar */}
-        {esProgramado && (
-          <>
+    <MenuFlotantePortal
+      ancho={212}
+      trigger={({ abierto, toggleMenu }) => (
+        <button
+          type="button"
+          onClick={toggleMenu}
+          className={`p-2 rounded-xl transition-colors cursor-pointer ${
+            abierto
+              ? "bg-teal-100 text-teal-900 dark:bg-slate-800 dark:text-slate-100"
+              : "text-slate-500 hover:text-teal-900 hover:bg-teal-50 dark:text-slate-400 dark:hover:text-slate-200 dark:hover:bg-slate-800"
+          }`}
+          title="Más acciones"
+        >
+          <MoreVertical size={18} />
+        </button>
+      )}
+    >
+      {({ cerrarMenu }) => (
+        <div className="flex flex-col text-xs font-semibold text-slate-700 dark:text-slate-200">
+          {abrirParaVer && (
             <button
               type="button"
-              onClick={(e) => ejecutarAccion(e, abrirParaEditar)}
-              className="flex items-center gap-2.5 px-4 py-2.5 text-xs font-semibold text-blue-700 hover:bg-blue-50 text-left transition-colors cursor-pointer w-full"
+              onClick={() => {
+                cerrarMenu();
+                abrirParaVer(turno);
+              }}
+              className="flex items-center gap-2.5 px-3.5 py-2 hover:bg-teal-50/70 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200 transition-colors cursor-pointer text-left"
             >
-              <Edit size={16} className="text-blue-600" />
-              <span>Editar</span>
+              <Eye size={15} className="text-[#0d8266] shrink-0" />
+              <span>Ver Detalle</span>
             </button>
+          )}
 
-            <button
-              type="button"
-              onClick={(e) => ejecutarAccion(e, abrirParaAtender)}
-              className="flex items-center gap-2.5 px-4 py-2.5 text-xs font-bold text-emerald-800 hover:bg-emerald-100/70 text-left transition-colors cursor-pointer w-full"
-            >
-              <CheckSquare size={16} className="text-emerald-600" />
-              <span>Atender</span>
-            </button>
+          {esProgramado && (
+            <>
+              <button
+                type="button"
+                onClick={() => {
+                  cerrarMenu();
+                  abrirParaAtender(turno);
+                }}
+                className="flex items-center gap-2.5 px-3.5 py-2 hover:bg-emerald-50 dark:hover:bg-emerald-950/50 text-emerald-700 dark:text-emerald-300 transition-colors cursor-pointer text-left"
+              >
+                <CheckCircle size={15} className="shrink-0" />
+                <span>Marcar Atendido</span>
+              </button>
 
-            <button
-              type="button"
-              onClick={(e) => ejecutarAccion(e, abrirParaCancelar)}
-              className="flex items-center gap-2.5 px-4 py-2.5 text-xs font-semibold text-rose-700 hover:bg-rose-50 text-left transition-colors cursor-pointer w-full"
-            >
-              <X size={16} className="text-rose-500" />
-              <span>Cancelar</span>
-            </button>
+              <button
+                type="button"
+                onClick={() => {
+                  cerrarMenu();
+                  abrirParaReprogramar(turno, formatearTurnoParaReprogramar);
+                }}
+                className="flex items-center gap-2.5 px-3.5 py-2 hover:bg-sky-50 dark:hover:bg-sky-950/50 text-sky-700 dark:text-sky-300 transition-colors cursor-pointer text-left"
+              >
+                <CalendarClock size={15} className="shrink-0" />
+                <span>Reprogramar</span>
+              </button>
 
-            <button
-              type="button"
-              onClick={(e) => ejecutarAccion(e, abrirParaInasistente)}
-              className="flex items-center gap-2.5 px-4 py-2.5 text-xs font-semibold text-amber-800 hover:bg-amber-50 text-left transition-colors cursor-pointer w-full"
-            >
-              <UserRoundX size={16} className="text-amber-600" />
-              <span>Inasistido</span>
-            </button>
+              <button
+                type="button"
+                onClick={() => {
+                  cerrarMenu();
+                  abrirParaInasistente(turno);
+                }}
+                className="flex items-center gap-2.5 px-3.5 py-2 hover:bg-amber-50 dark:hover:bg-amber-950/50 text-amber-700 dark:text-amber-300 transition-colors cursor-pointer text-left"
+              >
+                <UserX size={15} className="shrink-0" />
+                <span>Marcar Inasistido</span>
+              </button>
 
-            <button
-              type="button"
-              onClick={(e) => ejecutarAccion(e, abrirParaReprogramar)}
-              className="flex items-center gap-2.5 px-4 py-2.5 text-xs font-semibold text-sky-800 hover:bg-sky-50 text-left transition-colors cursor-pointer w-full"
-            >
-              <CalendarDays size={16} className="text-sky-600" />
-              <span>Reprogramar</span>
-            </button>
-          </>
-        )}
+              <button
+                type="button"
+                onClick={() => {
+                  cerrarMenu();
+                  abrirParaCancelar(turno);
+                }}
+                className="flex items-center gap-2.5 px-3.5 py-2 hover:bg-rose-50 dark:hover:bg-rose-950/50 text-rose-600 dark:text-rose-400 transition-colors cursor-pointer text-left"
+              >
+                <XCircle size={15} className="shrink-0" />
+                <span>Cancelar Turno</span>
+              </button>
 
-        {/* Si está ATENDIDO: cobrar */}
-        {esAtendido && (
+              <div className="my-1 border-t border-slate-100 dark:border-slate-800" />
+            </>
+          )}
+
+          {tieneSaldoPendiente && abrirParaCobrar && (
+            <>
+              <button
+                type="button"
+                onClick={() => {
+                  cerrarMenu();
+                  abrirParaCobrar(turno);
+                }}
+                className="flex items-center gap-2.5 px-3.5 py-2 hover:bg-emerald-50 dark:hover:bg-emerald-950/50 text-[#0d8266] dark:text-emerald-300 font-bold transition-colors cursor-pointer text-left"
+              >
+                <Banknote size={15} className="shrink-0" />
+                <span>Registrar Pago</span>
+              </button>
+              <div className="my-1 border-t border-slate-100 dark:border-slate-800" />
+            </>
+          )}
+
           <button
             type="button"
-            onClick={(e) => ejecutarAccion(e, abrirParaCobrar)}
-            className="flex items-center gap-2.5 px-4 py-2.5 text-xs font-bold text-emerald-800 hover:bg-emerald-50 text-left transition-colors cursor-pointer w-full"
+            onClick={() => {
+              cerrarMenu();
+              abrirParaEditar(turno);
+            }}
+            className="flex items-center gap-2.5 px-3.5 py-2 hover:bg-amber-50/80 dark:hover:bg-amber-950/40 text-slate-700 dark:text-slate-200 hover:text-amber-800 transition-colors cursor-pointer text-left"
           >
-            <Banknote size={16} className="text-emerald-600" />
-            <span>Cobrar</span>
+            <Edit size={15} className="text-amber-600 shrink-0" />
+            <span>Editar Turno</span>
           </button>
-        )}
 
-        {/* Si está CANCELADO o INASISTIDO: reprogramar */}
-        {(esCancelado || esInasistente) && (
           <button
             type="button"
-            onClick={(e) => ejecutarAccion(e, abrirParaReprogramar)}
-            className="flex items-center gap-2.5 px-4 py-2.5 text-xs font-semibold text-sky-800 hover:bg-sky-50 text-left transition-colors cursor-pointer w-full"
+            onClick={() => {
+              cerrarMenu();
+              abrirParaEliminar(turno);
+            }}
+            className="flex items-center gap-2.5 px-3.5 py-2 hover:bg-rose-50 dark:hover:bg-rose-950/50 text-rose-600 dark:text-rose-400 transition-colors cursor-pointer text-left"
           >
-            <CalendarDays size={16} className="text-sky-600" />
-            <span>Reprogramar</span>
+            <Trash2 size={15} className="shrink-0" />
+            <span>Eliminar Turno</span>
           </button>
-        )}
-
-        {/* Opción común: Eliminar / Cancelar definitivamente el registro */}
-        {abrirParaEliminar && (
-          <>
-            <div className="my-1 border-t border-gray-100 dark:border-slate-700/60" />
-            <button
-              type="button"
-              onClick={(e) => ejecutarAccion(e, abrirParaEliminar)}
-              className="flex items-center gap-2.5 px-4 py-2.5 text-xs font-semibold text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 text-left transition-colors cursor-pointer w-full"
-            >
-              <Trash2 size={16} className="text-rose-500" />
-              <span>Eliminar turno</span>
-            </button>
-          </>
-        )}
-      </MenuFlotantePortal>
-    </div>
+        </div>
+      )}
+    </MenuFlotantePortal>
   );
 }
-
-export default BotonAccionesTurno;

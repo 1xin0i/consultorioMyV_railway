@@ -1,15 +1,14 @@
 /** @format */
 
 import { useState, useEffect } from "react";
-import api from "../../../../services/api";
-import Modal from "../../../../components/common/Modal";
+import Modal from "@/shared/components/ui/Modal";
 import { UserPlus, AlertCircle, Plus, X } from "lucide-react";
-import { formatDateTimeInput } from "../../../../utils";
-import toast from "react-hot-toast";
-import { manejarErrorApi } from "../../../../utils/errorHandler";
-import InputFiltro from "../../../../components/common/InputFiltro";
+import { formatDateTimeInput } from "@/shared/utils";
+import InputFiltro from "@/shared/components/ui/InputFiltro";
 import { calcularHoraFin } from "../../utils/calcularHoraFin";
-import { useConfiguracion } from "../../../../context/ConfiguracionContext";
+import { useConfiguracion } from "@/features/configuracion";
+import turnosApi from "../../services/turnos.api";
+import { ModalPacienteRapido } from "./ModalPacienteRapido";
 
 export function ModalTurnoForm({
   modalAbierto,
@@ -24,14 +23,6 @@ export function ModalTurnoForm({
 }) {
   const [modalPacienteRapidoAbierto, setModalPacienteRapidoAbierto] =
     useState(false);
-  const [datosPacienteRapido, setDatosPacienteRapido] = useState({
-    nombre: "",
-    apellido: "",
-    telefono: "",
-    dni: "",
-    fecha_nacimiento: "",
-    domicilio: "",
-  });
 
   const { validarTurnoHorario } = useConfiguracion();
   const validacionHorario =
@@ -42,7 +33,6 @@ export function ModalTurnoForm({
         )
       : null;
 
-  // Precargar prácticas si se está editando un turno programado existente
   useEffect(() => {
     if (
       modalAbierto &&
@@ -50,8 +40,8 @@ export function ModalTurnoForm({
       datosFormulario?.id_turno &&
       (!datosFormulario.practicas || datosFormulario.practicas.length === 0)
     ) {
-      api
-        .get(`/practicas-turnos/${datosFormulario.id_turno}`)
+      turnosApi
+        .obtenerPracticasDeTurno(datosFormulario.id_turno)
         .then((res) => {
           const lista = res.data.data || [];
           if (lista.length > 0) {
@@ -89,7 +79,6 @@ export function ModalTurnoForm({
     });
   };
 
-  // Cálculo automático de la fecha/hora de fin al crear
   useEffect(() => {
     if (
       modalAbierto &&
@@ -107,54 +96,6 @@ export function ModalTurnoForm({
     actualizarDatos,
   ]);
 
-  const actualizarDatosPacienteRapido = (e) => {
-    const { name, value } = e.target;
-    setDatosPacienteRapido((prev) => ({ ...prev, [name]: value }));
-  };
-
-  const guardarPacienteRapido = async (e) => {
-    e.preventDefault();
-    try {
-      const respuesta = await api.post("/pacientes", {
-        nombre: datosPacienteRapido.nombre.trim(),
-        apellido: datosPacienteRapido.apellido.trim(),
-        telefono: datosPacienteRapido.telefono.trim(),
-        dni: datosPacienteRapido.dni?.trim() || null,
-        fecha_nacimiento: datosPacienteRapido.fecha_nacimiento || null,
-        domicilio: datosPacienteRapido.domicilio?.trim() || null,
-      });
-
-      const nuevoPaciente = respuesta.data.data || respuesta.data;
-      const nuevoId = nuevoPaciente.id_paciente;
-
-      if (setPacientes) {
-        setPacientes((prev) => {
-          const existe = prev.some((p) => p.id_paciente === nuevoId);
-          return existe ? prev : [...prev, nuevoPaciente];
-        });
-      }
-
-      actualizarDatos({
-        target: { name: "id_paciente", value: nuevoId },
-      });
-
-      toast.success("Paciente creado correctamente");
-      setDatosPacienteRapido({
-        nombre: "",
-        apellido: "",
-        telefono: "",
-        dni: "",
-        fecha_nacimiento: "",
-        domicilio: "",
-      });
-      setModalPacienteRapidoAbierto(false);
-    } catch (error) {
-      console.error("Error al crear paciente rápido:", error);
-      manejarErrorApi(error, "No se pudo crear el paciente.");
-    }
-  };
-
-  // Identificar el estado del turno
   const idEstadoActual = Number(datosFormulario.id_estado);
   const esProgramado = idEstadoActual === 1 || !editando;
 
@@ -180,7 +121,6 @@ export function ModalTurnoForm({
         }
       >
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pb-8 sm:pb-6">
-          {/* Aviso si el turno no es programado */}
           {editando && !esProgramado && (
             <div className="col-span-1 md:col-span-2 p-3 bg-amber-50 border border-amber-200 rounded-xl text-amber-800 text-xs font-medium">
               Este turno se encuentra en estado Atendido/Cerrado. El paciente y
@@ -189,7 +129,6 @@ export function ModalTurnoForm({
             </div>
           )}
 
-          {/* Banner Ámbar de Excepción / Urgencia cuando cae en día no laboral o horario bloqueado */}
           {!editando && validacionHorario && !validacionHorario.valido && (
             <div className="col-span-1 md:col-span-2 p-3.5 bg-amber-50 dark:bg-amber-950/40 border border-amber-300 dark:border-amber-700/70 rounded-xl text-amber-900 dark:text-amber-200 flex flex-col gap-2.5 shadow-2xs">
               <div className="flex items-start gap-2.5">
@@ -228,7 +167,6 @@ export function ModalTurnoForm({
             </div>
           )}
 
-          {/* Paciente (Solo visible al agendar un turno nuevo) */}
           {!editando && (
             <div className="col-span-1 md:col-span-2">
               <div className="flex items-center justify-between mb-1">
@@ -272,7 +210,6 @@ export function ModalTurnoForm({
             </div>
           )}
 
-          {/* Fecha y Hora de Inicio */}
           {!editando && (
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-1">
@@ -302,7 +239,6 @@ export function ModalTurnoForm({
             </div>
           )}
 
-          {/* Duración (Minutos) */}
           {!editando && (
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-1">
@@ -325,7 +261,6 @@ export function ModalTurnoForm({
             </div>
           )}
 
-          {/* Fecha y Hora de Fin (Calculado) */}
           {!editando && (
             <div className="col-span-1 md:col-span-2 bg-gray-50 p-3 rounded-xl border border-gray-200">
               <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">
@@ -341,7 +276,6 @@ export function ModalTurnoForm({
             </div>
           )}
 
-          {/* Prácticas a Realizar (Opcional - Colocadas ARRIBA de las notas de la consulta) */}
           {(!editando || esProgramado) && (
             <div className="col-span-1 md:col-span-2 border-t border-gray-100 pt-3">
               <div className="flex items-center justify-between mb-2">
@@ -420,7 +354,6 @@ export function ModalTurnoForm({
             </div>
           )}
 
-          {/* Notas / Observaciones (Debajo de las prácticas) */}
           <div className="col-span-1 md:col-span-2">
             <label className="block text-sm font-semibold text-gray-700 mb-1">
               Notas de la Consulta
@@ -436,7 +369,6 @@ export function ModalTurnoForm({
           </div>
         </div>
 
-        {/* Acciones del Modal Fijas al Pie (Sin menú de estado) */}
         <div className="sticky bottom-0 -mx-5 -mb-5 sm:-mx-6 sm:-mb-6 mt-4 p-4 bg-white/95 backdrop-blur-xs border-t border-gray-100 flex items-center justify-end gap-3 z-20">
           <button
             type="button"
@@ -460,120 +392,16 @@ export function ModalTurnoForm({
         </div>
       </Modal>
 
-      {/* Modal Secundario: Crear Paciente Rápido */}
-      {modalPacienteRapidoAbierto && (
-        <Modal
-          isOpen={modalPacienteRapidoAbierto}
-          onClose={() => setModalPacienteRapidoAbierto(false)}
-          onSubmit={guardarPacienteRapido}
-          width="max-w-md"
-          title="Crear Paciente Rápido"
-        >
-          <div className="flex flex-col gap-3">
-            <div>
-              <label className="block text-xs font-semibold text-gray-700 mb-1">
-                Nombre <span className="text-rose-500">*</span>
-              </label>
-              <input
-                type="text"
-                name="nombre"
-                value={datosPacienteRapido.nombre}
-                onChange={actualizarDatosPacienteRapido}
-                required
-                placeholder="Ej. Martín"
-                className="w-full border border-gray-300 p-2 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#2eb086]/50 focus:border-[#2eb086]"
-              />
-            </div>
-
-            <div>
-              <label className="block text-xs font-semibold text-gray-700 mb-1">
-                Apellido <span className="text-rose-500">*</span>
-              </label>
-              <input
-                type="text"
-                name="apellido"
-                value={datosPacienteRapido.apellido}
-                onChange={actualizarDatosPacienteRapido}
-                required
-                placeholder="Ej. Gómez"
-                className="w-full border border-gray-300 p-2 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#2eb086]/50 focus:border-[#2eb086]"
-              />
-            </div>
-
-            <div>
-              <label className="block text-xs font-semibold text-gray-700 mb-1">
-                Teléfono <span className="text-rose-500">*</span>
-              </label>
-              <input
-                type="tel"
-                name="telefono"
-                value={datosPacienteRapido.telefono}
-                onChange={actualizarDatosPacienteRapido}
-                required
-                placeholder="Ej. 3514567890"
-                className="w-full border border-gray-300 p-2 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#2eb086]/50 focus:border-[#2eb086]"
-              />
-            </div>
-
-            <div>
-              <label className="block text-xs font-semibold text-gray-700 mb-1">
-                DNI (Opcional)
-              </label>
-              <input
-                type="text"
-                name="dni"
-                value={datosPacienteRapido.dni}
-                onChange={actualizarDatosPacienteRapido}
-                placeholder="Ej. 38450123"
-                className="w-full border border-gray-300 p-2 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#2eb086]/50 focus:border-[#2eb086]"
-              />
-            </div>
-
-            <div>
-              <label className="block text-xs font-semibold text-gray-700 mb-1">
-                Fecha de Nacimiento (Opcional)
-              </label>
-              <input
-                type="date"
-                name="fecha_nacimiento"
-                value={datosPacienteRapido.fecha_nacimiento}
-                onChange={actualizarDatosPacienteRapido}
-                className="w-full border border-gray-300 p-2 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#2eb086]/50 focus:border-[#2eb086]"
-              />
-            </div>
-
-            <div>
-              <label className="block text-xs font-semibold text-gray-700 mb-1">
-                Domicilio (Opcional)
-              </label>
-              <input
-                type="text"
-                name="domicilio"
-                value={datosPacienteRapido.domicilio}
-                onChange={actualizarDatosPacienteRapido}
-                placeholder="Ej. Av. Colón 1234"
-                className="w-full border border-gray-300 p-2 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#2eb086]/50 focus:border-[#2eb086]"
-              />
-            </div>
-
-            <div className="border-t border-gray-100 pt-3 mt-2 flex justify-end gap-2">
-              <button
-                type="button"
-                onClick={() => setModalPacienteRapidoAbierto(false)}
-                className="px-3.5 py-2 text-xs font-semibold rounded-xl text-gray-600 bg-gray-100 hover:bg-gray-200 transition-colors cursor-pointer"
-              >
-                Cancelar
-              </button>
-              <button
-                type="submit"
-                className="px-4 py-2 text-xs font-semibold rounded-xl text-white bg-[#2eb086] hover:bg-[#259370] transition-all shadow-sm cursor-pointer"
-              >
-                Guardar Paciente
-              </button>
-            </div>
-          </div>
-        </Modal>
-      )}
+      <ModalPacienteRapido
+        isOpen={modalPacienteRapidoAbierto}
+        onClose={() => setModalPacienteRapidoAbierto(false)}
+        setPacientes={setPacientes}
+        onPacienteCreado={(nuevoId) =>
+          actualizarDatos({
+            target: { name: "id_paciente", value: nuevoId },
+          })
+        }
+      />
     </>
   );
 }

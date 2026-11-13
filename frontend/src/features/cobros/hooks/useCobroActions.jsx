@@ -1,88 +1,108 @@
+/** @format */
+
 import { useState } from "react";
-import api from "../../../services/api";
 import toast from "react-hot-toast";
-import { manejarErrorApi } from "../../../utils/errorHandler";
+import { manejarErrorApi } from "@/shared/utils/errorHandler";
+import cobrosApi from "../services/cobros.api";
 
 export function useCobroActions(recargar, cerrarModal) {
   const [cargandoAccion, setCargandoAccion] = useState(false);
 
   const guardarCobro = async (datosFormulario, editando, cobroSeleccionado) => {
-    if (!datosFormulario?.id_turno) {
-      toast.error("Por favor seleccioná un turno para cobrar.");
+    const esInformal = datosFormulario.tipo_ingreso === "informal";
+
+    if (!esInformal && !datosFormulario.id_turno) {
+      toast.error("Debes seleccionar un turno atendido para registrar el cobro.");
       return;
     }
 
-    const monto = Number(datosFormulario?.monto_a_cobrar);
-    if (!monto || monto <= 0) {
-      toast.error("El monto a cobrar debe ser mayor a 0.");
+    if (esInformal && !datosFormulario.concepto_informal?.trim()) {
+      toast.error("El concepto del ingreso informal es obligatorio.");
+      return;
+    }
+
+    if (!datosFormulario.monto_pagado || Number(datosFormulario.monto_pagado) <= 0) {
+      toast.error("El monto del cobro debe ser mayor a 0.");
+      return;
+    }
+
+    if (!datosFormulario.medio_pago) {
+      toast.error("Selecciona un medio de pago.");
       return;
     }
 
     setCargandoAccion(true);
     try {
-      const payloadBase = {
-        id_turno: Number(datosFormulario.id_turno),
-        id_paciente: Number(datosFormulario.id_paciente),
-        monto_a_cobrar: monto,
-        observaciones: datosFormulario.observaciones?.trim() || null,
-      };
-
       if (editando) {
-        const idTarget = cobroSeleccionado.id || cobroSeleccionado.id_cobro;
-        await api.put(`/cobros/${idTarget}`, {
-          ...payloadBase,
-          metodo_pago: datosFormulario.metodo_pago || "Efectivo",
-        });
-        toast.success("Cobro actualizado correctamente");
-      } else {
-        const modalidad =
-          datosFormulario.modalidad === "informal" ? "informal" : "inmediato";
+        const idTarget =
+          cobroSeleccionado?.id_cobro ||
+          cobroSeleccionado?.id_movimiento ||
+          datosFormulario.id_cobro;
 
-        if (modalidad === "informal") {
-          await api.post("/cobros/informal", {
-            ...payloadBase,
-            entrega_inicial: Number(datosFormulario.entrega_inicial) || 0,
-            metodo_pago: datosFormulario.metodo_pago || "Efectivo",
-          });
-        } else {
-          await api.post("/cobros/inmediato", {
-            ...payloadBase,
-            metodo_pago: datosFormulario.metodo_pago || "Efectivo",
-          });
-        }
+        await cobrosApi.actualizar(idTarget, {
+          monto_pagado: parseFloat(datosFormulario.monto_pagado),
+          medio_pago: datosFormulario.medio_pago,
+          fecha_cobro: datosFormulario.fecha_cobro,
+          observaciones: esInformal
+            ? `[Ingreso Informal] ${datosFormulario.concepto_informal.trim()}${
+                datosFormulario.observaciones?.trim()
+                  ? ` - ${datosFormulario.observaciones.trim()}`
+                  : ""
+              }`
+            : datosFormulario.observaciones?.trim() || null,
+        });
+
+        toast.success("Cobro actualizado correctamente");
+      } else if (esInformal) {
+        await cobrosApi.crearCobroInformal({
+          concepto: datosFormulario.concepto_informal.trim(),
+          monto_pagado: parseFloat(datosFormulario.monto_pagado),
+          medio_pago: datosFormulario.medio_pago,
+          fecha_cobro: datosFormulario.fecha_cobro,
+          observaciones: datosFormulario.observaciones?.trim() || null,
+        });
+
+        toast.success("Ingreso informal registrado correctamente");
+      } else {
+        await cobrosApi.crearCobroInmediato({
+          id_turno: Number(datosFormulario.id_turno),
+          monto_pagado: parseFloat(datosFormulario.monto_pagado),
+          medio_pago: datosFormulario.medio_pago,
+          fecha_cobro: datosFormulario.fecha_cobro,
+          observaciones: datosFormulario.observaciones?.trim() || null,
+        });
+
         toast.success("Cobro registrado correctamente");
       }
 
       recargar();
       cerrarModal();
     } catch (error) {
-      console.error("Error al registrar el cobro:", error);
-      manejarErrorApi(error, "No se pudo procesar el cobro.");
+      console.error("Error al guardar cobro:", error);
+      manejarErrorApi(error, "No se pudo guardar el cobro.");
     } finally {
       setCargandoAccion(false);
     }
   };
 
-  const ejecutarEliminacion = async (cobroSeleccionado, cerrarModalEliminar) => {
+  const ejecutarEliminacionCobro = async (cobroSeleccionado) => {
     if (!cobroSeleccionado) return;
-    setCargandoAccion(true);
     try {
-      const idTarget = cobroSeleccionado.id || cobroSeleccionado.id_cobro;
-      await api.patch(`/cobros/${idTarget}/delete`);
-      toast.success("Registro de cobro eliminado");
+      const idTarget =
+        cobroSeleccionado.id_cobro || cobroSeleccionado.id_movimiento;
+      await cobrosApi.eliminar(idTarget);
+      toast.success("Cobro anulado correctamente");
       recargar();
-      if (typeof cerrarModalEliminar === "function") cerrarModalEliminar();
+      cerrarModal();
     } catch (error) {
-      console.error("Error al eliminar cobro:", error);
-      manejarErrorApi(error, "No se pudo eliminar el cobro.");
-    } finally {
-      setCargandoAccion(false);
+      console.error("Error al anular cobro:", error);
+      manejarErrorApi(error, "No se pudo anular el cobro.");
     }
   };
 
   return {
     guardarCobro,
-    ejecutarEliminacion,
+    ejecutarEliminacionCobro,
     cargandoAccion,
   };
 }

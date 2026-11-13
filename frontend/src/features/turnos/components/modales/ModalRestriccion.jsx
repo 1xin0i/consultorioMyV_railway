@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef, useMemo, memo } from "react";
 import { createPortal } from "react-dom";
-import { Lock, Unlock, Trash2, X, Calendar, ChevronDown } from "lucide-react";
+import { Lock, Unlock, X, Calendar, ChevronDown } from "lucide-react";
 import toast from "react-hot-toast";
 import { useRestricciones } from "../../hooks/useRestricciones";
 
@@ -118,14 +118,14 @@ export const ModalRestriccion = memo(function ModalRestriccion({
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [isOpen]);
 
+  const restriccionesExistentes = useMemo(() => {
+    if (!isOpen || !fechaInicioStr || !obtenerRestriccionesDeFecha) return [];
+    return obtenerRestriccionesDeFecha(fechaInicioStr);
+  }, [isOpen, fechaInicioStr, obtenerRestriccionesDeFecha]);
+
   if (!isOpen) return null;
 
   const esDiaCompleto = alcance === "dia_completo";
-
-  const restriccionesExistentes = useMemo(() => {
-    if (!fechaInicioStr || !obtenerRestriccionesDeFecha) return [];
-    return obtenerRestriccionesDeFecha(fechaInicioStr);
-  }, [fechaInicioStr, obtenerRestriccionesDeFecha]);
 
   const handleEliminar = async (id) => {
     const fn = onEliminar || eliminarRestriccion;

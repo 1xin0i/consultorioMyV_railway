@@ -1,3 +1,21 @@
+export const COLUMNAS_CAJA = [
+  { etiqueta: "Fecha", campo: "fecha", ordenable: true },
+  { etiqueta: "Tipo", campo: "tipo", ordenable: false },
+  { etiqueta: "Concepto", campo: "concepto", ordenable: false },
+  { etiqueta: "Medio / Cat.", campo: "categoria_o_medio", ordenable: false },
+  { etiqueta: "Monto", campo: "monto", ordenable: true },
+  { etiqueta: "Acciones", campo: null, ordenable: false, centrado: true },
+];
+
+export const COLUMNAS_GASTOS = [
+  { etiqueta: "ID", campo: "id_gasto", ordenable: true },
+  { etiqueta: "Categoría", campo: "id_categoria_gasto", ordenable: false },
+  { etiqueta: "Concepto", campo: "concepto", ordenable: false },
+  { etiqueta: "Fecha", campo: "fecha_gasto", ordenable: true },
+  { etiqueta: "Monto", campo: "monto", ordenable: true },
+  { etiqueta: "Acciones", campo: null, ordenable: false, centrado: true },
+];
+
 export const ESTADO_INICIAL_GASTO = {
   id_categoria_gasto: "",
   monto: "",
