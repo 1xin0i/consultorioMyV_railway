@@ -1,0 +1,2013 @@
+// Jest Snapshot v1, https://jestjs.io/docs/snapshot-testing
+
+exports[`Contrato API /api/turnos Cobros sobre turnos: formateo de SolicitudCobro en los listados: atendidos-despues-del-cobro 1`] = `
+{
+  "body": {
+    "data": [],
+    "status": "success",
+  },
+  "status": 200,
+}
+`;
+
+exports[`Contrato API /api/turnos Cobros sobre turnos: formateo de SolicitudCobro en los listados: lista-con-cobro 1`] = `
+{
+  "body": {
+    "data": [
+      {
+        "Cobro": {
+          "Cobros": [
+            {
+              "fecha_cobro": "2030-01-07T12:00:00.000Z",
+              "id": 1,
+              "id_cobro": 1,
+              "metodo_pago": "Transferencia",
+              "metodo_pago_id": 2,
+              "monto": 400,
+              "monto_cobrado": 400,
+              "observaciones": "Entrega inicial",
+            },
+          ],
+          "estado": "parcial",
+          "id": 1,
+          "id_cobro": 1,
+          "id_solicitud_cobro": 1,
+          "monto_a_cobrar": 1200,
+          "monto_total": 1200,
+          "observaciones": "Atendido ok",
+          "saldo_pendiente": 800,
+          "ya_cobrado": 400,
+        },
+        "EstadoTurno": {
+          "estado": "Atendido",
+        },
+        "Paciente": {
+          "apellido": "Gomez",
+          "dni": "35123456",
+          "nombre": "Carlos",
+          "telefono": "3515556666",
+        },
+        "PracticaTurnos": [
+          {
+            "ObraSocial": null,
+            "Practica": {
+              "codigo_nomenclador": "01.01",
+              "id_practica": 1,
+              "nombre_nomenclador": "Consulta",
+              "nombre_referencia": "Consulta general",
+              "precio_referencia": 1000,
+            },
+            "id_obra_social": null,
+            "id_practica": 1,
+            "id_practica_turno": 4,
+            "id_turno": 1,
+          },
+          {
+            "ObraSocial": null,
+            "Practica": {
+              "codigo_nomenclador": "02.02",
+              "id_practica": 2,
+              "nombre_nomenclador": "Limpieza",
+              "nombre_referencia": "Limpieza dental",
+              "precio_referencia": 2000,
+            },
+            "id_obra_social": null,
+            "id_practica": 2,
+            "id_practica_turno": 5,
+            "id_turno": 1,
+          },
+        ],
+        "SolicitudCobro": {
+          "Cobros": [
+            {
+              "fecha_cobro": "2030-01-07T12:00:00.000Z",
+              "id": 1,
+              "id_cobro": 1,
+              "metodo_pago": "Transferencia",
+              "metodo_pago_id": 2,
+              "monto": 400,
+              "monto_cobrado": 400,
+              "observaciones": "Entrega inicial",
+            },
+          ],
+          "estado": "parcial",
+          "id": 1,
+          "id_cobro": 1,
+          "id_solicitud_cobro": 1,
+          "monto_a_cobrar": 1200,
+          "monto_total": 1200,
+          "observaciones": "Atendido ok",
+          "saldo_pendiente": 800,
+          "ya_cobrado": 400,
+        },
+        "activo": true,
+        "fecha_hora_fin": "2030-01-07T13:30:00.000Z",
+        "fecha_hora_inicio": "2030-01-07T13:00:00.000Z",
+        "id_estado": 2,
+        "id_paciente": 1,
+        "id_turno": 1,
+        "notas_consulta": "Atendido ok",
+        "precio_final": 1200,
+      },
+    ],
+    "meta": {
+      "hasNextPage": false,
+      "hasPrevPage": false,
+      "limit": 9,
+      "page": 1,
+      "total": 1,
+      "totalPages": 1,
+    },
+    "status": "success",
+  },
+  "status": 200,
+}
+`;
+
+exports[`Contrato API /api/turnos Cobros sobre turnos: formateo de SolicitudCobro en los listados: pago-parcial-A 1`] = `
+{
+  "body": {
+    "data": {
+      "id_cobro": 1,
+      "id_turno": 1,
+      "monto_cobrado": 400,
+      "pagado_completo": false,
+      "saldo_pendiente": 800,
+      "solicitud_cobro_id": 1,
+    },
+    "message": "Cobro parcial registrado. Saldo pendiente actualizado.",
+    "status": "success",
+  },
+  "status": 200,
+}
+`;
+
+exports[`Contrato API /api/turnos Cobros sobre turnos: formateo de SolicitudCobro en los listados: por-paciente-con-cobro 1`] = `
+{
+  "body": {
+    "data": [
+      {
+        "Cobro": null,
+        "EstadoTurno": {
+          "estado": "Programado",
+          "id_estado": 1,
+        },
+        "PracticaTurnos": [],
+        "SolicitudCobro": null,
+        "activo": true,
+        "fecha_hora_fin": "2030-01-09T13:30:00.000Z",
+        "fecha_hora_inicio": "2030-01-09T13:00:00.000Z",
+        "id_estado": 1,
+        "id_paciente": 1,
+        "id_turno": 5,
+        "notas_consulta": null,
+        "precio_final": 300,
+      },
+      {
+        "Cobro": null,
+        "EstadoTurno": {
+          "estado": "Cancelado",
+          "id_estado": 3,
+        },
+        "PracticaTurnos": [
+          {
+            "ObraSocial": null,
+            "Practica": {
+              "codigo_nomenclador": "02.02",
+              "id_practica": 2,
+              "nombre_nomenclador": "Limpieza",
+              "nombre_referencia": "Limpieza dental",
+            },
+            "id_obra_social": null,
+            "id_practica": 2,
+            "id_practica_turno": 2,
+            "id_turno": 3,
+          },
+        ],
+        "SolicitudCobro": null,
+        "activo": true,
+        "fecha_hora_fin": "2030-01-07T15:30:00.000Z",
+        "fecha_hora_inicio": "2030-01-07T15:00:00.000Z",
+        "id_estado": 3,
+        "id_paciente": 1,
+        "id_turno": 3,
+        "notas_consulta": "Paciente avisó",
+        "precio_final": 500,
+      },
+      {
+        "Cobro": {
+          "Cobros": [
+            {
+              "MetodoPago": {
+                "id": 2,
+                "nombre": "Transferencia",
+              },
+              "fecha_cobro": "2030-01-07T12:00:00.000Z",
+              "id": 1,
+              "id_cobro": 1,
+              "metodo_pago": "Transferencia",
+              "metodo_pago_id": 2,
+              "monto": 400,
+              "monto_cobrado": 400,
+              "observaciones": "Entrega inicial",
+            },
+          ],
+          "created_at": "2030-01-07T12:00:00.000Z",
+          "estado": "parcial",
+          "id": 1,
+          "id_cobro": 1,
+          "id_solicitud_cobro": 1,
+          "monto_a_cobrar": 1200,
+          "monto_total": 1200,
+          "observaciones": "Atendido ok",
+          "saldo_pendiente": 800,
+          "ya_cobrado": 400,
+        },
+        "EstadoTurno": {
+          "estado": "Atendido",
+          "id_estado": 2,
+        },
+        "PracticaTurnos": [
+          {
+            "ObraSocial": null,
+            "Practica": {
+              "codigo_nomenclador": "01.01",
+              "id_practica": 1,
+              "nombre_nomenclador": "Consulta",
+              "nombre_referencia": "Consulta general",
+            },
+            "id_obra_social": null,
+            "id_practica": 1,
+            "id_practica_turno": 4,
+            "id_turno": 1,
+          },
+          {
+            "ObraSocial": null,
+            "Practica": {
+              "codigo_nomenclador": "02.02",
+              "id_practica": 2,
+              "nombre_nomenclador": "Limpieza",
+              "nombre_referencia": "Limpieza dental",
+            },
+            "id_obra_social": null,
+            "id_practica": 2,
+            "id_practica_turno": 5,
+            "id_turno": 1,
+          },
+        ],
+        "SolicitudCobro": {
+          "Cobros": [
+            {
+              "MetodoPago": {
+                "id": 2,
+                "nombre": "Transferencia",
+              },
+              "fecha_cobro": "2030-01-07T12:00:00.000Z",
+              "id": 1,
+              "id_cobro": 1,
+              "metodo_pago": "Transferencia",
+              "metodo_pago_id": 2,
+              "monto": 400,
+              "monto_cobrado": 400,
+              "observaciones": "Entrega inicial",
+            },
+          ],
+          "created_at": "2030-01-07T12:00:00.000Z",
+          "estado": "parcial",
+          "id": 1,
+          "id_cobro": 1,
+          "id_solicitud_cobro": 1,
+          "monto_a_cobrar": 1200,
+          "monto_total": 1200,
+          "observaciones": "Atendido ok",
+          "saldo_pendiente": 800,
+          "ya_cobrado": 400,
+        },
+        "activo": true,
+        "fecha_hora_fin": "2030-01-07T13:30:00.000Z",
+        "fecha_hora_inicio": "2030-01-07T13:00:00.000Z",
+        "id_estado": 2,
+        "id_paciente": 1,
+        "id_turno": 1,
+        "notas_consulta": "Atendido ok",
+        "precio_final": 1200,
+      },
+    ],
+    "status": "success",
+  },
+  "status": 200,
+}
+`;
+
+exports[`Contrato API /api/turnos Estado final de la BD (efectos secundarios): db-historial 1`] = `
+[
+  {
+    "descripcion": "Turno programado",
+    "fecha_hora_cambio": "2030-01-07 12:00:00.000 +00:00",
+    "id_estado": 1,
+    "id_turno": 1,
+  },
+  {
+    "descripcion": "Turno atendido",
+    "fecha_hora_cambio": "2030-01-07 12:00:00.000 +00:00",
+    "id_estado": 2,
+    "id_turno": 1,
+  },
+  {
+    "descripcion": "Turno programado",
+    "fecha_hora_cambio": "2030-01-07 12:00:00.000 +00:00",
+    "id_estado": 1,
+    "id_turno": 2,
+  },
+  {
+    "descripcion": "Turno programado",
+    "fecha_hora_cambio": "2030-01-07 12:00:00.000 +00:00",
+    "id_estado": 1,
+    "id_turno": 3,
+  },
+  {
+    "descripcion": "Turno cancelado",
+    "fecha_hora_cambio": "2030-01-07 12:00:00.000 +00:00",
+    "id_estado": 3,
+    "id_turno": 3,
+  },
+  {
+    "descripcion": "Turno programado",
+    "fecha_hora_cambio": "2030-01-07 12:00:00.000 +00:00",
+    "id_estado": 1,
+    "id_turno": 4,
+  },
+  {
+    "descripcion": "Turno reprogramado",
+    "fecha_hora_cambio": "2030-01-07 12:00:00.000 +00:00",
+    "id_estado": 1,
+    "id_turno": 4,
+  },
+  {
+    "descripcion": "Turno cancelado",
+    "fecha_hora_cambio": "2030-01-07 12:00:00.000 +00:00",
+    "id_estado": 3,
+    "id_turno": 4,
+  },
+  {
+    "descripcion": "Turno marcado como Inasistido",
+    "fecha_hora_cambio": "2030-01-07 12:00:00.000 +00:00",
+    "id_estado": 4,
+    "id_turno": 4,
+  },
+  {
+    "descripcion": "Turno programado",
+    "fecha_hora_cambio": "2030-01-07 12:00:00.000 +00:00",
+    "id_estado": 1,
+    "id_turno": 5,
+  },
+]
+`;
+
+exports[`Contrato API /api/turnos Estado final de la BD (efectos secundarios): db-practicas-turno 1`] = `
+[
+  {
+    "id_obra_social": null,
+    "id_practica": 1,
+    "id_turno": 1,
+  },
+  {
+    "id_obra_social": null,
+    "id_practica": 2,
+    "id_turno": 1,
+  },
+  {
+    "id_obra_social": null,
+    "id_practica": 2,
+    "id_turno": 3,
+  },
+]
+`;
+
+exports[`Contrato API /api/turnos Estado final de la BD (efectos secundarios): db-turnos 1`] = `
+[
+  {
+    "activo": 1,
+    "fecha_hora_fin": "2030-01-07 13:30:00.000 +00:00",
+    "fecha_hora_inicio": "2030-01-07 13:00:00.000 +00:00",
+    "id_estado": 2,
+    "id_paciente": 1,
+    "id_turno": 1,
+    "notas_consulta": "Atendido ok",
+    "precio_final": 1200,
+  },
+  {
+    "activo": 1,
+    "fecha_hora_fin": "2030-01-06 13:45:00.000 +00:00",
+    "fecha_hora_inicio": "2030-01-06 13:00:00.000 +00:00",
+    "id_estado": 1,
+    "id_paciente": 2,
+    "id_turno": 2,
+    "notas_consulta": null,
+    "precio_final": 700,
+  },
+  {
+    "activo": 1,
+    "fecha_hora_fin": "2030-01-07 15:30:00.000 +00:00",
+    "fecha_hora_inicio": "2030-01-07 15:00:00.000 +00:00",
+    "id_estado": 3,
+    "id_paciente": 1,
+    "id_turno": 3,
+    "notas_consulta": "Paciente avisó",
+    "precio_final": 500,
+  },
+  {
+    "activo": 1,
+    "fecha_hora_fin": "2030-01-08 15:00:00.000 +00:00",
+    "fecha_hora_inicio": "2030-01-08 14:00:00.000 +00:00",
+    "id_estado": 1,
+    "id_paciente": 2,
+    "id_turno": 4,
+    "notas_consulta": "No vino",
+    "precio_final": 300,
+  },
+  {
+    "activo": 1,
+    "fecha_hora_fin": "2030-01-09 13:30:00.000 +00:00",
+    "fecha_hora_inicio": "2030-01-09 13:00:00.000 +00:00",
+    "id_estado": 1,
+    "id_paciente": 1,
+    "id_turno": 5,
+    "notas_consulta": null,
+    "precio_final": 300,
+  },
+]
+`;
+
+exports[`Contrato API /api/turnos GET / listados, filtros, búsqueda y orden: lista-default 1`] = `
+{
+  "body": {
+    "data": [
+      {
+        "Cobro": null,
+        "EstadoTurno": {
+          "estado": "Programado",
+        },
+        "Paciente": {
+          "apellido": "Gomez",
+          "dni": "35123456",
+          "nombre": "Carlos",
+          "telefono": "3515556666",
+        },
+        "PracticaTurnos": [
+          {
+            "ObraSocial": null,
+            "Practica": {
+              "codigo_nomenclador": "02.02",
+              "id_practica": 2,
+              "nombre_nomenclador": "Limpieza",
+              "nombre_referencia": "Limpieza dental",
+              "precio_referencia": 2000,
+            },
+            "id_obra_social": null,
+            "id_practica": 2,
+            "id_practica_turno": 2,
+            "id_turno": 3,
+          },
+        ],
+        "SolicitudCobro": null,
+        "activo": true,
+        "fecha_hora_fin": "2030-01-07T15:30:00.000Z",
+        "fecha_hora_inicio": "2030-01-07T15:00:00.000Z",
+        "id_estado": 1,
+        "id_paciente": 1,
+        "id_turno": 3,
+        "notas_consulta": null,
+        "precio_final": 500,
+      },
+      {
+        "Cobro": null,
+        "EstadoTurno": {
+          "estado": "Programado",
+        },
+        "Paciente": {
+          "apellido": "Gomez",
+          "dni": "35123456",
+          "nombre": "Carlos",
+          "telefono": "3515556666",
+        },
+        "PracticaTurnos": [
+          {
+            "ObraSocial": null,
+            "Practica": {
+              "codigo_nomenclador": "01.01",
+              "id_practica": 1,
+              "nombre_nomenclador": "Consulta",
+              "nombre_referencia": "Consulta general",
+              "precio_referencia": 1000,
+            },
+            "id_obra_social": null,
+            "id_practica": 1,
+            "id_practica_turno": 1,
+            "id_turno": 1,
+          },
+        ],
+        "SolicitudCobro": null,
+        "activo": true,
+        "fecha_hora_fin": "2030-01-07T13:30:00.000Z",
+        "fecha_hora_inicio": "2030-01-07T13:00:00.000Z",
+        "id_estado": 1,
+        "id_paciente": 1,
+        "id_turno": 1,
+        "notas_consulta": "Control",
+        "precio_final": 1000,
+      },
+      {
+        "Cobro": null,
+        "EstadoTurno": {
+          "estado": "Programado",
+        },
+        "Paciente": {
+          "apellido": "Perez",
+          "dni": "30111222",
+          "nombre": "Ana",
+          "telefono": "3514445555",
+        },
+        "PracticaTurnos": [],
+        "SolicitudCobro": null,
+        "activo": true,
+        "fecha_hora_fin": "2030-01-06T13:45:00.000Z",
+        "fecha_hora_inicio": "2030-01-06T13:00:00.000Z",
+        "id_estado": 1,
+        "id_paciente": 2,
+        "id_turno": 2,
+        "notas_consulta": null,
+        "precio_final": 700,
+      },
+    ],
+    "meta": {
+      "hasNextPage": false,
+      "hasPrevPage": false,
+      "limit": 9,
+      "page": 1,
+      "total": 3,
+      "totalPages": 1,
+    },
+    "status": "success",
+  },
+  "status": 200,
+}
+`;
+
+exports[`Contrato API /api/turnos GET / listados, filtros, búsqueda y orden: lista-estado-id-2 1`] = `
+{
+  "body": {
+    "data": [],
+    "meta": {
+      "hasNextPage": false,
+      "hasPrevPage": false,
+      "limit": 9,
+      "page": 1,
+      "total": 0,
+      "totalPages": 0,
+    },
+    "status": "success",
+  },
+  "status": 200,
+}
+`;
+
+exports[`Contrato API /api/turnos GET / listados, filtros, búsqueda y orden: lista-estado-programado 1`] = `
+{
+  "body": {
+    "data": [
+      {
+        "Cobro": null,
+        "EstadoTurno": {
+          "estado": "Programado",
+        },
+        "Paciente": {
+          "apellido": "Gomez",
+          "dni": "35123456",
+          "nombre": "Carlos",
+          "telefono": "3515556666",
+        },
+        "PracticaTurnos": [
+          {
+            "ObraSocial": null,
+            "Practica": {
+              "codigo_nomenclador": "02.02",
+              "id_practica": 2,
+              "nombre_nomenclador": "Limpieza",
+              "nombre_referencia": "Limpieza dental",
+              "precio_referencia": 2000,
+            },
+            "id_obra_social": null,
+            "id_practica": 2,
+            "id_practica_turno": 2,
+            "id_turno": 3,
+          },
+        ],
+        "SolicitudCobro": null,
+        "activo": true,
+        "fecha_hora_fin": "2030-01-07T15:30:00.000Z",
+        "fecha_hora_inicio": "2030-01-07T15:00:00.000Z",
+        "id_estado": 1,
+        "id_paciente": 1,
+        "id_turno": 3,
+        "notas_consulta": null,
+        "precio_final": 500,
+      },
+      {
+        "Cobro": null,
+        "EstadoTurno": {
+          "estado": "Programado",
+        },
+        "Paciente": {
+          "apellido": "Gomez",
+          "dni": "35123456",
+          "nombre": "Carlos",
+          "telefono": "3515556666",
+        },
+        "PracticaTurnos": [
+          {
+            "ObraSocial": null,
+            "Practica": {
+              "codigo_nomenclador": "01.01",
+              "id_practica": 1,
+              "nombre_nomenclador": "Consulta",
+              "nombre_referencia": "Consulta general",
+              "precio_referencia": 1000,
+            },
+            "id_obra_social": null,
+            "id_practica": 1,
+            "id_practica_turno": 1,
+            "id_turno": 1,
+          },
+        ],
+        "SolicitudCobro": null,
+        "activo": true,
+        "fecha_hora_fin": "2030-01-07T13:30:00.000Z",
+        "fecha_hora_inicio": "2030-01-07T13:00:00.000Z",
+        "id_estado": 1,
+        "id_paciente": 1,
+        "id_turno": 1,
+        "notas_consulta": "Control",
+        "precio_final": 1000,
+      },
+      {
+        "Cobro": null,
+        "EstadoTurno": {
+          "estado": "Programado",
+        },
+        "Paciente": {
+          "apellido": "Perez",
+          "dni": "30111222",
+          "nombre": "Ana",
+          "telefono": "3514445555",
+        },
+        "PracticaTurnos": [],
+        "SolicitudCobro": null,
+        "activo": true,
+        "fecha_hora_fin": "2030-01-06T13:45:00.000Z",
+        "fecha_hora_inicio": "2030-01-06T13:00:00.000Z",
+        "id_estado": 1,
+        "id_paciente": 2,
+        "id_turno": 2,
+        "notas_consulta": null,
+        "precio_final": 700,
+      },
+    ],
+    "meta": {
+      "hasNextPage": false,
+      "hasPrevPage": false,
+      "limit": 9,
+      "page": 1,
+      "total": 3,
+      "totalPages": 1,
+    },
+    "status": "success",
+  },
+  "status": 200,
+}
+`;
+
+exports[`Contrato API /api/turnos GET / listados, filtros, búsqueda y orden: lista-mes 1`] = `
+{
+  "body": {
+    "data": [
+      {
+        "Cobro": null,
+        "EstadoTurno": {
+          "estado": "Programado",
+        },
+        "Paciente": {
+          "apellido": "Gomez",
+          "dni": "35123456",
+          "nombre": "Carlos",
+          "telefono": "3515556666",
+        },
+        "PracticaTurnos": [
+          {
+            "ObraSocial": null,
+            "Practica": {
+              "codigo_nomenclador": "02.02",
+              "id_practica": 2,
+              "nombre_nomenclador": "Limpieza",
+              "nombre_referencia": "Limpieza dental",
+              "precio_referencia": 2000,
+            },
+            "id_obra_social": null,
+            "id_practica": 2,
+            "id_practica_turno": 2,
+            "id_turno": 3,
+          },
+        ],
+        "SolicitudCobro": null,
+        "activo": true,
+        "fecha_hora_fin": "2030-01-07T15:30:00.000Z",
+        "fecha_hora_inicio": "2030-01-07T15:00:00.000Z",
+        "id_estado": 1,
+        "id_paciente": 1,
+        "id_turno": 3,
+        "notas_consulta": null,
+        "precio_final": 500,
+      },
+      {
+        "Cobro": null,
+        "EstadoTurno": {
+          "estado": "Programado",
+        },
+        "Paciente": {
+          "apellido": "Gomez",
+          "dni": "35123456",
+          "nombre": "Carlos",
+          "telefono": "3515556666",
+        },
+        "PracticaTurnos": [
+          {
+            "ObraSocial": null,
+            "Practica": {
+              "codigo_nomenclador": "01.01",
+              "id_practica": 1,
+              "nombre_nomenclador": "Consulta",
+              "nombre_referencia": "Consulta general",
+              "precio_referencia": 1000,
+            },
+            "id_obra_social": null,
+            "id_practica": 1,
+            "id_practica_turno": 1,
+            "id_turno": 1,
+          },
+        ],
+        "SolicitudCobro": null,
+        "activo": true,
+        "fecha_hora_fin": "2030-01-07T13:30:00.000Z",
+        "fecha_hora_inicio": "2030-01-07T13:00:00.000Z",
+        "id_estado": 1,
+        "id_paciente": 1,
+        "id_turno": 1,
+        "notas_consulta": "Control",
+        "precio_final": 1000,
+      },
+      {
+        "Cobro": null,
+        "EstadoTurno": {
+          "estado": "Programado",
+        },
+        "Paciente": {
+          "apellido": "Perez",
+          "dni": "30111222",
+          "nombre": "Ana",
+          "telefono": "3514445555",
+        },
+        "PracticaTurnos": [],
+        "SolicitudCobro": null,
+        "activo": true,
+        "fecha_hora_fin": "2030-01-06T13:45:00.000Z",
+        "fecha_hora_inicio": "2030-01-06T13:00:00.000Z",
+        "id_estado": 1,
+        "id_paciente": 2,
+        "id_turno": 2,
+        "notas_consulta": null,
+        "precio_final": 700,
+      },
+    ],
+    "meta": {
+      "hasNextPage": false,
+      "hasPrevPage": false,
+      "limit": 9,
+      "page": 1,
+      "total": 3,
+      "totalPages": 1,
+    },
+    "status": "success",
+  },
+  "status": 200,
+}
+`;
+
+exports[`Contrato API /api/turnos GET / listados, filtros, búsqueda y orden: lista-mes-vacio 1`] = `
+{
+  "body": {
+    "data": [],
+    "meta": {
+      "hasNextPage": false,
+      "hasPrevPage": false,
+      "limit": 9,
+      "page": 1,
+      "total": 0,
+      "totalPages": 0,
+    },
+    "status": "success",
+  },
+  "status": 200,
+}
+`;
+
+exports[`Contrato API /api/turnos GET / listados, filtros, búsqueda y orden: lista-orden-estado 1`] = `
+{
+  "body": {
+    "data": [
+      {
+        "Cobro": null,
+        "EstadoTurno": {
+          "estado": "Programado",
+        },
+        "Paciente": {
+          "apellido": "Gomez",
+          "dni": "35123456",
+          "nombre": "Carlos",
+          "telefono": "3515556666",
+        },
+        "PracticaTurnos": [
+          {
+            "ObraSocial": null,
+            "Practica": {
+              "codigo_nomenclador": "01.01",
+              "id_practica": 1,
+              "nombre_nomenclador": "Consulta",
+              "nombre_referencia": "Consulta general",
+              "precio_referencia": 1000,
+            },
+            "id_obra_social": null,
+            "id_practica": 1,
+            "id_practica_turno": 1,
+            "id_turno": 1,
+          },
+        ],
+        "SolicitudCobro": null,
+        "activo": true,
+        "fecha_hora_fin": "2030-01-07T13:30:00.000Z",
+        "fecha_hora_inicio": "2030-01-07T13:00:00.000Z",
+        "id_estado": 1,
+        "id_paciente": 1,
+        "id_turno": 1,
+        "notas_consulta": "Control",
+        "precio_final": 1000,
+      },
+      {
+        "Cobro": null,
+        "EstadoTurno": {
+          "estado": "Programado",
+        },
+        "Paciente": {
+          "apellido": "Perez",
+          "dni": "30111222",
+          "nombre": "Ana",
+          "telefono": "3514445555",
+        },
+        "PracticaTurnos": [],
+        "SolicitudCobro": null,
+        "activo": true,
+        "fecha_hora_fin": "2030-01-06T13:45:00.000Z",
+        "fecha_hora_inicio": "2030-01-06T13:00:00.000Z",
+        "id_estado": 1,
+        "id_paciente": 2,
+        "id_turno": 2,
+        "notas_consulta": null,
+        "precio_final": 700,
+      },
+      {
+        "Cobro": null,
+        "EstadoTurno": {
+          "estado": "Programado",
+        },
+        "Paciente": {
+          "apellido": "Gomez",
+          "dni": "35123456",
+          "nombre": "Carlos",
+          "telefono": "3515556666",
+        },
+        "PracticaTurnos": [
+          {
+            "ObraSocial": null,
+            "Practica": {
+              "codigo_nomenclador": "02.02",
+              "id_practica": 2,
+              "nombre_nomenclador": "Limpieza",
+              "nombre_referencia": "Limpieza dental",
+              "precio_referencia": 2000,
+            },
+            "id_obra_social": null,
+            "id_practica": 2,
+            "id_practica_turno": 2,
+            "id_turno": 3,
+          },
+        ],
+        "SolicitudCobro": null,
+        "activo": true,
+        "fecha_hora_fin": "2030-01-07T15:30:00.000Z",
+        "fecha_hora_inicio": "2030-01-07T15:00:00.000Z",
+        "id_estado": 1,
+        "id_paciente": 1,
+        "id_turno": 3,
+        "notas_consulta": null,
+        "precio_final": 500,
+      },
+    ],
+    "meta": {
+      "hasNextPage": false,
+      "hasPrevPage": false,
+      "limit": 9,
+      "page": 1,
+      "total": 3,
+      "totalPages": 1,
+    },
+    "status": "success",
+  },
+  "status": 200,
+}
+`;
+
+exports[`Contrato API /api/turnos GET / listados, filtros, búsqueda y orden: lista-orden-honorarios-paginado 1`] = `
+{
+  "body": {
+    "data": [
+      {
+        "Cobro": null,
+        "EstadoTurno": {
+          "estado": "Programado",
+        },
+        "Paciente": {
+          "apellido": "Gomez",
+          "dni": "35123456",
+          "nombre": "Carlos",
+          "telefono": "3515556666",
+        },
+        "PracticaTurnos": [
+          {
+            "ObraSocial": null,
+            "Practica": {
+              "codigo_nomenclador": "02.02",
+              "id_practica": 2,
+              "nombre_nomenclador": "Limpieza",
+              "nombre_referencia": "Limpieza dental",
+              "precio_referencia": 2000,
+            },
+            "id_obra_social": null,
+            "id_practica": 2,
+            "id_practica_turno": 2,
+            "id_turno": 3,
+          },
+        ],
+        "SolicitudCobro": null,
+        "activo": true,
+        "fecha_hora_fin": "2030-01-07T15:30:00.000Z",
+        "fecha_hora_inicio": "2030-01-07T15:00:00.000Z",
+        "id_estado": 1,
+        "id_paciente": 1,
+        "id_turno": 3,
+        "notas_consulta": null,
+        "precio_final": 500,
+      },
+    ],
+    "meta": {
+      "hasNextPage": false,
+      "hasPrevPage": true,
+      "limit": 2,
+      "page": 2,
+      "total": 3,
+      "totalPages": 2,
+    },
+    "status": "success",
+  },
+  "status": 200,
+}
+`;
+
+exports[`Contrato API /api/turnos GET / listados, filtros, búsqueda y orden: lista-orden-paciente 1`] = `
+{
+  "body": {
+    "data": [
+      {
+        "Cobro": null,
+        "EstadoTurno": {
+          "estado": "Programado",
+        },
+        "Paciente": {
+          "apellido": "Gomez",
+          "dni": "35123456",
+          "nombre": "Carlos",
+          "telefono": "3515556666",
+        },
+        "PracticaTurnos": [
+          {
+            "ObraSocial": null,
+            "Practica": {
+              "codigo_nomenclador": "01.01",
+              "id_practica": 1,
+              "nombre_nomenclador": "Consulta",
+              "nombre_referencia": "Consulta general",
+              "precio_referencia": 1000,
+            },
+            "id_obra_social": null,
+            "id_practica": 1,
+            "id_practica_turno": 1,
+            "id_turno": 1,
+          },
+        ],
+        "SolicitudCobro": null,
+        "activo": true,
+        "fecha_hora_fin": "2030-01-07T13:30:00.000Z",
+        "fecha_hora_inicio": "2030-01-07T13:00:00.000Z",
+        "id_estado": 1,
+        "id_paciente": 1,
+        "id_turno": 1,
+        "notas_consulta": "Control",
+        "precio_final": 1000,
+      },
+      {
+        "Cobro": null,
+        "EstadoTurno": {
+          "estado": "Programado",
+        },
+        "Paciente": {
+          "apellido": "Gomez",
+          "dni": "35123456",
+          "nombre": "Carlos",
+          "telefono": "3515556666",
+        },
+        "PracticaTurnos": [
+          {
+            "ObraSocial": null,
+            "Practica": {
+              "codigo_nomenclador": "02.02",
+              "id_practica": 2,
+              "nombre_nomenclador": "Limpieza",
+              "nombre_referencia": "Limpieza dental",
+              "precio_referencia": 2000,
+            },
+            "id_obra_social": null,
+            "id_practica": 2,
+            "id_practica_turno": 2,
+            "id_turno": 3,
+          },
+        ],
+        "SolicitudCobro": null,
+        "activo": true,
+        "fecha_hora_fin": "2030-01-07T15:30:00.000Z",
+        "fecha_hora_inicio": "2030-01-07T15:00:00.000Z",
+        "id_estado": 1,
+        "id_paciente": 1,
+        "id_turno": 3,
+        "notas_consulta": null,
+        "precio_final": 500,
+      },
+      {
+        "Cobro": null,
+        "EstadoTurno": {
+          "estado": "Programado",
+        },
+        "Paciente": {
+          "apellido": "Perez",
+          "dni": "30111222",
+          "nombre": "Ana",
+          "telefono": "3514445555",
+        },
+        "PracticaTurnos": [],
+        "SolicitudCobro": null,
+        "activo": true,
+        "fecha_hora_fin": "2030-01-06T13:45:00.000Z",
+        "fecha_hora_inicio": "2030-01-06T13:00:00.000Z",
+        "id_estado": 1,
+        "id_paciente": 2,
+        "id_turno": 2,
+        "notas_consulta": null,
+        "precio_final": 700,
+      },
+    ],
+    "meta": {
+      "hasNextPage": false,
+      "hasPrevPage": false,
+      "limit": 9,
+      "page": 1,
+      "total": 3,
+      "totalPages": 1,
+    },
+    "status": "success",
+  },
+  "status": 200,
+}
+`;
+
+exports[`Contrato API /api/turnos GET / listados, filtros, búsqueda y orden: lista-search 1`] = `
+{
+  "body": {
+    "error": "Error al obtener los turnos",
+  },
+  "status": 500,
+}
+`;
+
+exports[`Contrato API /api/turnos GET /:id (200 y 404): get-por-id-A 1`] = `
+{
+  "body": {
+    "data": {
+      "EstadoTurno": {
+        "estado": "Programado",
+        "id_estado": 1,
+      },
+      "Paciente": {
+        "apellido": "Gomez",
+        "dni": "35123456",
+        "domicilio": null,
+        "fecha_nacimiento": null,
+        "nombre": "Carlos",
+        "telefono": "3515556666",
+      },
+      "PracticaTurnos": [
+        {
+          "ObraSocial": null,
+          "Practica": {
+            "codigo_nomenclador": "01.01",
+            "id_practica": 1,
+            "nombre_nomenclador": "Consulta",
+            "nombre_referencia": "Consulta general",
+            "precio_referencia": 1000,
+          },
+          "id_obra_social": null,
+          "id_practica": 1,
+          "id_practica_turno": 1,
+          "id_turno": 1,
+        },
+      ],
+      "activo": true,
+      "fecha_hora_fin": "2030-01-07T13:30:00.000Z",
+      "fecha_hora_inicio": "2030-01-07T13:00:00.000Z",
+      "id_estado": 1,
+      "id_paciente": 1,
+      "id_turno": 1,
+      "notas_consulta": "Control",
+      "precio_final": 1000,
+    },
+    "status": "success",
+  },
+  "status": 200,
+}
+`;
+
+exports[`Contrato API /api/turnos GET /:id (200 y 404): get-por-id-inexistente 1`] = `
+{
+  "body": {
+    "message": "No se encontró Turno con ID 9999",
+    "status": "error",
+  },
+  "status": 404,
+}
+`;
+
+exports[`Contrato API /api/turnos GET /agenda con datos y GET /paciente/:id: agenda 1`] = `
+{
+  "body": {
+    "data": [
+      {
+        "EstadoTurno": {
+          "estado": "Programado",
+        },
+        "Paciente": {
+          "apellido": "Gomez",
+          "dni": "35123456",
+          "nombre": "Carlos",
+          "telefono": "3515556666",
+        },
+        "PracticaTurnos": [
+          {
+            "ObraSocial": null,
+            "Practica": {
+              "codigo_nomenclador": "01.01",
+              "id_practica": 1,
+              "nombre_nomenclador": "Consulta",
+              "nombre_referencia": "Consulta general",
+              "precio_referencia": 1000,
+            },
+            "id_obra_social": null,
+            "id_practica": 1,
+            "id_practica_turno": 1,
+            "id_turno": 1,
+          },
+        ],
+        "activo": true,
+        "fecha_hora_fin": "2030-01-07T13:30:00.000Z",
+        "fecha_hora_inicio": "2030-01-07T13:00:00.000Z",
+        "id_estado": 1,
+        "id_paciente": 1,
+        "id_turno": 1,
+        "notas_consulta": "Control",
+        "precio_final": 1000,
+      },
+      {
+        "EstadoTurno": {
+          "estado": "Programado",
+        },
+        "Paciente": {
+          "apellido": "Perez",
+          "dni": "30111222",
+          "nombre": "Ana",
+          "telefono": "3514445555",
+        },
+        "PracticaTurnos": [],
+        "activo": true,
+        "fecha_hora_fin": "2030-01-06T13:45:00.000Z",
+        "fecha_hora_inicio": "2030-01-06T13:00:00.000Z",
+        "id_estado": 1,
+        "id_paciente": 2,
+        "id_turno": 2,
+        "notas_consulta": null,
+        "precio_final": 700,
+      },
+      {
+        "EstadoTurno": {
+          "estado": "Programado",
+        },
+        "Paciente": {
+          "apellido": "Gomez",
+          "dni": "35123456",
+          "nombre": "Carlos",
+          "telefono": "3515556666",
+        },
+        "PracticaTurnos": [
+          {
+            "ObraSocial": null,
+            "Practica": {
+              "codigo_nomenclador": "02.02",
+              "id_practica": 2,
+              "nombre_nomenclador": "Limpieza",
+              "nombre_referencia": "Limpieza dental",
+              "precio_referencia": 2000,
+            },
+            "id_obra_social": null,
+            "id_practica": 2,
+            "id_practica_turno": 2,
+            "id_turno": 3,
+          },
+        ],
+        "activo": true,
+        "fecha_hora_fin": "2030-01-07T15:30:00.000Z",
+        "fecha_hora_inicio": "2030-01-07T15:00:00.000Z",
+        "id_estado": 1,
+        "id_paciente": 1,
+        "id_turno": 3,
+        "notas_consulta": null,
+        "precio_final": 500,
+      },
+    ],
+    "status": "success",
+  },
+  "status": 200,
+}
+`;
+
+exports[`Contrato API /api/turnos GET /agenda con datos y GET /paciente/:id: por-paciente-1 1`] = `
+{
+  "body": {
+    "data": [
+      {
+        "Cobro": null,
+        "EstadoTurno": {
+          "estado": "Programado",
+          "id_estado": 1,
+        },
+        "PracticaTurnos": [
+          {
+            "ObraSocial": null,
+            "Practica": {
+              "codigo_nomenclador": "02.02",
+              "id_practica": 2,
+              "nombre_nomenclador": "Limpieza",
+              "nombre_referencia": "Limpieza dental",
+            },
+            "id_obra_social": null,
+            "id_practica": 2,
+            "id_practica_turno": 2,
+            "id_turno": 3,
+          },
+        ],
+        "SolicitudCobro": null,
+        "activo": true,
+        "fecha_hora_fin": "2030-01-07T15:30:00.000Z",
+        "fecha_hora_inicio": "2030-01-07T15:00:00.000Z",
+        "id_estado": 1,
+        "id_paciente": 1,
+        "id_turno": 3,
+        "notas_consulta": null,
+        "precio_final": 500,
+      },
+      {
+        "Cobro": null,
+        "EstadoTurno": {
+          "estado": "Programado",
+          "id_estado": 1,
+        },
+        "PracticaTurnos": [
+          {
+            "ObraSocial": null,
+            "Practica": {
+              "codigo_nomenclador": "01.01",
+              "id_practica": 1,
+              "nombre_nomenclador": "Consulta",
+              "nombre_referencia": "Consulta general",
+            },
+            "id_obra_social": null,
+            "id_practica": 1,
+            "id_practica_turno": 1,
+            "id_turno": 1,
+          },
+        ],
+        "SolicitudCobro": null,
+        "activo": true,
+        "fecha_hora_fin": "2030-01-07T13:30:00.000Z",
+        "fecha_hora_inicio": "2030-01-07T13:00:00.000Z",
+        "id_estado": 1,
+        "id_paciente": 1,
+        "id_turno": 1,
+        "notas_consulta": "Control",
+        "precio_final": 1000,
+      },
+    ],
+    "status": "success",
+  },
+  "status": 200,
+}
+`;
+
+exports[`Contrato API /api/turnos GET /agenda con datos y GET /paciente/:id: por-paciente-sin-turnos 1`] = `
+{
+  "body": {
+    "data": [],
+    "status": "success",
+  },
+  "status": 200,
+}
+`;
+
+exports[`Contrato API /api/turnos GET /agenda vacío: agenda-vacia 1`] = `
+{
+  "body": {
+    "data": [],
+    "status": "success",
+  },
+  "status": 200,
+}
+`;
+
+exports[`Contrato API /api/turnos GET /atendidos (A atendido, sin solicitud de cobro): atendidos-sin-cobro 1`] = `
+{
+  "body": {
+    "data": [
+      {
+        "EstadoTurno": {
+          "estado": "Atendido",
+        },
+        "Paciente": {
+          "apellido": "Gomez",
+          "dni": "35123456",
+          "nombre": "Carlos",
+          "telefono": "3515556666",
+        },
+        "activo": true,
+        "fecha_hora_fin": "2030-01-07T13:30:00.000Z",
+        "fecha_hora_inicio": "2030-01-07T13:00:00.000Z",
+        "id_estado": 2,
+        "id_paciente": 1,
+        "id_turno": 1,
+        "notas_consulta": "Atendido ok",
+        "precio_final": 1200,
+      },
+    ],
+    "status": "success",
+  },
+  "status": 200,
+}
+`;
+
+exports[`Contrato API /api/turnos PATCH /:id/atender (200), repetido (400), práctica inexistente (400), 404: atender-404 1`] = `
+{
+  "body": {
+    "message": "No se encontró Turno con ID 9999",
+    "status": "error",
+  },
+  "status": 404,
+}
+`;
+
+exports[`Contrato API /api/turnos PATCH /:id/atender (200), repetido (400), práctica inexistente (400), 404: atender-A 1`] = `
+{
+  "body": {
+    "data": {
+      "activo": true,
+      "fecha_hora_fin": "2030-01-07T13:30:00.000Z",
+      "fecha_hora_inicio": "2030-01-07T13:00:00.000Z",
+      "id_estado": 2,
+      "id_paciente": 1,
+      "id_turno": 1,
+      "notas_consulta": "Atendido ok",
+      "precio_final": 1200,
+    },
+    "status": "success",
+  },
+  "status": 200,
+}
+`;
+
+exports[`Contrato API /api/turnos PATCH /:id/atender (200), repetido (400), práctica inexistente (400), 404: atender-A-repetido 1`] = `
+{
+  "body": {
+    "error": "El turno debe estar programado para poder marcarlo como atendido.",
+  },
+  "status": 400,
+}
+`;
+
+exports[`Contrato API /api/turnos PATCH /:id/atender (200), repetido (400), práctica inexistente (400), 404: atender-practica-inexistente 1`] = `
+{
+  "body": {
+    "error": "Una o más prácticas especificadas no existen",
+  },
+  "status": 400,
+}
+`;
+
+exports[`Contrato API /api/turnos PATCH /:id/cancelar (200) y repetido (400): cancelar-A-atendido 1`] = `
+{
+  "body": {
+    "error": "El turno debe estar programado o inasistente para poder cancelarlo.",
+  },
+  "status": 400,
+}
+`;
+
+exports[`Contrato API /api/turnos PATCH /:id/cancelar (200) y repetido (400): cancelar-C 1`] = `
+{
+  "body": {
+    "data": {
+      "activo": true,
+      "fecha_hora_fin": "2030-01-07T15:30:00.000Z",
+      "fecha_hora_inicio": "2030-01-07T15:00:00.000Z",
+      "id_estado": 3,
+      "id_paciente": 1,
+      "id_turno": 3,
+      "notas_consulta": "Paciente avisó",
+      "precio_final": 500,
+    },
+    "status": "success",
+  },
+  "status": 200,
+}
+`;
+
+exports[`Contrato API /api/turnos PATCH /:id/cancelar (200) y repetido (400): cancelar-C-repetido 1`] = `
+{
+  "body": {
+    "error": "El turno debe estar programado o inasistente para poder cancelarlo.",
+  },
+  "status": 400,
+}
+`;
+
+exports[`Contrato API /api/turnos PATCH /:id/delete (toggle activo) y 404: delete-404 1`] = `
+{
+  "body": {
+    "message": "No se encontró Turno con ID 9999",
+    "status": "error",
+  },
+  "status": 404,
+}
+`;
+
+exports[`Contrato API /api/turnos PATCH /:id/delete (toggle activo) y 404: delete-B 1`] = `
+{
+  "body": {
+    "message": "Turno eliminado correctamente",
+  },
+  "status": 200,
+}
+`;
+
+exports[`Contrato API /api/turnos PATCH /:id/delete (toggle activo) y 404: delete-B-toggle-de-vuelta 1`] = `
+{
+  "body": {
+    "message": "Turno eliminado correctamente",
+  },
+  "status": 200,
+}
+`;
+
+exports[`Contrato API /api/turnos PATCH /:id/delete (toggle activo) y 404: lista-sin-B 1`] = `
+{
+  "body": {
+    "data": [
+      {
+        "Cobro": null,
+        "EstadoTurno": {
+          "estado": "Programado",
+        },
+        "Paciente": {
+          "apellido": "Gomez",
+          "dni": "35123456",
+          "nombre": "Carlos",
+          "telefono": "3515556666",
+        },
+        "PracticaTurnos": [],
+        "SolicitudCobro": null,
+        "activo": true,
+        "fecha_hora_fin": "2030-01-09T13:30:00.000Z",
+        "fecha_hora_inicio": "2030-01-09T13:00:00.000Z",
+        "id_estado": 1,
+        "id_paciente": 1,
+        "id_turno": 5,
+        "notas_consulta": null,
+        "precio_final": 300,
+      },
+      {
+        "Cobro": null,
+        "EstadoTurno": {
+          "estado": "Programado",
+        },
+        "Paciente": {
+          "apellido": "Perez",
+          "dni": "30111222",
+          "nombre": "Ana",
+          "telefono": "3514445555",
+        },
+        "PracticaTurnos": [],
+        "SolicitudCobro": null,
+        "activo": true,
+        "fecha_hora_fin": "2030-01-08T15:00:00.000Z",
+        "fecha_hora_inicio": "2030-01-08T14:00:00.000Z",
+        "id_estado": 1,
+        "id_paciente": 2,
+        "id_turno": 4,
+        "notas_consulta": "No vino",
+        "precio_final": 300,
+      },
+      {
+        "Cobro": null,
+        "EstadoTurno": {
+          "estado": "Cancelado",
+        },
+        "Paciente": {
+          "apellido": "Gomez",
+          "dni": "35123456",
+          "nombre": "Carlos",
+          "telefono": "3515556666",
+        },
+        "PracticaTurnos": [
+          {
+            "ObraSocial": null,
+            "Practica": {
+              "codigo_nomenclador": "02.02",
+              "id_practica": 2,
+              "nombre_nomenclador": "Limpieza",
+              "nombre_referencia": "Limpieza dental",
+              "precio_referencia": 2000,
+            },
+            "id_obra_social": null,
+            "id_practica": 2,
+            "id_practica_turno": 2,
+            "id_turno": 3,
+          },
+        ],
+        "SolicitudCobro": null,
+        "activo": true,
+        "fecha_hora_fin": "2030-01-07T15:30:00.000Z",
+        "fecha_hora_inicio": "2030-01-07T15:00:00.000Z",
+        "id_estado": 3,
+        "id_paciente": 1,
+        "id_turno": 3,
+        "notas_consulta": "Paciente avisó",
+        "precio_final": 500,
+      },
+      {
+        "Cobro": {
+          "Cobros": [
+            {
+              "fecha_cobro": "2030-01-07T12:00:00.000Z",
+              "id": 1,
+              "id_cobro": 1,
+              "metodo_pago": "Transferencia",
+              "metodo_pago_id": 2,
+              "monto": 400,
+              "monto_cobrado": 400,
+              "observaciones": "Entrega inicial",
+            },
+          ],
+          "estado": "parcial",
+          "id": 1,
+          "id_cobro": 1,
+          "id_solicitud_cobro": 1,
+          "monto_a_cobrar": 1200,
+          "monto_total": 1200,
+          "observaciones": "Atendido ok",
+          "saldo_pendiente": 800,
+          "ya_cobrado": 400,
+        },
+        "EstadoTurno": {
+          "estado": "Atendido",
+        },
+        "Paciente": {
+          "apellido": "Gomez",
+          "dni": "35123456",
+          "nombre": "Carlos",
+          "telefono": "3515556666",
+        },
+        "PracticaTurnos": [
+          {
+            "ObraSocial": null,
+            "Practica": {
+              "codigo_nomenclador": "01.01",
+              "id_practica": 1,
+              "nombre_nomenclador": "Consulta",
+              "nombre_referencia": "Consulta general",
+              "precio_referencia": 1000,
+            },
+            "id_obra_social": null,
+            "id_practica": 1,
+            "id_practica_turno": 4,
+            "id_turno": 1,
+          },
+          {
+            "ObraSocial": null,
+            "Practica": {
+              "codigo_nomenclador": "02.02",
+              "id_practica": 2,
+              "nombre_nomenclador": "Limpieza",
+              "nombre_referencia": "Limpieza dental",
+              "precio_referencia": 2000,
+            },
+            "id_obra_social": null,
+            "id_practica": 2,
+            "id_practica_turno": 5,
+            "id_turno": 1,
+          },
+        ],
+        "SolicitudCobro": {
+          "Cobros": [
+            {
+              "fecha_cobro": "2030-01-07T12:00:00.000Z",
+              "id": 1,
+              "id_cobro": 1,
+              "metodo_pago": "Transferencia",
+              "metodo_pago_id": 2,
+              "monto": 400,
+              "monto_cobrado": 400,
+              "observaciones": "Entrega inicial",
+            },
+          ],
+          "estado": "parcial",
+          "id": 1,
+          "id_cobro": 1,
+          "id_solicitud_cobro": 1,
+          "monto_a_cobrar": 1200,
+          "monto_total": 1200,
+          "observaciones": "Atendido ok",
+          "saldo_pendiente": 800,
+          "ya_cobrado": 400,
+        },
+        "activo": true,
+        "fecha_hora_fin": "2030-01-07T13:30:00.000Z",
+        "fecha_hora_inicio": "2030-01-07T13:00:00.000Z",
+        "id_estado": 2,
+        "id_paciente": 1,
+        "id_turno": 1,
+        "notas_consulta": "Atendido ok",
+        "precio_final": 1200,
+      },
+    ],
+    "meta": {
+      "hasNextPage": false,
+      "hasPrevPage": false,
+      "limit": 50,
+      "page": 1,
+      "total": 4,
+      "totalPages": 1,
+    },
+    "status": "success",
+  },
+  "status": 200,
+}
+`;
+
+exports[`Contrato API /api/turnos PATCH /:id/inasistente + cancelar desde inasistente: cancelar-D-desde-inasistente 1`] = `
+{
+  "body": {
+    "data": {
+      "activo": true,
+      "fecha_hora_fin": "2030-01-08T13:30:00.000Z",
+      "fecha_hora_inicio": "2030-01-08T13:00:00.000Z",
+      "id_estado": 3,
+      "id_paciente": 2,
+      "id_turno": 4,
+      "notas_consulta": "No vino",
+      "precio_final": 300,
+    },
+    "status": "success",
+  },
+  "status": 200,
+}
+`;
+
+exports[`Contrato API /api/turnos PATCH /:id/inasistente + cancelar desde inasistente: crear-D 1`] = `
+{
+  "body": {
+    "data": {
+      "activo": true,
+      "fecha_hora_fin": "2030-01-08T13:30:00.000Z",
+      "fecha_hora_inicio": "2030-01-08T13:00:00.000Z",
+      "id_estado": 1,
+      "id_paciente": 2,
+      "id_turno": 4,
+      "notas_consulta": null,
+      "precio_final": 300,
+    },
+    "status": "success",
+  },
+  "status": 201,
+}
+`;
+
+exports[`Contrato API /api/turnos PATCH /:id/inasistente + cancelar desde inasistente: inasistente-D 1`] = `
+{
+  "body": {
+    "data": {
+      "activo": true,
+      "fecha_hora_fin": "2030-01-08T13:30:00.000Z",
+      "fecha_hora_inicio": "2030-01-08T13:00:00.000Z",
+      "id_estado": 4,
+      "id_paciente": 2,
+      "id_turno": 4,
+      "notas_consulta": "No vino",
+      "precio_final": 300,
+    },
+    "status": "success",
+  },
+  "status": 200,
+}
+`;
+
+exports[`Contrato API /api/turnos PATCH /:id/inasistente + cancelar desde inasistente: inasistente-D-repetido 1`] = `
+{
+  "body": {
+    "error": "El turno debe estar programado para poder marcarlo como inasistente.",
+  },
+  "status": 400,
+}
+`;
+
+exports[`Contrato API /api/turnos PATCH /:id/reprogramado (200, 409 solapamiento, 409 restricción, 400 estado): crear-E 1`] = `
+{
+  "body": {
+    "data": {
+      "activo": true,
+      "fecha_hora_fin": "2030-01-09T13:30:00.000Z",
+      "fecha_hora_inicio": "2030-01-09T13:00:00.000Z",
+      "id_estado": 1,
+      "id_paciente": 1,
+      "id_turno": 5,
+      "notas_consulta": null,
+      "precio_final": 300,
+    },
+    "status": "success",
+  },
+  "status": 201,
+}
+`;
+
+exports[`Contrato API /api/turnos PATCH /:id/reprogramado (200, 409 solapamiento, 409 restricción, 400 estado): reprogramar-A-atendido 1`] = `
+{
+  "body": {
+    "error": "El turno debe estar inasistente o cancelado para poder marcarlo como programado.",
+  },
+  "status": 400,
+}
+`;
+
+exports[`Contrato API /api/turnos PATCH /:id/reprogramado (200, 409 solapamiento, 409 restricción, 400 estado): reprogramar-D-domingo 1`] = `
+{
+  "body": {
+    "error": "El horario seleccionado se superpone con un turno ya programado.",
+  },
+  "status": 409,
+}
+`;
+
+exports[`Contrato API /api/turnos PATCH /:id/reprogramado (200, 409 solapamiento, 409 restricción, 400 estado): reprogramar-D-ignorando-restricciones 1`] = `
+{
+  "body": {
+    "error": "El horario seleccionado se superpone con un turno ya programado.",
+  },
+  "status": 409,
+}
+`;
+
+exports[`Contrato API /api/turnos PATCH /:id/reprogramado (200, 409 solapamiento, 409 restricción, 400 estado): reprogramar-D-ok 1`] = `
+{
+  "body": {
+    "data": {
+      "activo": true,
+      "fecha_hora_fin": "2030-01-08T15:00:00.000Z",
+      "fecha_hora_inicio": "2030-01-08T14:00:00.000Z",
+      "id_estado": 1,
+      "id_paciente": 2,
+      "id_turno": 4,
+      "notas_consulta": "No vino",
+      "precio_final": 300,
+    },
+    "status": "success",
+  },
+  "status": 200,
+}
+`;
+
+exports[`Contrato API /api/turnos PATCH /:id/reprogramado (200, 409 solapamiento, 409 restricción, 400 estado): reprogramar-D-solapa-E 1`] = `
+{
+  "body": {
+    "error": "El horario seleccionado se superpone con un turno ya programado.",
+  },
+  "status": 409,
+}
+`;
+
+exports[`Contrato API /api/turnos POST / crear turno A (201, con práctica): crear-A 1`] = `
+{
+  "body": {
+    "data": {
+      "activo": true,
+      "fecha_hora_fin": "2030-01-07T13:30:00.000Z",
+      "fecha_hora_inicio": "2030-01-07T13:00:00.000Z",
+      "id_estado": 1,
+      "id_paciente": 1,
+      "id_turno": 1,
+      "notas_consulta": "Control",
+      "precio_final": 1000,
+    },
+    "status": "success",
+  },
+  "status": 201,
+}
+`;
+
+exports[`Contrato API /api/turnos POST / crear turno C (práctica como objeto): crear-C 1`] = `
+{
+  "body": {
+    "data": {
+      "activo": true,
+      "fecha_hora_fin": "2030-01-07T15:30:00.000Z",
+      "fecha_hora_inicio": "2030-01-07T15:00:00.000Z",
+      "id_estado": 1,
+      "id_paciente": 1,
+      "id_turno": 3,
+      "notas_consulta": null,
+      "precio_final": 500,
+    },
+    "status": "success",
+  },
+  "status": 201,
+}
+`;
+
+exports[`Contrato API /api/turnos POST / fecha_hora_fin explícita y solapamiento con B: crear-solapa-B 1`] = `
+{
+  "body": {
+    "error": "El horario seleccionado se superpone con un turno ya programado.",
+  },
+  "status": 409,
+}
+`;
+
+exports[`Contrato API /api/turnos POST / ignorar restricciones (201) turno B domingo, alias camelCase: crear-B-ignorar 1`] = `
+{
+  "body": {
+    "data": {
+      "activo": true,
+      "fecha_hora_fin": "2030-01-06T13:45:00.000Z",
+      "fecha_hora_inicio": "2030-01-06T13:00:00.000Z",
+      "id_estado": 1,
+      "id_paciente": 2,
+      "id_turno": 2,
+      "notas_consulta": null,
+      "precio_final": 700,
+    },
+    "status": "success",
+  },
+  "status": 201,
+}
+`;
+
+exports[`Contrato API /api/turnos POST / práctica inexistente (400, rollback): crear-practica-inexistente 1`] = `
+{
+  "body": {
+    "error": "Una o más prácticas especificadas no existen",
+  },
+  "status": 400,
+}
+`;
+
+exports[`Contrato API /api/turnos POST / restricción de agenda: domingo (409) y fuera de horario (409): crear-domingo 1`] = `
+{
+  "body": {
+    "codigo": "RESTRICCION_AGENDA",
+    "error": "El consultorio no atiende los días Domingo.",
+  },
+  "status": 409,
+}
+`;
+
+exports[`Contrato API /api/turnos POST / restricción de agenda: domingo (409) y fuera de horario (409): crear-fuera-de-horario 1`] = `
+{
+  "body": {
+    "codigo": "RESTRICCION_AGENDA",
+    "error": "El horario seleccionado está fuera de la jornada de atención (08:00 a 20:00 hs).",
+  },
+  "status": 409,
+}
+`;
+
+exports[`Contrato API /api/turnos POST / solapamiento (409): crear-solapado 1`] = `
+{
+  "body": {
+    "error": "El horario seleccionado se superpone con un turno ya programado.",
+  },
+  "status": 409,
+}
+`;
+
+exports[`Contrato API /api/turnos POST / validación Zod (400): crear-zod 1`] = `
+{
+  "body": {
+    "errors": {
+      "id_paciente": "Invalid input: expected number, received undefined",
+    },
+    "message": "Error de validación en los datos enviados",
+    "status": "error",
+  },
+  "status": 400,
+}
+`;
+
+exports[`Contrato API /api/turnos PUT /:id actualizar (200), paciente inexistente (400), 404: update-404 1`] = `
+{
+  "body": {
+    "message": "No se encontró Turno con ID 9999",
+    "status": "error",
+  },
+  "status": 404,
+}
+`;
+
+exports[`Contrato API /api/turnos PUT /:id actualizar (200), paciente inexistente (400), 404: update-A 1`] = `
+{
+  "body": {
+    "data": {
+      "activo": true,
+      "fecha_hora_fin": "2030-01-07T13:30:00.000Z",
+      "fecha_hora_inicio": "2030-01-07T13:00:00.000Z",
+      "id_estado": 1,
+      "id_paciente": 1,
+      "id_turno": 1,
+      "notas_consulta": "Nueva nota",
+      "precio_final": 1500,
+    },
+    "status": "success",
+  },
+  "status": 200,
+}
+`;
+
+exports[`Contrato API /api/turnos PUT /:id actualizar (200), paciente inexistente (400), 404: update-paciente-inexistente 1`] = `
+{
+  "body": {
+    "message": "El paciente seleccionado no existen.",
+    "status": "error",
+  },
+  "status": 400,
+}
+`;
+
+exports[`Contrato API /api/turnos PUT /:id actualizar (200), paciente inexistente (400), 404: update-zod 1`] = `
+{
+  "body": {
+    "errors": {
+      "precio_final": "El precio final debe ser mayor o igual a 0",
+    },
+    "message": "Error de validación en los datos enviados",
+    "status": "error",
+  },
+  "status": 400,
+}
+`;

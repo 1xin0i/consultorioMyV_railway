@@ -1,0 +1,110 @@
+// Jest Snapshot v1, https://jestjs.io/docs/snapshot-testing
+
+exports[`Snapshot de rutas de la API inventario completo de endpoints 1`] = `
+"USE / -> corsMiddleware
+USE / -> jsonParser
+GET / -> [(anon)]
+POST <?>/api/auth/login -> [(anon), login]
+POST <?>/api/auth/login-maestro -> [(anon), login]
+POST <?>/api/auth/refresh-token -> [refreshToken]
+POST <?>/api/auth/refreshToken -> [refreshToken]
+GET <?>/api/auth/me -> [verificarToken, obtenerUsuarioActual]
+PUT <?>/api/auth/cambiar-password -> [verificarToken, cambiarPassword]
+POST <?>/api/auth/recuperar-password -> [(anon), (anon), solicitarRecuperacionPassword]
+POST <?>/api/auth/restablecer-password -> [(anon), (anon), restablecerPassword]
+POST <?>/api/auth/registro -> [(anon), createUsuario]
+POST <?>/api/auth -> [(anon), createUsuario]
+PUT <?>/api/auth/:id -> [verificarToken, (anon), updateUsuario]
+POST <?>/api/usuarios/login -> [(anon), login]
+POST <?>/api/usuarios/login-maestro -> [(anon), login]
+POST <?>/api/usuarios/refresh-token -> [refreshToken]
+POST <?>/api/usuarios/refreshToken -> [refreshToken]
+GET <?>/api/usuarios/me -> [verificarToken, obtenerUsuarioActual]
+PUT <?>/api/usuarios/cambiar-password -> [verificarToken, cambiarPassword]
+POST <?>/api/usuarios/recuperar-password -> [(anon), (anon), solicitarRecuperacionPassword]
+POST <?>/api/usuarios/restablecer-password -> [(anon), (anon), restablecerPassword]
+POST <?>/api/usuarios/registro -> [(anon), createUsuario]
+POST <?>/api/usuarios -> [(anon), createUsuario]
+PUT <?>/api/usuarios/:id -> [verificarToken, (anon), updateUsuario]
+USE <?> -> verificarToken
+GET <?>/api/cobros -> [getAllCobros]
+GET <?>/api/cobros/:turnoId/cobros -> [getCobroByTurnoId]
+GET <?>/api/cobros/:id -> [getCobroById]
+POST <?>/api/cobros -> [(anon), createCobro]
+POST <?>/api/cobros/inmediato -> [(anon), (anon), createCobroInmediato]
+POST <?>/api/cobros/informal -> [(anon), (anon), createCobroInformal]
+POST <?>/api/cobros/registrar-pago -> [registrarPagoTurno]
+PUT <?>/api/cobros/:id -> [(anon), updateCobro]
+PATCH <?>/api/cobros/:id/delete -> [deleteCobro]
+USE <?> -> verificarToken
+GET <?>/api/estados -> [getAllEstados]
+USE <?> -> verificarToken
+GET <?>/api/historial-estado-turnos/:id -> [getHistorialTurnoByTurnoId]
+USE <?> -> verificarToken
+GET <?>/api/obras-sociales -> [getAllObrasSociales]
+GET <?>/api/obras-sociales/:id -> [(anon), getObraSocialById]
+POST <?>/api/obras-sociales -> [(anon), createObraSocial]
+PUT <?>/api/obras-sociales/:id -> [(anon), (anon), updateObraSocial]
+PATCH <?>/api/obras-sociales/:id/delete -> [(anon), toggleObraSocial]
+DELETE <?>/api/obras-sociales/:id/delete -> [(anon), deleteObraSocial]
+USE <?> -> verificarToken
+GET <?>/api/pacientes -> [getAllPacientes]
+GET <?>/api/pacientes/:id -> [(anon), getPacienteById]
+POST <?>/api/pacientes -> [(anon), createPaciente]
+PUT <?>/api/pacientes/:id -> [(anon), (anon), updatePaciente]
+PATCH <?>/api/pacientes/:id/delete -> [(anon), deletePaciente]
+USE <?> -> verificarToken
+GET <?>/api/pacientes-por-obras-sociales -> [getAllPacientesPorObraSocial]
+GET <?>/api/pacientes-por-obras-sociales/:id_paciente -> [(anon), getObrasSocialesByPacienteID]
+POST <?>/api/pacientes-por-obras-sociales -> [(anon), (anon), (anon), createPacientePorObraSocial]
+PUT <?>/api/pacientes-por-obras-sociales/:id -> [(anon), (anon), updatePacientePorObraSocial]
+DELETE <?>/api/pacientes-por-obras-sociales/:id -> [(anon), deletePacientePorObraSocial]
+USE <?> -> verificarToken
+GET <?>/api/practicas -> [getAllPracticas]
+GET <?>/api/practicas/:id -> [(anon), getPracticaById]
+POST <?>/api/practicas -> [(anon), createPractica]
+PUT <?>/api/practicas/:id -> [(anon), (anon), updatePractica]
+PATCH <?>/api/practicas/:id/delete -> [(anon), togglePractica]
+DELETE <?>/api/practicas/:id/delete -> [(anon), deletePractica]
+USE <?> -> verificarToken
+GET <?>/api/practicas-turnos -> [getAllPracticaTurno]
+GET <?>/api/practicas-turnos/:id -> [(anon), getPracticaTurnoById]
+GET <?>/api/practicas-turnos/:id_turno/turno -> [getPracticasByTurnoId]
+POST <?>/api/practicas-turnos -> [(anon), (anon), (anon), createPracticaTurno]
+PUT <?>/api/practicas-turnos/:id -> [(anon), (anon), updatePracticaTurno]
+DELETE <?>/api/practicas-turnos/:id -> [(anon), deletePracticaTurno]
+USE <?> -> verificarToken
+GET <?>/api/turnos -> [getAllTurnos]
+GET <?>/api/turnos/agenda -> [getAllTurnosAgenda]
+GET <?>/api/turnos/atendidos -> [getAllTurnosAtendidos]
+GET <?>/api/turnos/paciente/:id_paciente -> [getTurnosByPacienteId]
+GET <?>/api/turnos/:id -> [(anon), getTurnoById]
+POST <?>/api/turnos -> [(anon), createTurno]
+PUT <?>/api/turnos/:id -> [(anon), (anon), updateTurno]
+PATCH <?>/api/turnos/:id/atender -> [(anon), (anon), turnoAtendido]
+PATCH <?>/api/turnos/:id/cancelar -> [(anon), (anon), turnoCancelado]
+PATCH <?>/api/turnos/:id/inasistente -> [(anon), (anon), turnoInasistido]
+PATCH <?>/api/turnos/:id/reprogramado -> [(anon), turnoReprogramado]
+PATCH <?>/api/turnos/:id/delete -> [(anon), deleteTurno]
+USE <?> -> verificarToken
+GET <?>/api/gastos -> [getAllGastos]
+GET <?>/api/gastos/:id -> [(anon), getGastoById]
+POST <?>/api/gastos -> [(anon), createGasto]
+PUT <?>/api/gastos/:id -> [(anon), (anon), updateGasto]
+PATCH <?>/api/gastos/:id/delete -> [(anon), deleteGasto]
+USE <?> -> verificarToken
+GET <?>/api/categorias-gastos -> [getAllCategoriasGastos]
+GET <?>/api/categorias-gastos/:id -> [(anon), getCategoriaGastoById]
+POST <?>/api/categorias-gastos -> [(anon), createCategoriaGasto]
+PUT <?>/api/categorias-gastos/:id -> [(anon), (anon), updateCategoriaGasto]
+PATCH <?>/api/categorias-gastos/:id/delete -> [(anon), deleteCategoriaGasto]
+USE <?> -> verificarToken
+GET <?>/api/caja -> [getCajaConsolidada]
+USE <?> -> verificarToken
+GET <?>/api/configuracion-agenda -> [getConfiguracionAgenda]
+PUT <?>/api/configuracion-agenda -> [updateConfiguracionAgenda]
+USE <?> -> verificarToken
+GET <?>/api/restricciones-agenda -> [getRestriccionesAgenda]
+POST <?>/api/restricciones-agenda -> [createRestriccionAgenda]
+DELETE <?>/api/restricciones-agenda/:id -> [deleteRestriccionAgenda]"
+`;

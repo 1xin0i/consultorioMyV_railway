@@ -13,19 +13,12 @@ import {
 } from "../models/index.model.js";
 import { parsePagination, buildPaginationMeta } from "../utils/pagination.js";
 
-const MAPA_METODO_A_ID = {
-  efectivo: 1,
-  transferencia: 2,
-  tarjeta: 3,
-  otro: 4,
-};
+import { MAPA_METODO_A_ID } from "../constants/MetodosPago.js";
+import { formatearCobroConDetalles } from "../mappers/cobro.mapper.js";
+import { formatearSolicitudConSaldos } from "../mappers/solicitudCobro.mapper.js";
 
-const MAPA_ID_A_METODO = {
-  1: "Efectivo",
-  2: "Transferencia",
-  3: "Tarjeta",
-  4: "Otro",
-};
+// Re-exportados por compatibilidad (Caja.controller los importa desde aquí).
+export { formatearCobroConDetalles, formatearSolicitudConSaldos };
 
 export const resolverMetodoPagoId = (metodoPagoId, metodoPagoNombre) => {
   if (metodoPagoId && !isNaN(Number(metodoPagoId))) {
@@ -48,89 +41,6 @@ export const resolverMetodoPagoId = (metodoPagoId, metodoPagoNombre) => {
   return 1;
 };
 
-export const formatearCobroConDetalles = (cobroInstance) => {
-  const plain = cobroInstance.get
-    ? cobroInstance.get({ plain: true })
-    : cobroInstance;
-  const solicitud = plain.SolicitudCobro || null;
-  const paciente = solicitud?.Paciente || plain.Paciente || null;
-  const turno = solicitud?.Turno || plain.Turno || null;
-  const metodoNombre =
-    plain.MetodoPago?.nombre ||
-    MAPA_ID_A_METODO[plain.metodo_pago_id] ||
-    plain.metodo_pago ||
-    "Efectivo";
-
-  const practicaNombre =
-    turno?.PracticaTurnos?.[0]?.Practica?.nombre_referencia ||
-    turno?.PracticaTurnos?.[0]?.Practica?.nombre_nomenclador ||
-    null;
-
-  const conceptoCalculado =
-    plain.observaciones ||
-    solicitud?.observaciones ||
-    practicaNombre ||
-    "Cobro de Atención";
-
-  return {
-    ...plain,
-    id: plain.id,
-    id_cobro: plain.id,
-    solicitud_cobro_id: plain.solicitud_cobro_id,
-    id_turno: solicitud?.turno_id || null,
-    turno_id: solicitud?.turno_id || null,
-    id_paciente: solicitud?.paciente_id || null,
-    paciente_id: solicitud?.paciente_id || null,
-    monto: Number(plain.monto) || 0,
-    monto_cobrado: Number(plain.monto) || 0,
-    monto_a_cobrar: Number(solicitud?.monto_total ?? plain.monto) || 0,
-    metodo_pago_id: plain.metodo_pago_id,
-    metodo_pago: metodoNombre,
-    modalidad: metodoNombre,
-    fecha_cobro: plain.fecha_cobro,
-    fecha_emision: plain.fecha_cobro || plain.created_at,
-    observaciones: plain.observaciones || null,
-    concepto: conceptoCalculado,
-    Paciente: paciente,
-    Turno: turno,
-    SolicitudCobro: solicitud,
-  };
-};
-
-export const formatearSolicitudConSaldos = (solicitudInstance) => {
-  const plain = solicitudInstance.get
-    ? solicitudInstance.get({ plain: true })
-    : solicitudInstance;
-  const cobros = (plain.Cobros || []).map((c) => {
-    const metodoNombre =
-      c.MetodoPago?.nombre || MAPA_ID_A_METODO[c.metodo_pago_id] || "Efectivo";
-    return {
-      ...c,
-      id_cobro: c.id,
-      monto: Number(c.monto) || 0,
-      monto_cobrado: Number(c.monto) || 0,
-      metodo_pago: metodoNombre,
-    };
-  });
-
-  const montoTotal = Number(plain.monto_total) || 0;
-  const yaCobrado = cobros.reduce((acc, c) => acc + (Number(c.monto) || 0), 0);
-  const saldoPendiente = Math.max(0, montoTotal - yaCobrado);
-
-  return {
-    ...plain,
-    id: plain.id,
-    id_solicitud_cobro: plain.id,
-    id_cobro: plain.id,
-    id_turno: plain.turno_id,
-    id_paciente: plain.paciente_id,
-    monto_total: montoTotal,
-    monto_a_cobrar: montoTotal,
-    ya_cobrado: yaCobrado,
-    saldo_pendiente: saldoPendiente,
-    Cobros: cobros,
-  };
-};
 
 /**
  * Recalcula y actualiza automáticamente el estado ('pendiente', 'parcial', 'saldado')
