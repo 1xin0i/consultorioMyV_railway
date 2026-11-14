@@ -17,7 +17,7 @@ export function useCobroActions(recargar, cerrarModal) {
     }
 
     if (esInformal && !datosFormulario.concepto_informal?.trim()) {
-      toast.error("El concepto del ingreso informal es obligatorio.");
+      toast.error("El concepto del ingreso es obligatorio.");
       return;
     }
 
@@ -62,7 +62,7 @@ export function useCobroActions(recargar, cerrarModal) {
           observaciones: datosFormulario.observaciones?.trim() || null,
         });
 
-        toast.success("Ingreso informal registrado correctamente");
+        toast.success("Ingreso registrado correctamente");
       } else {
         await cobrosApi.crearCobroInmediato({
           id_turno: Number(datosFormulario.id_turno),

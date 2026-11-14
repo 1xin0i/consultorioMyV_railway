@@ -70,7 +70,7 @@ export function useMovimientosCaja(
           g.CategoriaGasto?.id_categoria_gasto ||
           g.CategoriaGasto?.id_categoria;
         const textoConcepto =
-          g.concepto || g.detalle || g.CategoriaGasto?.nombre || "Gasto General";
+          g.concepto || g.detalle || g.CategoriaGasto?.nombre || "Egreso General";
 
         return {
           ...g,
@@ -95,7 +95,7 @@ export function useMovimientosCaja(
       let listaSegunVista;
       if (vistaActiva === "ingresos") {
         listaSegunVista = cobrosMapeados;
-      } else if (vistaActiva === "gastos") {
+      } else if (vistaActiva === "Egresos") {
         listaSegunVista = gastosMapeados;
       } else {
         listaSegunVista = [...cobrosMapeados, ...gastosMapeados];

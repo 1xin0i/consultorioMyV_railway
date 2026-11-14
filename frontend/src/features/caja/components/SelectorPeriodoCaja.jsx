@@ -247,7 +247,7 @@ export function SelectorPeriodoCaja({
             </button>
           </div>
 
-          {/* Botón Ver Cobros y Gastos del Año */}
+          {/* Botón Ver Ingresos y Egresos del Año */}
           <button
             type="button"
             onClick={() => {
@@ -261,7 +261,7 @@ export function SelectorPeriodoCaja({
             }`}
           >
             <BarChart3 size={14} />
-            <span>Ver Cobros y Gastos del Año ({anioVista})</span>
+            <span>Ver Ingresos y Egresos del Año ({anioVista})</span>
           </button>
 
           {/* Grilla de 12 Meses */}

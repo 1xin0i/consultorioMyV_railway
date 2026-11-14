@@ -104,7 +104,7 @@ export function ModalRegistrarPago({
                   : "text-teal-900/70 hover:text-teal-950"
               }`}
             >
-              Ingreso Particular / Informal
+              Otro ingreso
             </button>
           </div>
         )}
@@ -155,7 +155,7 @@ export function ModalRegistrarPago({
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
             <div className="sm:col-span-2">
               <label className={LABEL_CLASS}>
-                Concepto del Ingreso Particular *
+                Concepto del Ingreso *
               </label>
               <input
                 type="text"

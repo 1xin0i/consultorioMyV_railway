@@ -298,7 +298,7 @@ export function FormularioEliminar({
             <strong className="text-slate-900 font-bold">
               {pacienteSeleccionado?.nombre} {pacienteSeleccionado?.apellido}
             </strong>
-            . Su historial clínico y turnos previos se conservarán intactos.
+            Su historial y turnos previos se conservarán intactos.
           </p>
         </div>
       </div>

@@ -124,7 +124,7 @@ export function ModalTurnoForm({
           {editando && !esProgramado && (
             <div className="col-span-1 md:col-span-2 p-3 bg-amber-50 border border-amber-200 rounded-xl text-amber-800 text-xs font-medium">
               Este turno se encuentra en estado Atendido/Cerrado. El paciente y
-              horario están fijados para preservar el historial clínico. Solo
+              horario están fijados para preservar el historial de turnos. Solo
               podés modificar las notas u observaciones.
             </div>
           )}
@@ -287,8 +287,8 @@ export function ModalTurnoForm({
                     </span>
                   </label>
                   <p className="text-[11px] text-gray-500">
-                    Podés programar qué tratamientos se realizarán. El arancel y
-                    piezas dentales se registran al atender.
+                    Podés programar qué tratamientos se realizarán. El monto y
+                    las piezas dentales se registran al atender.
                   </p>
                 </div>
                 <button

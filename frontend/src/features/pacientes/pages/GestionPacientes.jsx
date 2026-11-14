@@ -167,7 +167,7 @@ export function GestionPacientes() {
     <PageLayout
       icono={<Users size={24} />}
       titulo="Gestión de Pacientes"
-      subtitulo="Administrá las fichas personales, obras sociales e historial clínico."
+      subtitulo="Administrá los datos personales, obras sociales e historial de turnos."
       onNuevo={() => abrirParaCrear()}
       accionesHeader={
         <button

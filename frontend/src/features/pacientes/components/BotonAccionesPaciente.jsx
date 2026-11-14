@@ -40,7 +40,7 @@ export function BotonAccionesPaciente({
             className="flex items-center gap-2.5 px-3.5 py-2 hover:bg-teal-50/70 text-slate-700 hover:text-teal-900 transition-colors cursor-pointer text-left"
           >
             <Eye size={15} className="text-[#0d8266] shrink-0" />
-            <span>Ver Ficha Clínica</span>
+            <span>Ver datos del paciente</span>
           </button>
 
           <button

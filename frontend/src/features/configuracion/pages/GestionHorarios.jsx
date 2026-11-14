@@ -194,7 +194,7 @@ export function GestionHorarios() {
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-1">
               <div>
                 <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">
-                  Hora de Apertura
+                  Hora de Inicio de atención
                 </label>
                 <input
                   type="time"
@@ -209,7 +209,7 @@ export function GestionHorarios() {
 
               <div>
                 <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">
-                  Hora de Cierre
+                  Hora de Fin de Atención
                 </label>
                 <input
                   type="time"
@@ -264,7 +264,7 @@ export function GestionHorarios() {
               </div>
               <div>
                 <h2 className="text-sm sm:text-base font-bold text-slate-900 dark:text-slate-100">
-                  Días Laborales de Atención
+                  Días de Atención
                 </h2>
                 <p className="text-xs text-slate-500 dark:text-slate-400">
                   Los días desmarcados se mostrarán como &quot;Cerrado / No
@@ -306,10 +306,10 @@ export function GestionHorarios() {
                 </div>
                 <div>
                   <h2 className="text-sm sm:text-base font-bold text-slate-900 dark:text-slate-100">
-                    Bloqueos y Feriados Registrados
+                    Días y horarios sin atención
                   </h2>
                   <p className="text-xs text-slate-500 dark:text-slate-400">
-                    Días o franjas horarias bloqueadas en la base de datos.
+                    Días o franjas horarias sin atención en la base de datos.
                   </p>
                 </div>
               </div>

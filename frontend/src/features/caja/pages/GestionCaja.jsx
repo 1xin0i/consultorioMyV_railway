@@ -182,8 +182,8 @@ export function GestionCaja() {
   return (
     <PageLayout
       icono={<Wallet size={24} />}
-      titulo="Cobros y Gastos"
-      subtitulo="Control de ingresos por turnos, cobros particulares, gastos operativos y balance del consultorio."
+      titulo="Ingresos y Egresos"
+      subtitulo="Registro de los cobros de turnos, otros ingresos y gastos del consultorio, con totales por período."
       accionesHeader={
         <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
           <button

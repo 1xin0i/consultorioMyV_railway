@@ -57,7 +57,7 @@ export function VistaPaciente({
           setHistorialTurnos(res.data?.data || []);
         })
         .catch((err) => {
-          console.error("Error al obtener historial clínico del paciente:", err);
+          console.error("Error al obtener historial de turnos del paciente:", err);
           setHistorialTurnos([]);
         })
         .finally(() => {
@@ -78,7 +78,7 @@ export function VistaPaciente({
       isOpen={isOpen}
       onClose={onClose}
       width="max-w-3xl"
-      title={`Ficha Clínica — ${paciente.nombre} ${paciente.apellido}`}
+      title={`Datos del paciente — ${paciente.nombre} ${paciente.apellido}`}
     >
       {/* Cabecera resumida del paciente */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-gradient-to-r from-teal-50/90 via-emerald-50/40 to-teal-50/60 p-4 rounded-2xl border border-teal-200/80 shadow-2xs">
@@ -141,7 +141,7 @@ export function VistaPaciente({
             }`}
           >
             <ClipboardList size={14} />
-            <span>Historial Clínico</span>
+            <span>Historial de turnos</span>
             <span
               className={`ml-0.5 px-1.5 py-0.2 rounded-full text-[10px] font-extrabold ${
                 pestanaActiva === "historial"
@@ -241,7 +241,7 @@ export function VistaPaciente({
         </div>
       )}
 
-      {/* CONTENIDO PESTAÑA 2: HISTORIAL CLÍNICO DE TURNOS Y ATENCIONES */}
+      {/* CONTENIDO PESTAÑA 2: Historial de turnos Y ATENCIONES */}
       {pestanaActiva === "historial" && (
         <div className="flex flex-col gap-3 mt-1">
           <div className="flex items-center justify-between text-xs text-slate-600 bg-teal-50/50 px-3.5 py-2.5 rounded-xl border border-teal-100">

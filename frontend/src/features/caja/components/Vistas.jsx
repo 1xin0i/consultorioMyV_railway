@@ -218,11 +218,11 @@ export function VistaGastos({
       ordenarPor={propsPaginacion.ordenarPor}
       direccion={propsPaginacion.direccion}
       manejarOrden={propsPaginacion.manejarOrden}
-      mensajeVacio="No se registraron gastos en este período."
+      mensajeVacio="No se registraron egresos en este período."
       renderTarjeta={(gasto) => (
         <TarjetaRegistro
           key={gasto.uid || gasto.id_gasto}
-          titulo={gasto.concepto || gasto.detalle || "Gasto"}
+          titulo={gasto.concepto || gasto.detalle || "Egreso"}
           subtitulo={formatDate(gasto.fecha || gasto.fecha_gasto)}
           badge={
             <span className="bg-rose-50 text-rose-700 border border-rose-200 px-2 py-0.5 rounded-full text-[10px] font-bold">
@@ -240,14 +240,14 @@ export function VistaGastos({
               <button
                 onClick={() => abrirParaEditar(gasto, formatearGastoParaEditar)}
                 className="p-1.5 text-blue-500 hover:text-blue-700 hover:bg-blue-50 dark:text-blue-400 dark:hover:bg-blue-950/40 rounded-lg transition-colors cursor-pointer"
-                title="Editar gasto"
+                title="Editar egreso"
               >
                 <Edit size={16} />
               </button>
               <button
                 onClick={() => abrirParaEliminar(gasto)}
                 className="p-1.5 text-slate-600 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors cursor-pointer"
-                title="Eliminar gasto"
+                title="Eliminar egreso"
               >
                 <Trash2 size={16} />
               </button>
@@ -279,14 +279,14 @@ export function VistaGastos({
               <button
                 onClick={() => abrirParaEditar(gasto, formatearGastoParaEditar)}
                 className="p-2 text-blue-500 hover:text-blue-700 hover:bg-blue-50 dark:text-blue-400 dark:hover:bg-blue-950/40 rounded-xl transition-colors cursor-pointer"
-                title="Editar gasto"
+                title="Editar egreso"
               >
                 <Edit size={16} />
               </button>
               <button
                 onClick={() => abrirParaEliminar(gasto)}
                 className="p-2 text-slate-500 hover:text-rose-600 hover:bg-rose-50 rounded-xl transition-colors cursor-pointer"
-                title="Eliminar gasto"
+                title="Eliminar egreso"
               >
                 <Trash2 size={16} />
               </button>

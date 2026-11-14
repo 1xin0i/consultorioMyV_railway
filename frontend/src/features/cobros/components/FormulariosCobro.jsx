@@ -98,7 +98,7 @@ export function FormularioCrearEditar({
                   : "text-teal-900/70 hover:text-teal-950"
               }`}
             >
-              Ingreso Informal / Particular
+              Otro ingreso
             </button>
           </div>
         )}
@@ -156,7 +156,7 @@ export function FormularioCrearEditar({
           ) : (
             <div className="col-span-1 md:col-span-2">
               <label className={LABEL_CLASS}>
-                Concepto del Ingreso Informal *
+                Concepto del Ingreso *
               </label>
               <input
                 type="text"

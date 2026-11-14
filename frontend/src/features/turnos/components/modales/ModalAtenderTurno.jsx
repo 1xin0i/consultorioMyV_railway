@@ -216,7 +216,7 @@ export function ModalAtenderTurno({
           <div className="bg-emerald-50/70 border border-emerald-200/80 p-4 rounded-2xl flex items-center justify-between shadow-xs">
             <div className="w-full flex flex-col gap-1.5">
               <label className="block text-xs font-bold text-emerald-800 uppercase tracking-wider">
-                Precio Final de la Atención (Calculado / Modificable)
+                Monto a cobrar (sugerido, editable)
               </label>
               <div className="relative flex items-center max-w-xs">
                 <span className="absolute left-3.5 text-emerald-700 font-bold text-sm">

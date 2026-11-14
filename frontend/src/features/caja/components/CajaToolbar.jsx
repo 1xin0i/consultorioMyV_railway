@@ -81,7 +81,7 @@ export function CajaToolbar({
           },
           {
             id: "gastos",
-            label: "Gastos",
+            label: "Egresos",
             dot: "bg-rose-500",
             activeClass:
               "bg-[#fff1f2] text-rose-900 border border-rose-300/80 dark:bg-rose-950/80 dark:text-rose-200 dark:border-rose-700 shadow-2xs",
@@ -154,7 +154,7 @@ export function MenuFlotanteCajaMobile({ onNuevoIngreso, onNuevoGasto }) {
             className="flex items-center gap-2 bg-rose-600 text-white px-3.5 py-2 rounded-xl shadow-lg font-bold text-xs animate-in fade-in slide-in-from-bottom-2 duration-150 cursor-pointer active:scale-95"
           >
             <TrendingDown size={15} />
-            <span>Registrar Gasto</span>
+            <span>Registrar Egreso</span>
           </button>
         </>
       )}

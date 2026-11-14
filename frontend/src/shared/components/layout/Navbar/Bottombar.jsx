@@ -40,7 +40,7 @@ const PAGINAS_CONFIG = [
   { to: "/practicas", label: "Prácticas", icon: ClipboardCheck },
   { to: "/obras-sociales", label: "Obras Sociales", icon: Building2 },
   { to: "/categorias-gastos", label: "Categorías Gasto", icon: Tag },
-  { to: "/configuracion/horarios", label: "Ajustes", icon: Settings },
+  { to: "/configuracion/horarios", label: "Horarios y disponibilidad", icon: Settings },
 ];
 
 export function Bottombar() {

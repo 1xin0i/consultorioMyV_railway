@@ -136,7 +136,7 @@ export function GestionCategoriasGasto() {
     <PageLayout
       icono={<Tag size={24} />}
       titulo="Categorías de Gastos"
-      subtitulo="Catálogo y clasificación de gastos operativos, insumos y servicios del consultorio."
+      subtitulo="Categorías para clasificar los gastos del consultorio."
       onNuevo={() => abrirParaCrear()}
       accionesHeader={
         <button

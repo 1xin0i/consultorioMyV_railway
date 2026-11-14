@@ -138,7 +138,7 @@ export function GridEstadoHonorariosTurno({
       <div className="rounded-2xl p-3.5 sm:p-4 bg-slate-50/70 dark:bg-slate-800/40 border border-slate-100 dark:border-slate-800 flex flex-col justify-between">
         <div className="flex items-center justify-between">
           <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">
-            HONORARIOS
+            MONTO DEL TURNO
           </span>
           {estaCanceladoOInasistido ? (
             <span className="text-[10px] font-bold px-2 py-0.5 rounded-md border border-slate-200 dark:border-slate-700 text-slate-500 bg-white dark:bg-slate-800">

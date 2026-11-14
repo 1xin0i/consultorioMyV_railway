@@ -44,7 +44,7 @@ export function Kpis({
       <div className="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200/90 dark:border-slate-800 shadow-sm flex items-center justify-between">
         <div className="flex flex-col min-w-0">
           <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 block truncate">
-            COBROS REGISTRADOS
+            INGRESOS REGISTRADOS
           </span>
           <span className="text-xl sm:text-2xl font-black text-slate-900 dark:text-slate-100 mt-1 tabular-nums truncate">
             +${totalIngresos.toLocaleString("es-AR", { minimumFractionDigits: 2 })}
@@ -53,7 +53,7 @@ export function Kpis({
             <ArrowUpRight size={13} className="shrink-0" />
             <span>
               {totalCobrosCount}{" "}
-              {totalCobrosCount === 1 ? "cobro registrado" : "cobros registrados"}
+              {totalCobrosCount === 1 ? "ingreso registrado" : "ingresos registrados"}
             </span>
           </span>
         </div>
@@ -67,7 +67,7 @@ export function Kpis({
       <div className="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200/90 dark:border-slate-800 shadow-sm flex items-center justify-between">
         <div className="flex flex-col min-w-0">
           <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 block truncate">
-            GASTOS REGISTRADOS
+            EGRESOS REGISTRADOS
           </span>
           <span className="text-xl sm:text-2xl font-black text-slate-900 dark:text-slate-100 mt-1 tabular-nums truncate">
             -${totalEgresos.toLocaleString("es-AR", { minimumFractionDigits: 2 })}
@@ -76,7 +76,7 @@ export function Kpis({
             <ArrowDownRight size={13} className="shrink-0" />
             <span>
               {totalGastosCount}{" "}
-              {totalGastosCount === 1 ? "gasto registrado" : "gastos registrados"}
+              {totalGastosCount === 1 ? "egreso registrado" : "egresos registrados"}
             </span>
           </span>
         </div>

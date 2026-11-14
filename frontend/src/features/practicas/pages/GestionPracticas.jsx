@@ -116,7 +116,7 @@ export function GestionPracticas() {
     <PageLayout
       icono={<Stethoscope size={24} />}
       titulo="Gestión de Prácticas"
-      subtitulo="Catálogo de prestaciones, nomenclador y aranceles de referencia del consultorio."
+      subtitulo="Prácticas del consultorio y sus precios de referencia."
       onNuevo={() => abrirParaCrear()}
       accionesHeader={
         <button

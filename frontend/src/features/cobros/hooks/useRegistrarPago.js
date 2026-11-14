@@ -227,7 +227,7 @@ export function useRegistrarPago({
     try {
       if (tipoIngreso === "informal") {
         if (!conceptoInformal.trim()) {
-          toast.error("El concepto del ingreso informal es obligatorio.");
+          toast.error("El concepto del ingreso es obligatorio.");
           setEnviando(false);
           return;
         }
@@ -240,7 +240,7 @@ export function useRegistrarPago({
           observaciones: observaciones.trim() || null,
         });
 
-        toast.success("Ingreso informal registrado en Caja correctamente.");
+        toast.success("Ingreso registrado correctamente.");
       } else {
         if (!turnoElegido?.id_turno) {
           toast.error("Seleccioná un turno atendido para registrar el pago.");
