@@ -135,7 +135,7 @@ export function GestionCategoriasGasto() {
   return (
     <PageLayout
       icono={<Tag size={24} />}
-      titulo="Categorías de Gastos"
+      titulo="Categorías de Egresos"
       subtitulo="Categorías para clasificar los gastos del consultorio."
       onNuevo={() => abrirParaCrear()}
       accionesHeader={
@@ -154,7 +154,7 @@ export function GestionCategoriasGasto() {
         <BarraFiltros
           busqueda={propsPaginacion.busqueda}
           setBusqueda={propsPaginacion.setBusqueda}
-          placeholder="Buscar categoría de gasto..."
+          placeholder="Buscar categoría de egreso..."
           className="mb-0"
         >
           <div className="flex items-center bg-gray-100/90 dark:bg-slate-800/90 border border-gray-200/90 dark:border-slate-700 p-1 rounded-2xl overflow-x-auto shadow-2xs">
@@ -196,7 +196,7 @@ export function GestionCategoriasGasto() {
             ordenarPor={propsPaginacion.ordenarPor}
             direccion={propsPaginacion.direccion}
             manejarOrden={propsPaginacion.manejarOrden}
-            mensajeVacio="No se encontraron categorías de gastos registradas."
+            mensajeVacio="No se encontraron categorías de egresos registradas."
             renderTarjeta={(cat) => (
               <TarjetaRegistro
                 key={cat.id_categoria_gasto}

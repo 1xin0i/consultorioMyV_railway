@@ -62,7 +62,7 @@ export function FormularioCrearEditar({
       onClose={cerrarModal}
       onSubmit={guardarCobro}
       width="max-w-lg"
-      title={editando ? "Editar Cobro" : "Registrar Ingreso en Caja"}
+      title={editando ? "Editar Ingreso" : "Registrar Ingreso"}
     >
       <div className="flex flex-col gap-4">
         {/* Selector de tipo de ingreso (Turno vs Informal) */}
@@ -210,7 +210,7 @@ export function FormularioCrearEditar({
           </div>
 
           <div className="col-span-1 md:col-span-2">
-            <label className={LABEL_CLASS}>Fecha del Cobro *</label>
+            <label className={LABEL_CLASS}>Fecha del Ingreso *</label>
             <input
               type="date"
               name="fecha_cobro"
@@ -249,7 +249,7 @@ export function FormularioCrearEditar({
           type="submit"
           className="px-5 py-2.5 rounded-xl text-white bg-[#0d8266] hover:bg-[#09664f] font-bold text-xs transition-all shadow-sm shadow-teal-900/20 cursor-pointer"
         >
-          {editando ? "Guardar Cambios" : "Registrar Cobro"}
+          {editando ? "Guardar Cambios" : "Registrar Ingreso"}
         </button>
       </div>
     </Modal>
@@ -267,7 +267,7 @@ export function FormularioEliminar({
       isOpen={modalEliminar}
       onClose={cerrarModal}
       width="max-w-md"
-      title="Anular Cobro"
+      title="Anular Ingreso"
       variant="danger"
     >
       <div className="bg-gradient-to-br from-rose-50/80 to-rose-100/30 border border-rose-200/90 rounded-2xl p-4 flex items-start gap-3.5 shadow-2xs">
@@ -276,7 +276,7 @@ export function FormularioEliminar({
         </div>
         <div className="flex flex-col gap-1.5">
           <h3 className="text-sm font-bold text-slate-900">
-            ¿Confirmas la anulación de este cobro?
+            ¿Confirmas la anulación de este ingreso?
           </h3>
           <p className="text-xs text-slate-600 leading-relaxed">
             Se eliminará el ingreso por{" "}
@@ -308,7 +308,7 @@ export function FormularioEliminar({
           onClick={ejecutarEliminacion}
           className="px-4 py-2.5 rounded-xl text-white bg-rose-600 hover:bg-rose-700 font-bold text-xs transition-colors shadow-sm shadow-rose-500/30 cursor-pointer"
         >
-          Sí, Anular Cobro
+          Sí, Anular Ingreso
         </button>
       </div>
     </Modal>

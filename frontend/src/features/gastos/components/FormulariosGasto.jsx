@@ -66,13 +66,13 @@ export function FormularioCrearEditar({
         onClose={cerrarModal}
         onSubmit={guardarGasto}
         width="max-w-lg"
-        title={editando ? "Editar Gasto" : "Registrar Nuevo Gasto"}
+        title={editando ? "Editar Egreso" : "Registrar Nuevo Egreso"}
       >
         <div className="flex flex-col gap-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
             <div className="col-span-1 md:col-span-2">
               <div className="flex items-center justify-between mb-1">
-                <label className={LABEL_CLASS}>Categoría de Gasto *</label>
+                <label className={LABEL_CLASS}>Categoría de Egreso *</label>
                 <button
                   type="button"
                   onClick={() => setModalCatAbierto(true)}
@@ -131,7 +131,7 @@ export function FormularioCrearEditar({
             </div>
 
             <div>
-              <label className={LABEL_CLASS}>Fecha del Gasto *</label>
+              <label className={LABEL_CLASS}>Fecha del Egreso *</label>
               <input
                 type="date"
                 name="fecha_gasto"
@@ -177,7 +177,7 @@ export function FormularioCrearEditar({
             type="submit"
             className="px-5 py-2.5 rounded-xl text-white bg-[#0d8266] hover:bg-[#09664f] font-bold text-xs transition-all shadow-sm shadow-teal-900/20 cursor-pointer"
           >
-            {editando ? "Guardar Cambios" : "Registrar Gasto"}
+            {editando ? "Guardar Cambios" : "Registrar Egreso"}
           </button>
         </div>
       </Modal>
@@ -188,7 +188,7 @@ export function FormularioCrearEditar({
           onClose={() => setModalCatAbierto(false)}
           onSubmit={handleCrearCategoriaRapida}
           width="max-w-md"
-          title="Nueva Categoría de Gasto"
+          title="Nueva Categoría de Egreso"
         >
           <div className="flex flex-col gap-3.5">
             <div>
@@ -263,7 +263,7 @@ export function FormularioEliminar({
       isOpen={modalEliminar}
       onClose={cerrarModal}
       width="max-w-md"
-      title="Eliminar Gasto"
+      title="Eliminar Egreso"
       variant="danger"
     >
       <div className="bg-gradient-to-br from-rose-50/80 to-rose-100/30 border border-rose-200/90 rounded-2xl p-4 flex items-start gap-3.5 shadow-2xs">
@@ -272,12 +272,12 @@ export function FormularioEliminar({
         </div>
         <div className="flex flex-col gap-1.5">
           <h3 className="text-sm font-bold text-slate-900">
-            ¿Estás seguro de eliminar este gasto?
+            ¿Estás seguro de eliminar este egreso?
           </h3>
           <p className="text-xs text-slate-600 leading-relaxed">
             Se eliminará el registro de{" "}
             <strong className="text-slate-900 font-bold">
-              {gastoSeleccionado?.CategoriaGasto?.nombre || "Gasto"}
+              {gastoSeleccionado?.CategoriaGasto?.nombre || "Egreso"}
             </strong>{" "}
             por un monto de{" "}
             <span className="inline-flex px-1.5 py-0.5 rounded-md bg-rose-100 text-rose-900 font-extrabold">

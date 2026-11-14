@@ -133,9 +133,9 @@ export function GestionHorarios() {
   const handleEliminarRestriccion = async (id) => {
     try {
       await eliminarRestriccion(id);
-      toast.success("Bloqueo eliminado de la base de datos.", { icon: "🔓" });
+      toast.success("Atención habilitada correctamente.", { icon: "🔓" });
     } catch {
-      toast.error("No se pudo eliminar el bloqueo.");
+      toast.error("No se pudo habilitar la atención.");
     }
   };
 
@@ -320,13 +320,13 @@ export function GestionHorarios() {
                 className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-slate-900 dark:bg-slate-800 hover:bg-slate-800 dark:hover:bg-slate-700 text-white text-xs font-bold transition-colors cursor-pointer"
               >
                 <Plus size={14} />
-                <span>Nuevo Bloqueo</span>
+                <span>Agregar día sin atención</span>
               </button>
             </div>
 
             {restricciones.length === 0 ? (
               <div className="rounded-xl border border-dashed border-slate-200 dark:border-slate-800 p-4 text-center text-xs text-slate-400 dark:text-slate-500">
-                No hay días ni franjas horarias bloqueadas actualmente.
+                No hay días ni franjas horarias sin atención actualmente.
               </div>
             ) : (
               <div className="flex flex-col gap-2 max-h-64 overflow-y-auto pr-1">

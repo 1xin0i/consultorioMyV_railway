@@ -29,7 +29,7 @@ import { usePWAInstall } from "@/shared/hooks/usePWAInstall";
 
 // Orden requerido: Cobros, Turnos, Agenda, Pacientes, Más
 const BOTTOMBAR_LINKS = [
-  { to: "/caja", label: "Cobros", icon: Wallet },
+  { to: "/caja", label: "Movimientos", icon: Wallet },
   { to: "/turnos", label: "Turnos", icon: CalendarClock },
   { to: "/", label: "Agenda", icon: CalendarDays },
   { to: "/pacientes", label: "Pacientes", icon: Users },
@@ -39,7 +39,7 @@ const BOTTOMBAR_LINKS = [
 const PAGINAS_CONFIG = [
   { to: "/practicas", label: "Prácticas", icon: ClipboardCheck },
   { to: "/obras-sociales", label: "Obras Sociales", icon: Building2 },
-  { to: "/categorias-gastos", label: "Categorías Gasto", icon: Tag },
+  { to: "/categorias-gastos", label: "Categorías Egreso", icon: Tag },
   { to: "/configuracion/horarios", label: "Horarios y disponibilidad", icon: Settings },
 ];
 

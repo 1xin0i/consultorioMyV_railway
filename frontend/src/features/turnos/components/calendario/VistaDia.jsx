@@ -201,7 +201,7 @@ export const VistaDia = memo(function VistaDia({
                     className="text-slate-600 dark:text-slate-400 shrink-0"
                   />
                   <span className="truncate">
-                    {restriccion?.motivo || "Horario Bloqueado"}
+                    {restriccion?.motivo || "Sin atención"}
                   </span>
                 </div>
               )}

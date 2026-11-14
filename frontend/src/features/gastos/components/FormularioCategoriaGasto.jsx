@@ -21,7 +21,7 @@ export function FormularioCategoriaGasto({
       onClose={cerrarModal}
       onSubmit={guardarCategoria}
       width="max-w-lg"
-      title={editando ? "Editar Categoría de Gasto" : "Registrar Nueva Categoría"}
+      title={editando ? "Editar Categoría de Egreso" : "Registrar Nueva Categoría"}
     >
       <div className="flex flex-col gap-4">
         <div>
@@ -46,7 +46,7 @@ export function FormularioCategoriaGasto({
           <textarea
             name="descripcion"
             rows={3}
-            placeholder="Detalles sobre los tipos de gastos incluidos en esta categoría..."
+            placeholder="Detalles sobre los tipos de egresos incluidos en esta categoría..."
             value={datosFormulario?.descripcion || ""}
             onChange={actualizarDatos}
             className={INPUT_CLASS}

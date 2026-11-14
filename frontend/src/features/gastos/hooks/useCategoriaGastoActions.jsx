@@ -23,10 +23,10 @@ export function useCategoriaGastoActions(recargar, cerrarModal) {
       descripcion: datosFormulario.descripcion?.trim() || null,
     }),
     mensajes: {
-      creado: "Categoría de gasto registrada correctamente",
-      actualizado: "Categoría de gasto actualizada correctamente",
+      creado: "Categoría de egreso registrada correctamente",
+      actualizado: "Categoría de egreso actualizada correctamente",
       eliminado: "Estado de la categoría actualizado correctamente",
-      errorGuardar: "No se pudo guardar la categoría de gasto.",
+      errorGuardar: "No se pudo guardar la categoría de egreso.",
       errorEliminar: "No se pudo actualizar el estado de la categoría.",
     },
   });

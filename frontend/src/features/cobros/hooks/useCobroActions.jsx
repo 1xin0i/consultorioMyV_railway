@@ -12,7 +12,7 @@ export function useCobroActions(recargar, cerrarModal) {
     const esInformal = datosFormulario.tipo_ingreso === "informal";
 
     if (!esInformal && !datosFormulario.id_turno) {
-      toast.error("Debes seleccionar un turno atendido para registrar el cobro.");
+      toast.error("Debes seleccionar un turno atendido para registrar el ingreso.");
       return;
     }
 
@@ -22,7 +22,7 @@ export function useCobroActions(recargar, cerrarModal) {
     }
 
     if (!datosFormulario.monto_pagado || Number(datosFormulario.monto_pagado) <= 0) {
-      toast.error("El monto del cobro debe ser mayor a 0.");
+      toast.error("El monto del ingreso debe ser mayor a 0.");
       return;
     }
 
@@ -52,7 +52,7 @@ export function useCobroActions(recargar, cerrarModal) {
             : datosFormulario.observaciones?.trim() || null,
         });
 
-        toast.success("Cobro actualizado correctamente");
+        toast.success("Ingreso actualizado correctamente");
       } else if (esInformal) {
         await cobrosApi.crearCobroInformal({
           concepto: datosFormulario.concepto_informal.trim(),
@@ -72,14 +72,14 @@ export function useCobroActions(recargar, cerrarModal) {
           observaciones: datosFormulario.observaciones?.trim() || null,
         });
 
-        toast.success("Cobro registrado correctamente");
+        toast.success("Ingreso registrado correctamente");
       }
 
       recargar();
       cerrarModal();
     } catch (error) {
       console.error("Error al guardar cobro:", error);
-      manejarErrorApi(error, "No se pudo guardar el cobro.");
+      manejarErrorApi(error, "No se pudo guardar el ingreso.");
     } finally {
       setCargandoAccion(false);
     }
@@ -91,12 +91,12 @@ export function useCobroActions(recargar, cerrarModal) {
       const idTarget =
         cobroSeleccionado.id_cobro || cobroSeleccionado.id_movimiento;
       await cobrosApi.eliminar(idTarget);
-      toast.success("Cobro anulado correctamente");
+      toast.success("Ingreso anulado correctamente");
       recargar();
       cerrarModal();
     } catch (error) {
       console.error("Error al anular cobro:", error);
-      manejarErrorApi(error, "No se pudo anular el cobro.");
+      manejarErrorApi(error, "No se pudo anular el ingreso.");
     }
   };
 

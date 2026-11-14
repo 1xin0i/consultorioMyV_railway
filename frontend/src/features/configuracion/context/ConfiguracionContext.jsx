@@ -222,7 +222,7 @@ export function ConfiguracionProvider({ children }) {
       todoElDia: Boolean(nueva.todoElDia),
       horaInicio: nueva.todoElDia ? null : nueva.horaInicio,
       horaFin: nueva.todoElDia ? null : nueva.horaFin,
-      motivo: nueva.motivo || "Horario bloqueado",
+      motivo: nueva.motivo || "Sin atención",
     };
 
     try {

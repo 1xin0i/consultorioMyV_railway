@@ -40,7 +40,7 @@ export function Kpis({
 
   return (
     <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-5 sm:mb-6">
-      {/* ─── CARD 1: COBROS REGISTRADOS ─── */}
+      {/* ─── CARD 1: INGRESOS REGISTRADOS ─── */}
       <div className="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200/90 dark:border-slate-800 shadow-sm flex items-center justify-between">
         <div className="flex flex-col min-w-0">
           <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 block truncate">
@@ -63,7 +63,7 @@ export function Kpis({
         </div>
       </div>
 
-      {/* ─── CARD 2: GASTOS REGISTRADOS ─── */}
+      {/* ─── CARD 2: EGRESOS REGISTRADOS ─── */}
       <div className="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200/90 dark:border-slate-800 shadow-sm flex items-center justify-between">
         <div className="flex flex-col min-w-0">
           <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 block truncate">

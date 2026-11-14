@@ -99,7 +99,7 @@ export function CeldaDiaMes({
               <Lock size={10} className="shrink-0 text-slate-500" />
               <span className="truncate max-w-[85px] sm:max-w-[120px]">
                 {restriccion?.motivo ||
-                  (!diaLaboral ? "Día no laboral" : "Bloqueado")}
+                  (!diaLaboral ? "Día no laboral" : "Sin atención")}
               </span>
             </span>
           )}
@@ -112,7 +112,7 @@ export function CeldaDiaMes({
                 e.stopPropagation();
                 onEliminarRestriccion(restriccion.id);
               }}
-              title="Desbloquear día"
+              title="Habilitar atención"
               className="p-0.5 rounded text-rose-500 hover:text-rose-700 hover:bg-rose-50 dark:hover:bg-rose-950/50 transition-colors cursor-pointer"
             >
               <Unlock size={11} />
@@ -217,7 +217,7 @@ export function LeyendaOcupacionMes({
           <Lock size={11} className="text-slate-500 shrink-0" />
           <span>
             <strong className="text-slate-700 dark:text-slate-300">
-              Bloqueado
+              Sin atención
             </strong>
           </span>
         </div>

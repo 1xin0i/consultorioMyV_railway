@@ -111,8 +111,8 @@ export const validarTurnoHorarioConfig = (
   if (restrDia) {
     return {
       valido: false,
-      motivo: restrDia.motivo || "Día bloqueado",
-      mensaje: `El día seleccionado está bloqueado (${restrDia.motivo}).`,
+      motivo: restrDia.motivo || "Día sin atención",
+      mensaje: `El día seleccionado está marcado sin atención (${restrDia.motivo}).`,
     };
   }
 
@@ -150,7 +150,7 @@ export const validarTurnoHorarioConfig = (
     return {
       valido: false,
       motivo: `${restrFranja.motivo} (${restrFranja.horaInicio} a ${restrFranja.horaFin} hs)`,
-      mensaje: `El horario coincide con una franja bloqueada: "${restrFranja.motivo}" (${restrFranja.horaInicio} a ${restrFranja.horaFin} hs).`,
+      mensaje: `El horario coincide con una franja sin atención: "${restrFranja.motivo}" (${restrFranja.horaInicio} a ${restrFranja.horaFin} hs).`,
     };
   }
 

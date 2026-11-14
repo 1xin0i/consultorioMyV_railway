@@ -76,7 +76,7 @@ export function ModalRegistrarPago({
       width="max-w-2xl"
       title={
         turnoPreseleccionado
-          ? `Registrar Cobro — Turno #${turnoPreseleccionado.id_turno}`
+          ? `Registrar Ingreso — Turno #${turnoPreseleccionado.id_turno}`
           : "Registrar Ingreso en Caja"
       }
     >
@@ -93,7 +93,7 @@ export function ModalRegistrarPago({
                   : "text-teal-900/70 hover:text-teal-950"
               }`}
             >
-              Cobro de Turno Atendido
+              Ingreso por turno atendido
             </button>
             <button
               type="button"
@@ -219,7 +219,7 @@ export function ModalRegistrarPago({
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
               <div>
-                <label className={LABEL_CLASS}>Fecha del Cobro *</label>
+                <label className={LABEL_CLASS}>Fecha del Ingreso *</label>
                 <input
                   type="date"
                   required
@@ -271,7 +271,7 @@ export function ModalRegistrarPago({
               ? "Registrando..."
               : tipoIngreso === "informal"
                 ? "Registrar Ingreso"
-                : "Confirmar Cobro"}
+                : "Confirmar Ingreso"}
           </span>
         </button>
       </div>

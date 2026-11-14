@@ -51,7 +51,7 @@ export const normalizarRestriccion = (item) => {
     horaInicio:
       !todoElDia && horaInicioRaw ? String(horaInicioRaw).slice(0, 5) : null,
     horaFin: !todoElDia && horaFinRaw ? String(horaFinRaw).slice(0, 5) : null,
-    motivo: item.motivo || "Horario bloqueado",
+    motivo: item.motivo || "Sin atención",
   };
 };
 

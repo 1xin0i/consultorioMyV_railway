@@ -225,8 +225,8 @@ export const VistaSemana = memo(function VistaSemana({
                   }}
                   title={
                     diaBloqueado
-                      ? `Día bloqueado: ${restriccionDia?.motivo || "Cerrado"}`
-                      : "Clic: ver día | Mantener presionado y arrastrar: bloquear días"
+                      ? `Día sin atención: ${restriccionDia?.motivo || "Cerrado"}`
+                      : "Clic: ver día | Mantener presionado y arrastrar: marcar días sin atención"
                   }
                   className={`flex-1 min-w-[34px] md:min-w-[100px] text-center py-1 px-0.5 sm:py-1.5 sm:px-1 md:p-2 border-r border-gray-200 dark:border-slate-800 last:border-r-0 select-none cursor-pointer transition-colors ${
                     marcado
@@ -347,9 +347,9 @@ export const VistaSemana = memo(function VistaSemana({
                       onTouchEnd={handleTouchEnd}
                       title={
                         diaBloqueado
-                          ? `Día bloqueado: ${restriccionDia?.motivo || "Cerrado"}`
+                          ? `Día sin atención: ${restriccionDia?.motivo || "Cerrado"}`
                           : restriccion?.motivo ||
-                            (bloqueado ? "Horario Bloqueado" : "")
+                            (bloqueado ? "Sin atención" : "")
                       }
                       className={`border-b border-gray-200 dark:border-slate-800 transition-colors select-none flex items-center justify-center ${
                         pasado

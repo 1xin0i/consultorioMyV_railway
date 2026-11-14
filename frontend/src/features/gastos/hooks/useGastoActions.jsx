@@ -11,13 +11,13 @@ export function useGastoActions(recargar, cerrarModal) {
     metodoEliminar: "patch_delete",
     validar: (datosFormulario) => {
       if (!datosFormulario.id_categoria && !datosFormulario.id_categoria_gasto) {
-        return "Debes seleccionar una categoría de gasto.";
+        return "Debes seleccionar una categoría de egreso.";
       }
       if (!datosFormulario.monto || Number(datosFormulario.monto) <= 0) {
-        return "El monto del gasto debe ser mayor a 0.";
+        return "El monto del egreso debe ser mayor a 0.";
       }
       if (!datosFormulario.fecha_gasto) {
-        return "La fecha del gasto es obligatoria.";
+        return "La fecha del egreso es obligatoria.";
       }
       return null;
     },
@@ -40,11 +40,11 @@ export function useGastoActions(recargar, cerrarModal) {
       };
     },
     mensajes: {
-      creado: "Gasto registrado correctamente",
-      actualizado: "Gasto actualizado correctamente",
-      eliminado: "Gasto eliminado correctamente",
-      errorGuardar: "No se pudo guardar el gasto.",
-      errorEliminar: "No se pudo eliminar el gasto.",
+      creado: "Egreso registrado correctamente",
+      actualizado: "Egreso actualizado correctamente",
+      eliminado: "Egreso eliminado correctamente",
+      errorGuardar: "No se pudo guardar el egreso.",
+      errorEliminar: "No se pudo eliminar el egreso.",
     },
   });
 

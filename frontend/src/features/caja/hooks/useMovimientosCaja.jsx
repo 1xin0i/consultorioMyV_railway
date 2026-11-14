@@ -35,7 +35,7 @@ export function useMovimientosCaja(
           c.observaciones.startsWith("[Ingreso Informal]");
 
         let conceptoTexto = c.id_turno
-          ? `Cobro Turno #${c.id_turno}${nombrePaciente ? ` - ${nombrePaciente}` : ""}`
+          ? `Ingreso por turno #${c.id_turno}${nombrePaciente ? ` - ${nombrePaciente}` : ""}`
           : "Ingreso Particular";
 
         let obsLimpia = c.observaciones || "";
