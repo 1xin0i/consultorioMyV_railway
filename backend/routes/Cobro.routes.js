@@ -14,6 +14,8 @@ const router = express.Router();
 // Rutas para Cobro y SolicitudCobro
 router.get("/", CobroController.getAllCobros);
 
+router.get("/metodos-pago", CobroController.getMetodosPago);
+
 router.get("/:turnoId/cobros", CobroController.getCobroByTurnoId);
 
 router.get("/:id", CobroController.getCobroById);

@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import Modal from "@/shared/components/ui/Modal";
 import { formatDate, formatDateTime } from "@/shared/utils";
 import { calcularEdad } from "../utils/calcularEdad";
+import { obtenerObrasSocialesPaciente } from "../utils/formatearPacienteParaEditar";
 import { turnosApi } from "@/features/turnos";
 import {
   User,
@@ -67,8 +68,7 @@ export function VistaPaciente({
 
   if (!paciente) return null;
 
-  const obrasSociales =
-    paciente.ObraSocials || paciente.PacientesPorObrasSociales || [];
+  const obrasSociales = obtenerObrasSocialesPaciente(paciente);
   const totalAtendidos = historialTurnos.filter(
     (t) => t.EstadoTurno?.estado === "Atendido" || t.id_estado === 2,
   ).length;
@@ -392,7 +392,7 @@ export function VistaPaciente({
               onClose();
               abrirParaEditar(paciente, formatearPacienteParaEditar);
             }}
-            className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-amber-800 bg-amber-50 hover:bg-amber-100 border border-amber-200 font-bold text-xs transition-colors cursor-pointer"
+            className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-blue-700 bg-blue-50 hover:bg-blue-100 border border-blue-200 font-bold text-xs transition-colors cursor-pointer"
           >
             <Edit size={15} />
             <span>Editar Datos</span>

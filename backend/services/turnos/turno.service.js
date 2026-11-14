@@ -31,7 +31,7 @@ export const listarPaginado = async (query) => {
 
   const { count, rows } = await turnoRepo.findPaginado({
     where: turnoRepo.construirWhereListado({
-      estadoFiltrado: query.estadoFiltrado,
+      estadoFiltrado: query.estadoFiltrado || query.id_estado,
       mes: query.mes,
       search,
     }),

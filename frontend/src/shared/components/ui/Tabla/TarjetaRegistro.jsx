@@ -15,7 +15,7 @@ export function TarjetaRegistro({
       className={`p-3.5 transition-colors ${
         inactivo
           ? "bg-slate-50/70 dark:bg-slate-800/40 opacity-75"
-          : "bg-white dark:bg-slate-900 hover:bg-teal-50/30 dark:hover:bg-slate-800/60"
+          : "bg-white dark:bg-slate-900 hover:bg-slate-100 dark:hover:bg-slate-800"
       } ${onClick ? "cursor-pointer" : ""}`}
     >
       <div className="flex items-start justify-between gap-2">

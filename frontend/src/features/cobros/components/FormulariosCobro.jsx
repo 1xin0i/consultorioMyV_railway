@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import Modal from "@/shared/components/ui/Modal";
 import InputFiltro from "@/shared/components/ui/InputFiltro";
 import { formatDateTime } from "@/shared/utils";
-import { AlertTriangle, Banknote, Stethoscope } from "lucide-react";
+import { AlertTriangle, Stethoscope } from "lucide-react";
 import { turnosApi } from "@/features/turnos";
 
 const LABEL_CLASS =
@@ -65,21 +65,6 @@ export function FormularioCrearEditar({
       title={editando ? "Editar Cobro" : "Registrar Ingreso en Caja"}
     >
       <div className="flex flex-col gap-4">
-        <div className="bg-gradient-to-br from-emerald-50/80 to-teal-50/40 border border-emerald-200/80 rounded-2xl p-3.5 flex items-center gap-3 shadow-2xs">
-          <div className="w-10 h-10 rounded-xl bg-[#0d8266] text-white flex items-center justify-center shrink-0 shadow-xs">
-            <Banknote size={20} />
-          </div>
-          <div className="flex flex-col">
-            <span className="text-xs font-extrabold text-teal-950">
-              Ingreso de Caja
-            </span>
-            <span className="text-[11px] text-teal-800/80">
-              Podés asociar el pago a un turno atendido o registrar un ingreso
-              particular/informal.
-            </span>
-          </div>
-        </div>
-
         {/* Selector de tipo de ingreso (Turno vs Informal) */}
         {!editando && (
           <div className="flex bg-teal-50/70 p-1 rounded-xl border border-teal-100">
@@ -216,9 +201,11 @@ export function FormularioCrearEditar({
             >
               <option value="Efectivo">Efectivo</option>
               <option value="Transferencia">Transferencia</option>
+              <option value="Tarjeta">Tarjeta</option>
               <option value="Tarjeta de Débito">Tarjeta de Débito</option>
               <option value="Tarjeta de Crédito">Tarjeta de Crédito</option>
               <option value="Mercado Pago">Mercado Pago</option>
+              <option value="Otro">Otro</option>
             </select>
           </div>
 

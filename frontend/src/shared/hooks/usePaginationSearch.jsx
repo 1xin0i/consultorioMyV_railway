@@ -9,7 +9,7 @@ export function usePaginationSearch(endpoint, opciones = {}) {
   const {
     limitInicial = 8,
     ordenPorDefecto = "id",
-    direccionPorDefecto = "ASC",
+    direccionPorDefecto = "DESC",
     filtrosIniciales = {},
   } = opciones;
 
@@ -52,7 +52,9 @@ export function usePaginationSearch(endpoint, opciones = {}) {
         limit: limitInicial,
         search: busquedaDebounced,
         sortBy: ordenarPor,
+        sortField: ordenarPor,
         order: direccion,
+        sortOrder: direccion,
         ...filtros,
       };
 
@@ -61,10 +63,11 @@ export function usePaginationSearch(endpoint, opciones = {}) {
         signal: controller.signal,
       });
 
-      if (respuesta.data && respuesta.data.pagination) {
+      const pag = respuesta.data?.pagination || respuesta.data?.meta;
+      if (respuesta.data && pag) {
         setDatos(respuesta.data.data);
-        setTotalPaginas(respuesta.data.pagination.totalPages || 1);
-        setTotalRegistros(respuesta.data.pagination.totalItems || 0);
+        setTotalPaginas(pag.totalPages || 1);
+        setTotalRegistros(pag.totalItems ?? pag.total ?? 0);
       } else {
         const arrayFallback = respuesta.data.data || respuesta.data || [];
         setDatos(arrayFallback);
@@ -106,17 +109,16 @@ export function usePaginationSearch(endpoint, opciones = {}) {
     [totalPaginas],
   );
 
-  const manejarOrden = useCallback((columna) => {
-    setOrdenarPor((prevColumna) => {
-      if (prevColumna === columna) {
-        setDireccion((prevDir) => (prevDir === "ASC" ? "DESC" : "ASC"));
-        return prevColumna;
-      }
-      setDireccion("ASC");
-      return columna;
-    });
-    setPaginaActual(1);
-  }, []);
+  const manejarOrden = useCallback(
+    (columna) => {
+      setDireccion((prevDir) =>
+        columna === ordenarPor ? (prevDir === "DESC" ? "ASC" : "DESC") : "DESC",
+      );
+      setOrdenarPor(columna);
+      setPaginaActual(1);
+    },
+    [ordenarPor],
+  );
 
   const actualizarFiltro = useCallback((nombreFiltro, valor) => {
     setFiltros((prev) => ({

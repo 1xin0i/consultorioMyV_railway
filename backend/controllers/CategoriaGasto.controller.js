@@ -70,3 +70,21 @@ export const deleteCategoriaGasto = async (req, res) => {
     );
   }
 };
+
+export const destroyCategoriaGasto = async (req, res) => {
+  try {
+    await categoriaGastoService.eliminarPermanente(req.categoriaGasto);
+    res.status(200).json({ message: "Categoría de gasto eliminada permanentemente" });
+  } catch (error) {
+    if (error.name === "SequelizeForeignKeyConstraintError") {
+      return res.status(409).json({
+        status: "error",
+        message:
+          "No se puede eliminar permanentemente la categoría porque tiene gastos asociados. Podés mantenerla desactivada.",
+      });
+    }
+    responderError(res, error, "Error al eliminar la categoría de gasto:", {
+      error: "Error al eliminar la categoría de gasto",
+    });
+  }
+};

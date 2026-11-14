@@ -3,6 +3,7 @@
 import httpClient from "@/shared/services/httpClient";
 
 export const cobrosApi = {
+  obtenerMetodosPago: () => httpClient.get("/cobros/metodos-pago"),
   obtenerCobrosDeTurno: (idTurno) =>
     httpClient.get(`/cobros/${idTurno}/cobros`),
   registrarPago: (payload) =>

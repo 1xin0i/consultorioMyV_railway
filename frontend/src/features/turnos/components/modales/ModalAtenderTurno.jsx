@@ -207,6 +207,7 @@ export function ModalAtenderTurno({
         isOpen={abierto}
         onClose={cerrar}
         width="max-w-3xl"
+        variant="atendiendo"
         title={`Atender Turno #${turnoTarget?.id_turno || ""}${
           nombrePaciente ? ` - ${nombrePaciente}` : ""
         }`}
@@ -302,6 +303,7 @@ export function ModalAtenderTurno({
                           camposFiltrado={["nombre"]}
                           formatoVisual={(rel) =>
                             `${
+                              rel.nombre ||
                               rel.ObraSocial?.nombre ||
                               `Obra Social #${rel.id_obra_social}`
                             } ${

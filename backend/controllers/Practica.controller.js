@@ -15,10 +15,13 @@ export const getAllPracticas = async (req, res) => {
     });
     const where = {};
 
-    const estadoFiltrado = req.query.estadoFiltrado;
-    if (estadoFiltrado === "inactivas" || estadoFiltrado === "false" || estadoFiltrado === "0") {
+    const estadoFiltrado = req.query.estadoFiltrado ?? req.query.activo;
+    if (estadoFiltrado === "inactivas" || estadoFiltrado === "inactivos" || estadoFiltrado === "false" || estadoFiltrado === "0") {
       where.activo = false;
-    } else if (estadoFiltrado === "activas" || estadoFiltrado === "true" || estadoFiltrado === "1") {
+    } else if (estadoFiltrado === "todas" || estadoFiltrado === "todos" || estadoFiltrado === "all" || estadoFiltrado === "") {
+      // mostrar todas
+    } else {
+      // por defecto solo activas
       where.activo = true;
     }
 
@@ -127,15 +130,22 @@ export const togglePractica = async (req, res) => {
   }
 };
 
-// Eliminar una práctica existente
+// Eliminar una práctica existente permanentemente
 export const deletePractica = async (req, res) => {
   try {
     const practica = req.practica;
 
     await practica.destroy();
 
-    res.json({ message: "Practica eliminada correctamente" });
+    res.json({ message: "Práctica eliminada permanentemente" });
   } catch (error) {
+    if (error.name === "SequelizeForeignKeyConstraintError") {
+      return res.status(409).json({
+        status: "error",
+        message:
+          "No se puede eliminar permanentemente la práctica porque tiene turnos o solicitudes asociadas. Podés mantenerla desactivada.",
+      });
+    }
     res.status(500).json({ message: error.message });
   }
 };

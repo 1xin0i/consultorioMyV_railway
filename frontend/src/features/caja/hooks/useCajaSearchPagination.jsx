@@ -42,6 +42,12 @@ export function useCajaSearchPagination(endpoint, opciones = {}) {
       const params = {};
       if (filtros.fechaInicio) params.fechaInicio = filtros.fechaInicio;
       if (filtros.fechaFin) params.fechaFin = filtros.fechaFin;
+      if (filtros.fecha_desde) params.fecha_desde = filtros.fecha_desde;
+      if (filtros.fecha_hasta) params.fecha_hasta = filtros.fecha_hasta;
+      if (filtros.mes) params.mes = filtros.mes;
+      if (filtros.anio) params.anio = filtros.anio;
+      if (filtros.periodo) params.periodo = filtros.periodo;
+      if (filtros.modoAnual) params.periodo = "anio";
       if (filtros.medio_pago) params.medio_pago = filtros.medio_pago;
 
       const respuesta = await cajaApi.listar(params);
@@ -50,8 +56,10 @@ export function useCajaSearchPagination(endpoint, opciones = {}) {
       setDatosCrudos({
         cobros: data.cobros || [],
         gastos: data.gastos || [],
-        turnos: data.turnos || [],
-        resumen: data.resumen || null,
+        turnos: data.turnos || data.turnosPendientes || [],
+        turnosPendientes: data.turnosPendientes || data.turnos || [],
+        resumen: data.resumen || data.totales || null,
+        totales: data.totales || data.resumen || null,
       });
     } catch (error) {
       console.error("Error cargando datos de Caja:", error);
@@ -81,6 +89,14 @@ export function useCajaSearchPagination(endpoint, opciones = {}) {
     setFiltros((prev) => ({
       ...prev,
       [nombreFiltro]: valor,
+    }));
+    setPaginaActual(1);
+  }, []);
+
+  const actualizarFiltros = useCallback((nuevosFiltros) => {
+    setFiltros((prev) => ({
+      ...prev,
+      ...nuevosFiltros,
     }));
     setPaginaActual(1);
   }, []);
@@ -121,6 +137,7 @@ export function useCajaSearchPagination(endpoint, opciones = {}) {
     propsPaginacion,
     filtros,
     actualizarFiltro,
+    actualizarFiltros,
     limpiarFiltros,
   };
 }

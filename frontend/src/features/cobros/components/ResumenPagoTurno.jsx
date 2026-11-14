@@ -20,8 +20,6 @@ export function ResumenPagoTurno({
   practicasDelTurno,
   resumenFinanciero,
   cobrosPrevios,
-  tipoPago,
-  handleCambioTipoPago,
   montoAbonar,
   setMontoAbonar,
   cargandoDetalle,
@@ -140,123 +138,39 @@ export function ResumenPagoTurno({
         )}
       </div>
 
-      {/* Selector Pago Total vs Entrega Parcial */}
-      {resumenFinanciero.saldoPendienteActual > 0 && (
-        <div>
-          <label className={LABEL_CLASS}>Modalidad de Cobro</label>
-          <div className="grid grid-cols-2 gap-2.5">
-            <button
-              type="button"
-              onClick={() => handleCambioTipoPago("total")}
-              className={`p-3 rounded-xl border text-left transition-all cursor-pointer flex items-center justify-between ${
-                tipoPago === "total"
-                  ? "bg-emerald-50/90 border-[#0d8266] ring-2 ring-[#0d8266]/20"
-                  : "bg-slate-50/60 border-slate-200 hover:bg-slate-100/70"
-              }`}
-            >
-              <div>
-                <div className="text-xs font-extrabold text-slate-900">
-                  Pago Total
-                </div>
-                <div className="text-[11px] text-emerald-700 font-bold">
-                  Saldar ${" "}
-                  {resumenFinanciero.saldoPendienteActual.toLocaleString(
-                    "es-AR",
-                  )}
-                </div>
-              </div>
-              <CheckCircle2
-                size={18}
-                className={
-                  tipoPago === "total" ? "text-[#0d8266]" : "text-slate-300"
-                }
-              />
-            </button>
-
-            <button
-              type="button"
-              onClick={() => handleCambioTipoPago("parcial")}
-              className={`p-3 rounded-xl border text-left transition-all cursor-pointer flex items-center justify-between ${
-                tipoPago === "parcial"
-                  ? "bg-amber-50/90 border-amber-500 ring-2 ring-amber-500/20"
-                  : "bg-slate-50/60 border-slate-200 hover:bg-slate-100/70"
-              }`}
-            >
-              <div>
-                <div className="text-xs font-extrabold text-slate-900">
-                  Entrega Parcial / Seña
-                </div>
-                <div className="text-[11px] text-amber-800 font-semibold">
-                  Abonar una parte hoy
-                </div>
-              </div>
-              <Receipt
-                size={18}
-                className={
-                  tipoPago === "parcial" ? "text-amber-600" : "text-slate-300"
-                }
-              />
-            </button>
-          </div>
+      {/* Monto a cobrar + Simulación en oración debajo */}
+      <div>
+        <label className={LABEL_CLASS}>Monto a cobrar ($) *</label>
+        <div className="relative flex items-center">
+          <span className="absolute left-3.5 text-[#0d8266] font-extrabold text-base">
+            $
+          </span>
+          <input
+            type="number"
+            step="0.01"
+            min="0.01"
+            max={resumenFinanciero.saldoPendienteActual || undefined}
+            required
+            disabled={cargandoDetalle}
+            value={montoAbonar}
+            onChange={(e) => setMontoAbonar(e.target.value)}
+            placeholder="0.00"
+            className="w-full pl-8 pr-3 py-2.5 border border-teal-300 bg-teal-50/40 rounded-xl text-base font-black text-teal-950 focus:outline-none focus:bg-white focus:ring-2 focus:ring-teal-500/30 focus:border-teal-500 transition-all shadow-2xs"
+          />
         </div>
-      )}
-
-      {/* Monto a abonar hoy + Simulación en vivo */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 items-end">
-        <div>
-          <label className={LABEL_CLASS}>Monto a Abonar Hoy ($) *</label>
-          <div className="relative flex items-center">
-            <span className="absolute left-3.5 text-[#0d8266] font-extrabold text-base">
-              $
+        <p className="mt-1.5 text-xs text-slate-600 dark:text-slate-400 font-medium flex items-center gap-1.5">
+          {resumenFinanciero.saldoRestanteLuegoDePago === 0 ? (
+            <span className="text-emerald-700 dark:text-emerald-400 font-bold inline-flex items-center gap-1">
+              <Sparkles size={14} className="text-emerald-600 shrink-0" />
+              Saldo luego de este pago: $0 (queda saldado).
             </span>
-            <input
-              type="number"
-              step="0.01"
-              min="0.01"
-              max={resumenFinanciero.saldoPendienteActual || undefined}
-              required
-              disabled={cargandoDetalle}
-              value={montoAbonar}
-              onChange={(e) => {
-                setMontoAbonar(e.target.value);
-                const val = parseFloat(e.target.value) || 0;
-                if (val < resumenFinanciero.saldoPendienteActual) {
-                  if (tipoPago !== "parcial") handleCambioTipoPago("parcial");
-                } else {
-                  if (tipoPago !== "total") handleCambioTipoPago("total");
-                }
-              }}
-              placeholder="0.00"
-              className="w-full pl-8 pr-3 py-2.5 border border-teal-300 bg-teal-50/40 rounded-xl text-base font-black text-teal-950 focus:outline-none focus:bg-white focus:ring-2 focus:ring-teal-500/30 focus:border-teal-500 transition-all"
-            />
-          </div>
-        </div>
-
-        <div
-          className={`p-2.5 rounded-xl border flex items-center justify-between ${
-            resumenFinanciero.saldoRestanteLuegoDePago === 0
-              ? "bg-emerald-50/70 border-emerald-200 text-emerald-900"
-              : "bg-amber-50/70 border-amber-200 text-amber-900"
-          }`}
-        >
-          <div className="flex items-center gap-2">
-            {resumenFinanciero.saldoRestanteLuegoDePago === 0 ? (
-              <Sparkles size={16} className="text-emerald-600 shrink-0" />
-            ) : (
-              <AlertCircle size={16} className="text-amber-600 shrink-0" />
-            )}
-            <div>
-              <span className="block text-[10px] font-bold uppercase">
-                Saldo luego de este pago
-              </span>
-              <span className="text-xs font-extrabold">
-                {resumenFinanciero.saldoRestanteLuegoDePago === 0
-                  ? "$ 0 (Queda Saldado)"
-                  : `$ ${resumenFinanciero.saldoRestanteLuegoDePago.toLocaleString("es-AR")} pendiente`}
-              </span>
-            </div>
-          </div>
-        </div>
+          ) : (
+            <span className="text-amber-800 dark:text-amber-300 font-semibold inline-flex items-center gap-1">
+              <AlertCircle size={14} className="text-amber-600 shrink-0" />
+              Saldo luego de este pago: ${resumenFinanciero.saldoRestanteLuegoDePago.toLocaleString("es-AR")} pendiente.
+            </span>
+          )}
+        </p>
       </div>
     </>
   );

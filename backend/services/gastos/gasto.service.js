@@ -33,7 +33,9 @@ export const listarPaginado = async (query) => {
 };
 
 export const crear = async (body) => {
-  const { id_categoria_gasto, monto, concepto, fecha_gasto, metodo_pago } = body;
+  const id_categoria_gasto = body.id_categoria_gasto || body.id_categoria;
+  const concepto = body.concepto || body.detalle;
+  const { monto, fecha_gasto, metodo_pago } = body;
 
   return gastoRepo.crear({
     id_categoria_gasto,
@@ -45,7 +47,9 @@ export const crear = async (body) => {
 };
 
 export const actualizar = async (gasto, body) => {
-  const { id_categoria_gasto, monto, concepto, fecha_gasto, metodo_pago } = body;
+  const id_categoria_gasto = body.id_categoria_gasto || body.id_categoria;
+  const concepto = body.concepto || body.detalle;
+  const { monto, fecha_gasto, metodo_pago } = body;
 
   await gasto.update({
     id_categoria_gasto: id_categoria_gasto || gasto.id_categoria_gasto,

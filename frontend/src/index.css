@@ -6,10 +6,15 @@
 
 /* ─── PWA & Native Look & Feel ─── */
 body {
+  background-color: #f9fbfd;
   padding-top: env(safe-area-inset-top);
   padding-bottom: env(safe-area-inset-bottom);
   padding-left: env(safe-area-inset-left);
   padding-right: env(safe-area-inset-right);
+}
+
+html.dark body {
+  background-color: #020617;
 }
 
 /* Desactiva el "pull to refresh" y el rebote nativo del navegador */

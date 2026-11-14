@@ -6,8 +6,6 @@ import {
   Plus,
   X,
   Building2,
-  UserRound,
-  ShieldCheck,
 } from "lucide-react";
 import InputFiltro from "@/shared/components/ui/InputFiltro";
 
@@ -27,6 +25,7 @@ export function FormularioCrearEditar({
   actualizarObraSocial,
   eliminarObraSocial,
   guardarPaciente,
+  desdeTurno = false,
 }) {
   return (
     <Modal
@@ -34,27 +33,25 @@ export function FormularioCrearEditar({
       onClose={cerrarModal}
       onSubmit={guardarPaciente}
       width="max-w-2xl"
-      title={editando ? "Editar Paciente" : "Registrar Nuevo Paciente"}
+      title={
+        editando
+          ? "Editar Paciente"
+          : desdeTurno
+            ? "Registrar Paciente para Turno"
+            : "Registrar Nuevo Paciente"
+      }
     >
       <div className="flex flex-col gap-4">
-        <div className="bg-gradient-to-br from-teal-50/70 to-emerald-50/40 border border-teal-200/80 rounded-2xl p-3.5 flex items-center gap-3 shadow-2xs">
-          <div className="w-10 h-10 rounded-xl bg-[#0d8266] text-white flex items-center justify-center shrink-0 shadow-xs">
-            <UserRound size={20} />
-          </div>
-          <div className="flex flex-col">
-            <span className="text-xs font-extrabold text-teal-950">
-              Ficha Personal del Paciente
-            </span>
-            <span className="text-[11px] text-teal-800/80">
-              Completá los datos personales y de contacto para la historia
-              clínica.
-            </span>
-          </div>
-        </div>
-
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
           <div>
-            <label className={LABEL_CLASS}>Nombre *</label>
+            <label className={LABEL_CLASS}>
+              Nombre *
+              {desdeTurno && (
+                <span className="ml-1 text-[10px] text-amber-700 font-bold lowercase">
+                  (obligatorio)
+                </span>
+              )}
+            </label>
             <input
               type="text"
               name="nombre"
@@ -62,12 +59,23 @@ export function FormularioCrearEditar({
               placeholder="Ej. María"
               value={datosFormulario?.nombre || ""}
               onChange={actualizarDatos}
-              className={INPUT_CLASS}
+              className={`${INPUT_CLASS} ${
+                desdeTurno
+                  ? "!border-2 !border-amber-400 !bg-amber-50/20 focus:!border-amber-500 focus:!ring-amber-400/40"
+                  : ""
+              }`}
             />
           </div>
 
           <div>
-            <label className={LABEL_CLASS}>Apellido *</label>
+            <label className={LABEL_CLASS}>
+              Apellido *
+              {desdeTurno && (
+                <span className="ml-1 text-[10px] text-amber-700 font-bold lowercase">
+                  (obligatorio)
+                </span>
+              )}
+            </label>
             <input
               type="text"
               name="apellido"
@@ -75,7 +83,11 @@ export function FormularioCrearEditar({
               placeholder="Ej. González"
               value={datosFormulario?.apellido || ""}
               onChange={actualizarDatos}
-              className={INPUT_CLASS}
+              className={`${INPUT_CLASS} ${
+                desdeTurno
+                  ? "!border-2 !border-amber-400 !bg-amber-50/20 focus:!border-amber-500 focus:!ring-amber-400/40"
+                  : ""
+              }`}
             />
           </div>
 
@@ -92,7 +104,14 @@ export function FormularioCrearEditar({
           </div>
 
           <div>
-            <label className={LABEL_CLASS}>Teléfono *</label>
+            <label className={LABEL_CLASS}>
+              Teléfono *
+              {desdeTurno && (
+                <span className="ml-1 text-[10px] text-amber-700 font-bold lowercase">
+                  (obligatorio)
+                </span>
+              )}
+            </label>
             <input
               type="text"
               name="telefono"
@@ -100,7 +119,11 @@ export function FormularioCrearEditar({
               placeholder="Ej. 3514567890"
               value={datosFormulario?.telefono || ""}
               onChange={actualizarDatos}
-              className={INPUT_CLASS}
+              className={`${INPUT_CLASS} ${
+                desdeTurno
+                  ? "!border-2 !border-amber-400 !bg-amber-50/20 focus:!border-amber-500 focus:!ring-amber-400/40"
+                  : ""
+              }`}
             />
           </div>
 
@@ -126,40 +149,6 @@ export function FormularioCrearEditar({
               className={INPUT_CLASS}
             />
           </div>
-
-          {editando && (
-            <div className="col-span-1 md:col-span-2">
-              <label className="flex items-center justify-between gap-3 p-3.5 bg-teal-50/50 border border-teal-200/70 rounded-xl cursor-pointer hover:bg-teal-50/80 transition-colors">
-                <div className="flex items-center gap-2.5">
-                  <ShieldCheck size={18} className="text-[#0d8266] shrink-0" />
-                  <div className="flex flex-col">
-                    <span className="text-xs font-bold text-slate-900">
-                      Estado del Paciente (Activo)
-                    </span>
-                    <span className="text-[11px] text-slate-500">
-                      Los pacientes activos aparecen en los selectores de turnos
-                      y caja.
-                    </span>
-                  </div>
-                </div>
-                <input
-                  type="checkbox"
-                  name="activo"
-                  checked={
-                    datosFormulario.activo !== undefined
-                      ? datosFormulario.activo
-                      : true
-                  }
-                  onChange={(e) =>
-                    actualizarDatos({
-                      target: { name: "activo", value: e.target.checked },
-                    })
-                  }
-                  className="w-4.5 h-4.5 text-[#0d8266] rounded border-teal-300 focus:ring-teal-500 cursor-pointer accent-[#0d8266]"
-                />
-              </label>
-            </div>
-          )}
 
           {/* Sección de Obras Sociales */}
           <div className="col-span-1 md:col-span-2 border-t border-teal-100 pt-4 mt-1">

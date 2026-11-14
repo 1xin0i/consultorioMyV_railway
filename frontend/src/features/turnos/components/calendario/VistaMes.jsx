@@ -3,11 +3,7 @@
 import { memo } from "react";
 import { useConfiguracion } from "@/features/configuracion";
 import { useVistaMesSeleccion } from "../../hooks/useVistaMesSeleccion";
-import {
-  CeldaDiaMes,
-  BarraFlotanteSeleccionMes,
-  LeyendaOcupacionMes,
-} from "./CeldaDiaMes";
+import { CeldaDiaMes, LeyendaOcupacionMes } from "./CeldaDiaMes";
 
 const NOMBRES_DIAS_SEMANA = ["Lun", "Mar", "Mié", "Jue", "Vie", "Sáb", "Dom"];
 
@@ -17,6 +13,11 @@ export const VistaMes = memo(function VistaMes({
   onSelectDay,
   onSelectRangeToBlock,
   onEliminarRestriccion,
+  estaDiaMarcado,
+  iniciarPresionDia,
+  moverPresionDiaMouse,
+  moverPresionDiaTouch,
+  debeIgnorarClickDia,
 }) {
   const {
     configuracion,
@@ -24,7 +25,6 @@ export const VistaMes = memo(function VistaMes({
     esDiaBloqueado,
     obtenerRestriccionDia,
     minutosJornada,
-    horasJornada,
     modulosTotales,
     corteBajaModulos,
     corteMediaModulos,
@@ -34,18 +34,7 @@ export const VistaMes = memo(function VistaMes({
   const umbralBaja = Number(configuracion?.umbralBaja ?? 50);
   const umbralMedia = Number(configuracion?.umbralMedia ?? 80);
 
-  const {
-    diasCalendario,
-    setSeleccionDias,
-    rangoSeleccionado,
-    estaDiaSeleccionado,
-    iniciarSeleccionDia,
-    moverSeleccionDia,
-    handleDayTouchStart,
-    handleDayTouchMove,
-    handleDayTouchEnd,
-    handleClickCeldaDia,
-  } = useVistaMesSeleccion({
+  const { diasCalendario } = useVistaMesSeleccion({
     fechaActual,
     turnos,
     onSelectDay,
@@ -61,7 +50,7 @@ export const VistaMes = memo(function VistaMes({
   });
 
   return (
-    <div className="flex flex-col flex-1 select-none relative">
+    <div className="flex flex-col flex-1 select-none relative bg-white dark:bg-slate-900">
       {/* Encabezado de días de la semana */}
       <div className="grid grid-cols-7 border-b border-gray-200 dark:border-slate-800 bg-gray-50/90 dark:bg-slate-800/80">
         {NOMBRES_DIAS_SEMANA.map((dia) => (
@@ -74,39 +63,31 @@ export const VistaMes = memo(function VistaMes({
         ))}
       </div>
 
-      {/* Grilla de días del mes */}
-      <div className="grid grid-cols-7 flex-1 bg-white dark:bg-slate-900">
+      {/* Grilla de días del mes con tarjetas redondeadas y separación limpia */}
+      <div className="grid grid-cols-7 gap-2 p-2.5 sm:p-3 flex-1 bg-[#f9fbfd] dark:bg-slate-950/40">
         {diasCalendario.map((diaItem, idx) => (
           <CeldaDiaMes
             key={idx}
             diaItem={diaItem}
             idx={idx}
-            seleccionado={estaDiaSeleccionado(diaItem.fecha)}
-            iniciarSeleccionDia={iniciarSeleccionDia}
-            moverSeleccionDia={moverSeleccionDia}
-            handleDayTouchStart={handleDayTouchStart}
-            handleDayTouchMove={handleDayTouchMove}
-            handleDayTouchEnd={handleDayTouchEnd}
-            handleClickCeldaDia={handleClickCeldaDia}
+            capacidadDia={modulosTotales || 24}
+            seleccionado={
+              estaDiaMarcado ? estaDiaMarcado(diaItem.fecha) : false
+            }
+            iniciarPresionDia={iniciarPresionDia}
+            moverPresionDiaMouse={moverPresionDiaMouse}
+            moverPresionDiaTouch={moverPresionDiaTouch}
+            onClickDia={() => {
+              if (!debeIgnorarClickDia?.()) onSelectDay?.(diaItem.fecha);
+            }}
             onSelectRangeToBlock={onSelectRangeToBlock}
             onEliminarRestriccion={onEliminarRestriccion}
           />
         ))}
       </div>
 
-      {/* Barra flotante de acción cuando hay 1 o varios días seleccionados */}
-      <BarraFlotanteSeleccionMes
-        rangoSeleccionado={rangoSeleccionado}
-        onClear={() => setSeleccionDias(null)}
-        onSelectDay={onSelectDay}
-        onSelectRangeToBlock={onSelectRangeToBlock}
-      />
-
-      {/* Leyenda explicativa de capacidad diaria */}
+      {/* Leyenda explicativa de capacidad diaria en el pie de la vista */}
       <LeyendaOcupacionMes
-        horasJornada={horasJornada}
-        modulosTotales={modulosTotales}
-        intervaloMinutos={intervaloMinutos}
         corteBajaModulos={corteBajaModulos}
         corteMediaModulos={corteMediaModulos}
         umbralBaja={umbralBaja}

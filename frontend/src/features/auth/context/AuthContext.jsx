@@ -22,7 +22,9 @@ export function AuthProvider({ children }) {
     }
   });
   const [token, setToken] = useState(() => localStorage.getItem("token"));
-  const [cargando, setCargando] = useState(Boolean(localStorage.getItem("token")));
+  const [cargando, setCargando] = useState(
+    Boolean(localStorage.getItem("token")),
+  );
 
   // Verificar sesión activa al montar la app
   useEffect(() => {
@@ -36,7 +38,7 @@ export function AuthProvider({ children }) {
       .getMe()
       .then((res) => {
         const datosUsuario = res.data?.data || res.data;
-        setUsuario(datosUsuario);
+        setUsuario(datosUsuario.usuario);
         localStorage.setItem("usuario", JSON.stringify(datosUsuario));
       })
       .catch(() => {
@@ -106,4 +108,3 @@ export function useAuth() {
   }
   return ctx;
 }
-

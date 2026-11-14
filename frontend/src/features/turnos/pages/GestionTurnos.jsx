@@ -28,12 +28,11 @@ import { useTurnoActions } from "../hooks/useTurnoActions";
 import { ModalRegistrarPago } from "@/features/cobros";
 
 const COLUMNAS_TURNOS = [
-  { etiqueta: "ID", campo: "id_turno", ordenable: true },
+  { etiqueta: "Paciente", campo: "paciente", ordenable: true },
+  { etiqueta: "Práctica", campo: null, ordenable: false },
   { etiqueta: "Fecha y Hora", campo: "fecha_hora_inicio", ordenable: true },
-  { etiqueta: "Paciente", campo: "id_paciente", ordenable: false },
-  { etiqueta: "Prácticas", campo: null, ordenable: false },
   { etiqueta: "Estado", campo: "id_estado", ordenable: true, centrado: true },
-  { etiqueta: "Honorarios / Cuenta", campo: "precio_final", ordenable: true },
+  { etiqueta: "Honorarios", campo: "precio_final", ordenable: true },
   { etiqueta: "Notas", campo: null, ordenable: false, centrado: true },
   { etiqueta: "Acciones", campo: null, ordenable: false, centrado: true },
 ];
@@ -56,9 +55,9 @@ export function GestionTurnos() {
     ordenPorDefecto: "fecha_hora_inicio",
     direccionPorDefecto: "DESC",
     filtrosIniciales: {
+      estadoFiltrado: "",
       id_estado: "",
-      fechaInicio: "",
-      fechaFin: "",
+      mes: "",
     },
   });
 
@@ -129,8 +128,10 @@ export function GestionTurnos() {
   return (
     <PageLayout
       icono={<ListTodo size={24} />}
-      titulo="Listado General de Turnos"
+      titulo="Gestión de Turnos"
+      badge={`${propsPaginacion.totalRegistros} Registrados`}
       subtitulo="Consultá, filtrá y gestioná todos los turnos, estados de atención y saldos pendientes."
+      onNuevo={() => abrirParaCrear()}
       accionesHeader={
         <button
           onClick={() => abrirParaCrear()}
@@ -141,7 +142,8 @@ export function GestionTurnos() {
         </button>
       }
     >
-      <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-teal-100 dark:border-slate-800 overflow-hidden flex flex-col">
+      <div className="flex flex-col gap-2.5 sm:gap-3">
+        {/* Barra de filtros y búsqueda */}
         <TurnosToolbar
           busqueda={propsPaginacion.busqueda}
           setBusqueda={propsPaginacion.setBusqueda}
@@ -151,24 +153,30 @@ export function GestionTurnos() {
           soloSinPagar={soloSinPagar}
           setSoloSinPagar={setSoloSinPagar}
           irAPagina={propsPaginacion.irAPagina}
+          totalRegistros={propsPaginacion.totalRegistros}
         />
 
-        <Tabla
-          columnas={COLUMNAS_TURNOS}
-          datos={turnosFiltrados}
-          cargando={cargando}
-          compacto
-          ordenarPor={propsPaginacion.ordenarPor}
-          direccion={propsPaginacion.direccion}
-          manejarOrden={propsPaginacion.manejarOrden}
-          mensajeVacio="No se encontraron turnos con los filtros seleccionados."
-          renderTarjeta={(turno) =>
-            renderTarjetaTurno({ turno, ...sharedRowProps })
-          }
-          renderFila={(turno) => renderFilaTurno({ turno, ...sharedRowProps })}
-        />
+        {/* Card exclusivo de la tabla */}
+        <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-gray-200/90 dark:border-slate-800 overflow-hidden flex flex-col">
+          <Tabla
+            columnas={COLUMNAS_TURNOS}
+            datos={turnosFiltrados}
+            cargando={cargando}
+            compacto
+            ordenarPor={propsPaginacion.ordenarPor}
+            direccion={propsPaginacion.direccion}
+            manejarOrden={propsPaginacion.manejarOrden}
+            mensajeVacio="No se encontraron turnos con los filtros seleccionados."
+            renderTarjeta={(turno) =>
+              renderTarjetaTurno({ turno, ...sharedRowProps })
+            }
+            renderFila={(turno) =>
+              renderFilaTurno({ turno, ...sharedRowProps })
+            }
+          />
 
-        <TablaPaginacion {...propsPaginacion} />
+          <TablaPaginacion {...propsPaginacion} />
+        </div>
       </div>
 
       {/* Modales de Gestión de Turnos */}
@@ -256,4 +264,3 @@ export function GestionTurnos() {
 }
 
 export default GestionTurnos;
-

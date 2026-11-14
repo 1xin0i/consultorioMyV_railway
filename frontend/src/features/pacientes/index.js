@@ -7,6 +7,7 @@ export {
   FormularioEliminar,
 } from "./components/FormulariosPaciente";
 export { VistaPaciente } from "./components/VistaPaciente";
+export { ModalCrearPaciente } from "./components/ModalCrearPaciente";
 export { BotonAccionesPaciente } from "./components/BotonAccionesPaciente";
 export { usePacienteActions } from "./hooks/usePacienteActions";
 export { useObrasSocialesCatalogo } from "./hooks/useObrasSocialesCatalogo";

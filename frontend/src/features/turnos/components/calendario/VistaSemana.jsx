@@ -1,6 +1,6 @@
 /** @format */
 
-import { useRef, useMemo, memo } from "react";
+import { useMemo, memo } from "react";
 import { Clock, Lock } from "lucide-react";
 import useTurnoTouchClick from "../../hooks/useTurnoTouchClick";
 import {
@@ -8,6 +8,7 @@ import {
   SLOT_HEIGHT_SEMANA,
   HORA_INICIO_AGENDA,
   esMismoDia,
+  esSlotPasado as defaultEsSlotPasado,
   procesarTurnosColocacion,
   OBTENER_ESTILOS_ESTADO,
   formatHoraSimple,
@@ -60,26 +61,41 @@ export const VistaSemana = memo(function VistaSemana({
   setFechaActual,
   setVista,
   dias,
-  turnos,
+  diasSemana,
+  turnos = [],
   ahora: ahoraProp,
   slotsHoras = DEFAULT_SLOTS,
   esSlotPasado,
   esSlotBloqueado,
   obtenerRestriccionSlot,
+  esDiaLaboral,
   esDiaBloqueado,
   obtenerRestriccionDia,
   onBloquearDia,
   isSlotSelected,
+  estaSeleccionado,
   onSlotMouseDown,
+  iniciarSeleccion,
   onSlotMouseEnter,
+  moverSeleccion,
   onTouchStart,
+  handleSlotTouchStart,
   onTouchMove,
+  handleSlotTouchMove,
   onTouchEnd,
+  handleSlotTouchEnd,
   onEventClick,
+  onSelectDay,
+  estaDiaMarcado,
+  iniciarPresionDia,
+  moverPresionDiaMouse,
+  moverPresionDiaTouch,
+  debeIgnorarClickDia,
 }) {
-  const ahora = ahoraProp || new Date();
-  const timerHeaderRef = useRef(null);
-  const huboHoldingHeaderRef = useRef(false);
+  const ahora = useMemo(() => ahoraProp || new Date(), [ahoraProp]);
+
+  const diasArray = useMemo(() => dias || diasSemana || [], [dias, diasSemana]);
+  const checkSlotPasado = esSlotPasado || defaultEsSlotPasado;
 
   const horaInicioAgenda =
     slotsHoras && slotsHoras.length > 0
@@ -93,12 +109,18 @@ export const VistaSemana = memo(function VistaSemana({
 
   // Pre-calcular turnos posicionados y metadatos de cada día de la semana
   const datosDiasSemana = useMemo(() => {
-    return dias.map((d) => {
+    return diasArray.map((d) => {
       const esHoy = esMismoDia(d, ahora);
       const esDomingo = d.getDay() === 0;
-      const diaBloqueado = esDiaBloqueado ? esDiaBloqueado(d) : false;
+      const diaLaboral = esDiaLaboral ? esDiaLaboral(d) : true;
+      const bloqueado = esDiaBloqueado ? esDiaBloqueado(d) : false;
+      const diaBloqueado = bloqueado || !diaLaboral;
       const restriccionDia =
-        diaBloqueado && obtenerRestriccionDia ? obtenerRestriccionDia(d) : null;
+        bloqueado && obtenerRestriccionDia
+          ? obtenerRestriccionDia(d)
+          : !diaLaboral
+            ? { motivo: "Día no laboral" }
+            : null;
       const nombreDia = FMT_DIA_CORTO.format(d).replace(".", "").toUpperCase();
       const turnosDelDia = turnos.filter((t) =>
         esMismoDia(t.fecha_hora_inicio, d),
@@ -114,6 +136,7 @@ export const VistaSemana = memo(function VistaSemana({
         isoKey: d.toISOString(),
         esHoy,
         esDomingo,
+        diaLaboral,
         diaBloqueado,
         restriccionDia,
         nombreDia,
@@ -121,66 +144,49 @@ export const VistaSemana = memo(function VistaSemana({
       };
     });
   }, [
-    dias,
+    diasArray,
     ahora,
     turnos,
     horaInicioAgenda,
+    esDiaLaboral,
     esDiaBloqueado,
     obtenerRestriccionDia,
   ]);
 
   // Manejadores para el encabezado de días (clic rápido: ver día, mantener presionado: bloquear día)
-  const handleHeaderMouseDown = (e, dia) => {
-    if (e.button !== 0 || !dia) return;
-    huboHoldingHeaderRef.current = false;
-    if (timerHeaderRef.current) clearTimeout(timerHeaderRef.current);
-
-    timerHeaderRef.current = setTimeout(() => {
-      huboHoldingHeaderRef.current = true;
-      if (window.navigator?.vibrate) window.navigator.vibrate(30);
-      onBloquearDia?.(dia, dia);
-    }, 280);
-  };
-
-  const handleHeaderMouseUp = () => {
-    if (timerHeaderRef.current) clearTimeout(timerHeaderRef.current);
-  };
-
   const handleHeaderClick = (dia) => {
-    if (huboHoldingHeaderRef.current) {
-      huboHoldingHeaderRef.current = false;
-      return;
-    }
-    if (setFechaActual && setVista) {
+    if (debeIgnorarClickDia?.()) return;
+    if (onSelectDay) {
+      onSelectDay(dia);
+    } else if (setFechaActual && setVista) {
       setFechaActual(dia);
       setVista("dia");
     }
   };
 
-  const handleHeaderTouchStart = (e, dia) => {
-    huboHoldingHeaderRef.current = false;
-    if (timerHeaderRef.current) clearTimeout(timerHeaderRef.current);
-
-    timerHeaderRef.current = setTimeout(() => {
-      huboHoldingHeaderRef.current = true;
-      if (window.navigator?.vibrate) window.navigator.vibrate(30);
-      onBloquearDia?.(dia, dia);
-    }, 280);
+  const checkSlotSeleccionado = (d, h, idx) => {
+    if (typeof isSlotSelected === "function") return isSlotSelected(d, h);
+    if (typeof estaSeleccionado === "function") return estaSeleccionado(d, idx);
+    return false;
   };
 
-  const handleHeaderTouchEnd = (e, dia) => {
-    if (timerHeaderRef.current) clearTimeout(timerHeaderRef.current);
-    if (huboHoldingHeaderRef.current) {
-      setTimeout(() => {
-        huboHoldingHeaderRef.current = false;
-      }, 400);
-      return;
-    }
-    if (setFechaActual && setVista) {
-      setFechaActual(dia);
-      setVista("dia");
-    }
+  const handleMouseDown = (e, d, h, idx) => {
+    if (onSlotMouseDown) return onSlotMouseDown(e, d, h);
+    if (iniciarSeleccion) return iniciarSeleccion(d, idx, e);
   };
+
+  const handleMouseEnter = (d, h, idx) => {
+    if (onSlotMouseEnter) return onSlotMouseEnter(d, h);
+    if (moverSeleccion) return moverSeleccion(d, idx);
+  };
+
+  const handleTouchStart = (e, d, h, idx) => {
+    if (onTouchStart) return onTouchStart(e, d, h);
+    if (handleSlotTouchStart) return handleSlotTouchStart(d, idx, e);
+  };
+
+  const handleTouchMove = onTouchMove || handleSlotTouchMove;
+  const handleTouchEnd = onTouchEnd || handleSlotTouchEnd;
 
   return (
     <div className="w-full h-full flex flex-col overflow-y-auto overflow-x-auto">
@@ -200,80 +206,88 @@ export const VistaSemana = memo(function VistaSemana({
               diaBloqueado,
               restriccionDia,
               nombreDia,
-            }) => (
-              <div
-                key={isoKey}
-                onMouseDown={(e) => handleHeaderMouseDown(e, d)}
-                onMouseUp={handleHeaderMouseUp}
-                onClick={() => handleHeaderClick(d)}
-                onTouchStart={(e) => handleHeaderTouchStart(e, d)}
-                onTouchEnd={(e) => handleHeaderTouchEnd(e, d)}
-                onContextMenu={(e) => {
-                  e.preventDefault();
-                  onBloquearDia?.(d, d);
-                }}
-                title={
-                  diaBloqueado
-                    ? `Día bloqueado: ${restriccionDia?.motivo || "Cerrado"} (Clic derecho o mantener presionado para gestionar)`
-                    : "Clic: ver día | Mantener presionado o clic derecho: bloquear día"
-                }
-                className={`flex-1 min-w-[34px] md:min-w-[100px] text-center py-1 px-0.5 sm:py-1.5 sm:px-1 md:p-2 border-r border-gray-200 dark:border-slate-800 last:border-r-0 select-none cursor-pointer hover:bg-gray-200/70 dark:hover:bg-slate-800 transition-colors ${
-                  diaBloqueado
-                    ? "bg-slate-200/90 dark:bg-slate-950/80 text-slate-700 dark:text-slate-400"
-                    : esHoy
-                      ? "bg-emerald-50/70 dark:bg-emerald-950/40"
-                      : "bg-gray-50 dark:bg-slate-900"
-                }`}
-              >
-                <div className="flex items-center justify-center gap-1">
-                  <p
-                    className={`text-[9px] sm:text-[10px] md:text-xs font-bold uppercase tracking-wider truncate ${
-                      diaBloqueado
-                        ? "text-slate-600 dark:text-slate-400"
-                        : esHoy
-                          ? "text-emerald-700 dark:text-emerald-400 font-extrabold"
-                          : esDomingo
-                            ? "text-rose-500 font-bold"
-                            : "text-gray-500 dark:text-slate-400"
-                    }`}
-                  >
-                    {nombreDia}
-                  </p>
-                  {diaBloqueado && (
-                    <Lock
-                      size={10}
-                      className="text-slate-600 dark:text-slate-400 shrink-0"
-                    />
-                  )}
-                </div>
+            }) => {
+              const marcado = estaDiaMarcado ? estaDiaMarcado(d) : false;
+              const fechaIso = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 
-                <div className="flex items-center justify-center mt-0.5">
-                  {esHoy ? (
-                    <span className="inline-flex items-center justify-center w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-[#2eb086] text-white font-extrabold text-[10px] sm:text-xs shadow-xs">
-                      {d.getDate()}
-                    </span>
-                  ) : (
-                    <span
-                      className={`text-[11px] sm:text-xs md:text-sm font-extrabold ${
+              return (
+                <div
+                  key={isoKey}
+                  data-dia-iso={fechaIso}
+                  onMouseDown={(e) => iniciarPresionDia?.(d, e)}
+                  onMouseEnter={() => moverPresionDiaMouse?.(d)}
+                  onTouchStart={(e) => iniciarPresionDia?.(d, e)}
+                  onTouchMove={moverPresionDiaTouch}
+                  onClick={() => handleHeaderClick(d)}
+                  onContextMenu={(e) => {
+                    e.preventDefault();
+                    onBloquearDia?.(d, d);
+                  }}
+                  title={
+                    diaBloqueado
+                      ? `Día bloqueado: ${restriccionDia?.motivo || "Cerrado"}`
+                      : "Clic: ver día | Mantener presionado y arrastrar: bloquear días"
+                  }
+                  className={`flex-1 min-w-[34px] md:min-w-[100px] text-center py-1 px-0.5 sm:py-1.5 sm:px-1 md:p-2 border-r border-gray-200 dark:border-slate-800 last:border-r-0 select-none cursor-pointer transition-colors ${
+                    marcado
+                      ? "ring-2 ring-inset ring-black dark:ring-white bg-slate-200/90 dark:bg-slate-800 z-10"
+                      : diaBloqueado
+                        ? "bg-slate-200/90 dark:bg-slate-950/80 text-slate-700 dark:text-slate-400"
+                        : esHoy
+                          ? "bg-emerald-50/70 dark:bg-emerald-950/40"
+                          : "bg-gray-50 dark:bg-slate-900 hover:bg-gray-200/70 dark:hover:bg-slate-800"
+                  }`}
+                >
+                  <div className="flex items-center justify-center gap-1">
+                    <p
+                      className={`text-[9px] sm:text-[10px] md:text-xs font-bold uppercase tracking-wider truncate ${
                         diaBloqueado
                           ? "text-slate-600 dark:text-slate-400"
-                          : esDomingo
-                            ? "text-rose-600"
-                            : "text-gray-800 dark:text-slate-200"
+                          : esHoy
+                            ? "text-emerald-700 dark:text-emerald-400 font-extrabold"
+                            : esDomingo
+                              ? "text-rose-500 font-bold"
+                              : "text-gray-500 dark:text-slate-400"
                       }`}
                     >
-                      {d.getDate()}
-                    </span>
+                      {nombreDia}
+                    </p>
+                    {diaBloqueado && (
+                      <Lock
+                        size={10}
+                        className="text-slate-600 dark:text-slate-400 shrink-0"
+                      />
+                    )}
+                  </div>
+
+                  <div className="flex items-center justify-center mt-0.5">
+                    {esHoy ? (
+                      <span className="inline-flex items-center justify-center w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-[#2eb086] text-white font-extrabold text-[10px] sm:text-xs shadow-xs">
+                        {d.getDate()}
+                      </span>
+                    ) : (
+                      <span
+                        className={`text-[11px] sm:text-xs md:text-sm font-extrabold ${
+                          diaBloqueado
+                            ? "text-slate-600 dark:text-slate-400"
+                            : esDomingo
+                              ? "text-rose-600"
+                              : "text-gray-800 dark:text-slate-200"
+                        }`}
+                      >
+                        {d.getDate()}
+                      </span>
+                    )}
+                  </div>
+
+                  {diaBloqueado && restriccionDia?.motivo && (
+                    <p className="text-[8px] sm:text-[9px] font-semibold text-slate-500 dark:text-slate-400 truncate mt-0.5 max-w-[85px] sm:max-w-none mx-auto">
+                      {restriccionDia.motivo}
+                    </p>
                   )}
                 </div>
-
-                {diaBloqueado && restriccionDia?.motivo && (
-                  <p className="hidden md:block text-[9px] font-semibold text-slate-500 dark:text-slate-400 truncate mt-0.5">
-                    {restriccionDia.motivo}
-                  </p>
-                )}
-              </div>
-            ),
+              );
+            },
           )}
         </div>
 
@@ -294,16 +308,23 @@ export const VistaSemana = memo(function VistaSemana({
 
           {/* Columnas para cada día */}
           {datosDiasSemana.map(
-            ({ dia, isoKey, esHoy, diaBloqueado, turnosPosicionados }) => (
+            ({
+              dia,
+              isoKey,
+              esHoy,
+              diaBloqueado,
+              restriccionDia,
+              turnosPosicionados,
+            }) => (
               <div
                 key={isoKey}
                 className={`flex-1 min-w-[34px] md:min-w-[100px] border-r border-gray-200 dark:border-slate-800 last:border-r-0 relative ${
-                  diaBloqueado ? "bg-slate-100/50 dark:bg-slate-950/50" : ""
+                  diaBloqueado ? "bg-slate-100/60 dark:bg-slate-950/60" : ""
                 }`}
               >
                 {/* Slots del día de fondo */}
-                {slotsHoras.map((hora) => {
-                  const pasado = esSlotPasado(dia, hora);
+                {slotsHoras.map((hora, idx) => {
+                  const pasado = checkSlotPasado(dia, hora);
                   const bloqueado = esSlotBloqueado
                     ? esSlotBloqueado(dia, hora)
                     : false;
@@ -311,27 +332,33 @@ export const VistaSemana = memo(function VistaSemana({
                     bloqueado && obtenerRestriccionSlot
                       ? obtenerRestriccionSlot(dia, hora)
                       : null;
-                  const seleccion = isSlotSelected(dia, hora);
+                  const seleccion = checkSlotSeleccionado(dia, hora, idx);
 
                   return (
                     <div
                       key={hora}
+                      data-slot-idx={idx}
                       data-slot-hora={hora}
                       style={{ height: `${SLOT_HEIGHT_SEMANA}px` }}
-                      onMouseDown={(e) => onSlotMouseDown(e, dia, hora)}
-                      onMouseEnter={() => onSlotMouseEnter(dia, hora)}
-                      onTouchStart={(e) => onTouchStart(e, dia, hora)}
-                      onTouchMove={onTouchMove}
-                      onTouchEnd={onTouchEnd}
+                      onMouseDown={(e) => handleMouseDown(e, dia, hora, idx)}
+                      onMouseEnter={() => handleMouseEnter(dia, hora, idx)}
+                      onTouchStart={(e) => handleTouchStart(e, dia, hora, idx)}
+                      onTouchMove={handleTouchMove}
+                      onTouchEnd={handleTouchEnd}
                       title={
-                        restriccion?.motivo || (bloqueado ? "Bloqueado" : "")
+                        diaBloqueado
+                          ? `Día bloqueado: ${restriccionDia?.motivo || "Cerrado"}`
+                          : restriccion?.motivo ||
+                            (bloqueado ? "Horario Bloqueado" : "")
                       }
                       className={`border-b border-gray-200 dark:border-slate-800 transition-colors select-none flex items-center justify-center ${
                         pasado
                           ? "bg-slate-100/90 dark:bg-slate-950/70 cursor-not-allowed border-slate-200 dark:border-slate-800"
-                          : bloqueado
-                            ? "bg-slate-100/90 dark:bg-slate-950/70 hover:bg-amber-50/40 dark:hover:bg-amber-950/20 cursor-pointer border-slate-200 dark:border-slate-800"
-                            : "bg-white dark:bg-slate-900 hover:bg-emerald-50/30 dark:hover:bg-emerald-950/30 cursor-pointer"
+                          : diaBloqueado
+                            ? "bg-slate-100/60 dark:bg-slate-950/60 border-slate-200/70 dark:border-slate-800/70 cursor-pointer hover:bg-slate-200/50 dark:hover:bg-slate-900/50"
+                            : bloqueado
+                              ? "bg-slate-100/90 dark:bg-slate-950/70 hover:bg-amber-50/40 dark:hover:bg-amber-950/20 cursor-pointer border-slate-200 dark:border-slate-800"
+                              : "bg-white dark:bg-slate-900 hover:bg-emerald-50/30 dark:hover:bg-emerald-950/30 cursor-pointer"
                       } ${seleccion ? "!bg-emerald-100/90 dark:!bg-emerald-900/60" : ""}`}
                     />
                   );

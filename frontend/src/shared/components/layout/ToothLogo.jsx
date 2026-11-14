@@ -14,4 +14,3 @@ export function ToothLogo({ size = 34, className = "" }) {
 }
 
 export default ToothLogo;
-

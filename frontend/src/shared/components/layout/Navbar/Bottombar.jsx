@@ -3,6 +3,10 @@
 import { useState, useRef, useEffect } from "react";
 import { NavLink, useLocation } from "react-router-dom";
 import {
+  Wallet,
+  CalendarClock,
+  CalendarDays,
+  Users,
   MoreHorizontal,
   LogOut,
   X,
@@ -10,8 +14,11 @@ import {
   KeyRound,
   Moon,
   Sun,
+  ClipboardCheck,
+  Building2,
+  Tag,
+  Settings,
 } from "lucide-react";
-import { NAV_LINKS } from "@/shared/constants/navigation";
 import {
   useAuth,
   ModalCambiarPassword,
@@ -20,8 +27,21 @@ import {
 import { useTheme } from "@/shared/context/ThemeContext";
 import { usePWAInstall } from "@/shared/hooks/usePWAInstall";
 
-const PRIMARY_LINKS = NAV_LINKS.slice(0, 4);
-const MORE_LINKS = NAV_LINKS.slice(4);
+// Orden requerido: Cobros, Turnos, Agenda, Pacientes, Más
+const BOTTOMBAR_LINKS = [
+  { to: "/caja", label: "Cobros", icon: Wallet },
+  { to: "/turnos", label: "Turnos", icon: CalendarClock },
+  { to: "/", label: "Agenda", icon: CalendarDays },
+  { to: "/pacientes", label: "Pacientes", icon: Users },
+];
+
+// Páginas de Configuración para mostrar directamente en "Más"
+const PAGINAS_CONFIG = [
+  { to: "/practicas", label: "Prácticas", icon: ClipboardCheck },
+  { to: "/obras-sociales", label: "Obras Sociales", icon: Building2 },
+  { to: "/categorias-gastos", label: "Categorías Gasto", icon: Tag },
+  { to: "/configuracion/horarios", label: "Ajustes", icon: Settings },
+];
 
 export function Bottombar() {
   const [menuMasAbierto, setMenuMasAbierto] = useState(false);
@@ -32,6 +52,9 @@ export function Bottombar() {
   const { isInstallable, promptInstall } = usePWAInstall();
   const location = useLocation();
   const menuRef = useRef(null);
+
+  const nombreUsuario = usuario?.nombre || usuario?.nombre_usuario || "Usuario";
+  const inicialUsuario = nombreUsuario.charAt(0).toUpperCase();
 
   useEffect(() => {
     setMenuMasAbierto(false);
@@ -49,43 +72,66 @@ export function Bottombar() {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [menuMasAbierto]);
 
-  const estaEnRutaMas = MORE_LINKS.some((link) =>
-    link.to === "/"
-      ? location.pathname === "/"
-      : location.pathname.startsWith(link.to),
+  const estaEnRutaMas = PAGINAS_CONFIG.some((link) =>
+    location.pathname.startsWith(link.to),
   );
 
   return (
     <div ref={menuRef} className="md:hidden">
+      {/* Backdrop con z-50 para superponerse por encima del botón flotante (+) */}
       {menuMasAbierto && (
         <div
-          className="fixed inset-0 bg-slate-900/40 z-30 transition-opacity"
+          className="fixed inset-0 bg-slate-950/60 backdrop-blur-xs z-50 transition-opacity"
           onClick={() => setMenuMasAbierto(false)}
         />
       )}
 
+      {/* Menú flotante / Portal de "Más" con z-[60] */}
       {menuMasAbierto && (
-        <div className="fixed bottom-16 left-3 right-3 bg-[#10243a] border border-white/10 rounded-2xl shadow-2xl z-40 p-3 text-white animate-in fade-in slide-in-from-bottom-2 duration-150">
-          <div className="flex items-center justify-between px-2 pb-2 mb-2 border-b border-white/10">
-            <div className="flex items-center gap-2 min-w-0">
-              <div className="w-7 h-7 rounded-lg bg-[#2eb086]/20 border border-[#2eb086]/40 flex items-center justify-center text-[#3dd4a3] font-bold text-xs shrink-0">
-                {(usuario?.nombre || "A").charAt(0).toUpperCase()}
+        <div className="fixed bottom-20 left-3 right-3 max-w-sm mx-auto bg-[#3B7A94] dark:bg-slate-900 border border-white/15 dark:border-slate-800 rounded-2xl shadow-2xl z-[60] p-3.5 text-white animate-in fade-in slide-in-from-bottom-2 duration-150">
+          {/* Cabecera: [M] Nombre                 (🌙)  (X) */}
+          <div className="flex items-center justify-between px-1 pb-3 mb-3 border-b border-white/15">
+            <div className="flex items-center gap-2.5 min-w-0">
+              <div className="w-8 h-8 rounded-full bg-white/20 border border-white/30 flex items-center justify-center text-white font-bold text-xs shrink-0">
+                {inicialUsuario}
               </div>
-              <span className="text-xs font-semibold text-slate-200 truncate">
-                {usuario?.nombre || "Usuario"}
+              <span className="text-sm font-bold text-white truncate max-w-[160px]">
+                {nombreUsuario}
               </span>
             </div>
-            <button
-              type="button"
-              onClick={() => setMenuMasAbierto(false)}
-              className="p-1 rounded-lg text-slate-400 hover:text-white hover:bg-white/10 transition-colors"
-            >
-              <X size={16} />
-            </button>
+
+            <div className="flex items-center gap-1.5 shrink-0">
+              <button
+                type="button"
+                onClick={toggleTheme}
+                title={
+                  isDark ? "Cambiar a Modo Claro" : "Cambiar a Modo Oscuro"
+                }
+                className="p-1.5 rounded-lg text-white/80 hover:text-white hover:bg-white/15 transition-colors cursor-pointer"
+                aria-label="Alternar modo oscuro"
+              >
+                {isDark ? (
+                  <Sun size={17} className="text-amber-300" />
+                ) : (
+                  <Moon size={17} className="text-white" />
+                )}
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setMenuMasAbierto(false)}
+                title="Cerrar menú"
+                className="p-1.5 rounded-lg text-white/80 hover:text-white hover:bg-white/15 transition-colors cursor-pointer"
+                aria-label="Cerrar menú"
+              >
+                <X size={17} />
+              </button>
+            </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-1.5">
-            {MORE_LINKS.map((link) => {
+          {/* Páginas que antes estaban bajo Configuración: mostradas directamente */}
+          <div className="grid grid-cols-2 gap-2">
+            {PAGINAS_CONFIG.map((link) => {
               const IconComponent = link.icon;
               return (
                 <NavLink
@@ -93,59 +139,49 @@ export function Bottombar() {
                   to={link.to}
                   onClick={() => setMenuMasAbierto(false)}
                   className={({ isActive }) =>
-                    `flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-xs font-semibold transition-all ${
+                    `flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-xs transition-all ${
                       isActive
-                        ? "bg-[#2eb086] text-white shadow-sm"
-                        : "bg-white/5 text-slate-300 hover:bg-white/10 hover:text-white"
+                        ? "bg-[#0d8266] text-white font-bold shadow-md ring-1.5 ring-emerald-300/40"
+                        : "bg-white/10 text-white/90 font-semibold hover:bg-white/20 hover:text-white"
                     }`
                   }
                 >
-                  <IconComponent size={17} className="shrink-0" />
+                  <IconComponent size={16} className="shrink-0" />
                   <span className="truncate">{link.label}</span>
                 </NavLink>
               );
             })}
           </div>
 
-          <div className="mt-2 pt-2 border-t border-white/10 flex flex-col gap-1">
-            {isInstallable && (
-              <button
-                type="button"
-                onClick={async () => {
-                  await promptInstall();
-                  setMenuMasAbierto(false);
-                }}
-                className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-xl text-xs font-semibold bg-[#2eb086]/20 text-[#3dd4a3] border border-[#2eb086]/40 hover:bg-[#2eb086]/30 transition-colors cursor-pointer"
-              >
-                <Download size={16} />
-                <span>Instalar aplicación en el teléfono</span>
-              </button>
-            )}
-
+          {isInstallable && (
             <button
               type="button"
-              onClick={toggleTheme}
-              className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-xl text-xs font-semibold text-slate-200 hover:bg-white/10 transition-colors cursor-pointer"
+              onClick={async () => {
+                await promptInstall();
+                setMenuMasAbierto(false);
+              }}
+              className="w-full mt-2 flex items-center justify-center gap-2 px-3 py-2 rounded-xl text-xs font-semibold bg-white/10 hover:bg-white/20 text-white transition-colors cursor-pointer"
             >
-              {isDark ? (
-                <Sun size={16} className="text-amber-300" />
-              ) : (
-                <Moon size={16} className="text-sky-300" />
-              )}
-              <span>{isDark ? "Cambiar a Modo Claro" : "Cambiar a Modo Oscuro"}</span>
+              <Download size={15} />
+              <span>Instalar aplicación en el teléfono</span>
             </button>
+          )}
 
+          {/* Cambiar contraseña y Cerrar sesión separados por una línea */}
+          <div className="mt-3 pt-2.5 border-t border-white/15 flex flex-col gap-1.5">
             <button
               type="button"
               onClick={() => {
                 setMenuMasAbierto(false);
                 setModalPasswordAbierto(true);
               }}
-              className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-xl text-xs font-semibold text-slate-200 hover:bg-white/10 transition-colors cursor-pointer"
+              className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-semibold text-white/90 hover:bg-white/15 transition-colors cursor-pointer text-left"
             >
-              <KeyRound size={16} className="text-[#3dd4a3]" />
+              <KeyRound size={16} className="text-[#a5f3fc] shrink-0" />
               <span>Cambiar contraseña</span>
             </button>
+
+            <div className="border-t border-white/10 my-0.5" />
 
             <button
               type="button"
@@ -153,17 +189,18 @@ export function Bottombar() {
                 setMenuMasAbierto(false);
                 setModalLogoutAbierto(true);
               }}
-              className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-xl text-xs font-semibold text-rose-300 hover:bg-rose-500/15 hover:text-rose-200 transition-colors cursor-pointer"
+              className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-semibold bg-rose-500/15 text-rose-100 border border-rose-400/25 hover:bg-rose-500/30 hover:text-white transition-colors cursor-pointer text-left shadow-2xs"
             >
-              <LogOut size={16} />
+              <LogOut size={16} className="text-rose-300 shrink-0" />
               <span>Cerrar sesión</span>
             </button>
           </div>
         </div>
       )}
 
-      <nav className="fixed bottom-0 left-0 right-0 h-16 bg-[#0d1f33] border-t border-white/10 flex items-center justify-around px-1 z-30 shadow-[0_-4px_20px_rgba(0,0,0,0.2)]">
-        {PRIMARY_LINKS.map((link) => {
+      {/* Barra de navegación inferior: mismo color y estilo que la sidebar (#3B7A94) */}
+      <nav className="fixed bottom-0 left-0 right-0 h-16 bg-[#3B7A94] dark:bg-slate-900 border-t border-white/15 dark:border-slate-800 flex items-center justify-around px-1 z-30 shadow-[0_-4px_20px_rgba(0,0,0,0.15)] text-white">
+        {BOTTOMBAR_LINKS.map((link) => {
           const IconComponent = link.icon;
           return (
             <NavLink
@@ -172,9 +209,7 @@ export function Bottombar() {
               end={link.to === "/"}
               className={({ isActive }) =>
                 `flex flex-col items-center justify-center flex-1 h-12 rounded-xl transition-all duration-150 ${
-                  isActive
-                    ? "text-[#3dd4a3]"
-                    : "text-slate-400 hover:text-slate-200"
+                  isActive ? "text-white" : "text-white/70 hover:text-white"
                 }`
               }
             >
@@ -182,7 +217,7 @@ export function Bottombar() {
                 <>
                   <div
                     className={`p-1 rounded-lg transition-colors ${
-                      isActive ? "bg-[#2eb086]/20" : ""
+                      isActive ? "bg-white/20 shadow-xs" : ""
                     }`}
                   >
                     <IconComponent size={19} strokeWidth={isActive ? 2.4 : 2} />
@@ -201,13 +236,13 @@ export function Bottombar() {
           onClick={() => setMenuMasAbierto((prev) => !prev)}
           className={`flex flex-col items-center justify-center flex-1 h-12 rounded-xl transition-all duration-150 cursor-pointer ${
             menuMasAbierto || estaEnRutaMas
-              ? "text-[#3dd4a3]"
-              : "text-slate-400 hover:text-slate-200"
+              ? "text-white"
+              : "text-white/70 hover:text-white"
           }`}
         >
           <div
             className={`p-1 rounded-lg transition-colors ${
-              menuMasAbierto || estaEnRutaMas ? "bg-[#2eb086]/20" : ""
+              menuMasAbierto || estaEnRutaMas ? "bg-white/20 shadow-xs" : ""
             }`}
           >
             <MoreHorizontal size={19} />
@@ -236,4 +271,3 @@ export function Bottombar() {
 }
 
 export default Bottombar;
-

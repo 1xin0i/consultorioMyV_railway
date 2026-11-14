@@ -28,19 +28,55 @@ export function useRegistrarPago({
   const [cargandoDetalle, setCargandoDetalle] = useState(false);
   const [enviando, setEnviando] = useState(false);
 
-  const [tipoPago, setTipoPago] = useState("total");
   const [montoAbonar, setMontoAbonar] = useState("");
   const [medioPago, setMedioPago] = useState("Efectivo");
+  const [metodoPagoId, setMetodoPagoId] = useState(1);
+  const [metodosPagoLista, setMetodosPagoLista] = useState([
+    { id: 1, nombre: "Efectivo" },
+    { id: 2, nombre: "Transferencia" },
+    { id: 3, nombre: "Tarjeta" },
+    { id: 4, nombre: "Otro" },
+  ]);
   const [fechaCobro, setFechaCobro] = useState(obtenerFechaHoyLocal);
   const [conceptoInformal, setConceptoInformal] = useState("");
   const [observaciones, setObservaciones] = useState("");
+
+  // Cargar métodos de pago desde la API / BD
+  useEffect(() => {
+    cobrosApi
+      .obtenerMetodosPago()
+      .then((res) => {
+        const lista = res.data?.data || [];
+        if (Array.isArray(lista) && lista.length > 0) {
+          setMetodosPagoLista(lista);
+          if (!medioPago || medioPago === "Efectivo") {
+            const primero = lista[0];
+            setMedioPago(primero.nombre);
+            setMetodoPagoId(primero.id);
+          }
+        }
+      })
+      .catch(() => {
+        // Mantener métodos por defecto
+      });
+  }, []);
+
+  const seleccionarMetodoPago = (metodo) => {
+    if (typeof metodo === "object" && metodo !== null) {
+      setMedioPago(metodo.nombre);
+      setMetodoPagoId(metodo.id);
+    } else {
+      setMedioPago(metodo);
+      const enc = metodosPagoLista.find((m) => m.nombre === metodo);
+      if (enc) setMetodoPagoId(enc.id);
+    }
+  };
 
   // Sincronizar al abrir el modal
   useEffect(() => {
     if (!isOpen) return;
 
     setFechaCobro(obtenerFechaHoyLocal());
-    setMedioPago("Efectivo");
     setConceptoInformal("");
     setObservaciones("");
 
@@ -52,7 +88,6 @@ export function useRegistrarPago({
       setTurnoElegido(null);
       setCobrosPrevios([]);
       setMontoAbonar("");
-      setTipoPago("total");
     }
   }, [isOpen, turnoPreseleccionado]);
 
@@ -114,7 +149,6 @@ export function useRegistrarPago({
             ? Number(turnoElegido.SolicitudCobro.saldo_pendiente)
             : Math.max(0, montoTotalBase - pagadoHistorico);
 
-        setTipoPago("total");
         setMontoAbonar(saldoCalc > 0 ? String(saldoCalc) : "");
       })
       .catch(() => {
@@ -124,7 +158,6 @@ export function useRegistrarPago({
             turnoElegido.precio_final ??
             0,
         );
-        setTipoPago("total");
         setMontoAbonar(saldoFallback > 0 ? String(saldoFallback) : "");
       })
       .finally(() => {
@@ -176,19 +209,6 @@ export function useRegistrarPago({
     };
   }, [turnoElegido, cobrosPrevios, montoAbonar]);
 
-  const handleCambioTipoPago = (nuevoTipo) => {
-    setTipoPago(nuevoTipo);
-    if (nuevoTipo === "total") {
-      setMontoAbonar(
-        resumenFinanciero.saldoPendienteActual > 0
-          ? String(resumenFinanciero.saldoPendienteActual)
-          : "",
-      );
-    } else {
-      setMontoAbonar("");
-    }
-  };
-
   const handleSubmit = async (e) => {
     e.preventDefault();
     const montoNum = parseFloat(montoAbonar);
@@ -238,8 +258,11 @@ export function useRegistrarPago({
 
         await cobrosApi.registrarPago({
           id_turno: Number(turnoElegido.id_turno),
+          monto: montoNum,
+          monto_a_cobrar: montoNum,
           monto_abonado: montoNum,
-          medio_pago: medioPago,
+          metodo_pago: medioPago,
+          metodo_pago_id: metodoPagoId,
           fecha_cobro: fechaCobro,
           observaciones: observaciones.trim() || null,
         });
@@ -277,11 +300,14 @@ export function useRegistrarPago({
     cobrosPrevios,
     cargandoDetalle,
     enviando,
-    tipoPago,
     montoAbonar,
     setMontoAbonar,
     medioPago,
     setMedioPago,
+    metodoPagoId,
+    setMetodoPagoId,
+    metodosPagoLista,
+    seleccionarMetodoPago,
     fechaCobro,
     setFechaCobro,
     conceptoInformal,
@@ -289,7 +315,6 @@ export function useRegistrarPago({
     observaciones,
     setObservaciones,
     resumenFinanciero,
-    handleCambioTipoPago,
     handleSubmit,
     nombrePaciente,
     practicasDelTurno,

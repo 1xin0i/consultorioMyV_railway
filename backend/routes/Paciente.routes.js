@@ -43,4 +43,15 @@ router.patch(
   PacienteController.deletePaciente,
 );
 
+router.delete(
+  "/:id",
+  validarExistencia(Paciente, "id", "params"),
+  PacienteController.destroyPaciente,
+);
+router.delete(
+  "/:id/delete",
+  validarExistencia(Paciente, "id", "params"),
+  PacienteController.destroyPaciente,
+);
+
 export default router;

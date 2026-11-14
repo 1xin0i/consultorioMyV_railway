@@ -152,6 +152,23 @@ export const esMismoDia = (fecha1, fecha2) => {
   );
 };
 
+export const esSlotPasado = (fecha, hora) => {
+  if (!fecha || !hora) return false;
+  const hoy = new Date();
+  const d = new Date(fecha);
+  const [h, m] = hora.split(":").map(Number);
+  const slotDate = new Date(
+    d.getFullYear(),
+    d.getMonth(),
+    d.getDate(),
+    h,
+    m,
+    0,
+    0,
+  );
+  return slotDate.getTime() < hoy.getTime();
+};
+
 export const formatHoraSimple = (fechaStr) => {
   if (!fechaStr) return "";
   const d = new Date(fechaStr);

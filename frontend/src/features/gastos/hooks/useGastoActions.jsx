@@ -10,7 +10,7 @@ export function useGastoActions(recargar, cerrarModal) {
     cerrarModal,
     metodoEliminar: "patch_delete",
     validar: (datosFormulario) => {
-      if (!datosFormulario.id_categoria) {
+      if (!datosFormulario.id_categoria && !datosFormulario.id_categoria_gasto) {
         return "Debes seleccionar una categoría de gasto.";
       }
       if (!datosFormulario.monto || Number(datosFormulario.monto) <= 0) {
@@ -21,12 +21,24 @@ export function useGastoActions(recargar, cerrarModal) {
       }
       return null;
     },
-    formatearPayload: (datosFormulario) => ({
-      id_categoria: Number(datosFormulario.id_categoria),
-      monto: parseFloat(datosFormulario.monto),
-      fecha_gasto: datosFormulario.fecha_gasto,
-      detalle: datosFormulario.detalle?.trim() || null,
-    }),
+    formatearPayload: (datosFormulario) => {
+      const catId = Number(
+        datosFormulario.id_categoria_gasto || datosFormulario.id_categoria,
+      );
+      const textoDetalle =
+        datosFormulario.detalle?.trim() ||
+        datosFormulario.concepto?.trim() ||
+        null;
+
+      return {
+        id_categoria: catId,
+        id_categoria_gasto: catId,
+        monto: parseFloat(datosFormulario.monto),
+        fecha_gasto: datosFormulario.fecha_gasto,
+        detalle: textoDetalle,
+        concepto: textoDetalle,
+      };
+    },
     mensajes: {
       creado: "Gasto registrado correctamente",
       actualizado: "Gasto actualizado correctamente",

@@ -127,6 +127,9 @@ export function useDetalleTurno({ isOpen, onClose, turno }) {
       listaPracticas.find((p) => p?.ObraSocial?.nombre)?.ObraSocial?.nombre ||
       primerTratamiento?.ObraSocial?.nombre ||
       turno.ObraSocial?.nombre ||
+      turno.Paciente?.ObraSocial?.nombre ||
+      turno.Paciente?.ObraSocials?.[0]?.nombre ||
+      turno.Paciente?.PacienteObraSocials?.[0]?.ObraSocial?.nombre ||
       "Particular";
 
     let duracionMinutos = 30;

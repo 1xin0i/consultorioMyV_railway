@@ -1,5 +1,4 @@
 export const COLUMNAS_TABLA = [
-  { etiqueta: "ID", campo: "id_paciente", ordenable: true },
   { etiqueta: "Paciente", campo: "apellido", ordenable: true },
   { etiqueta: "DNI", campo: "dni", ordenable: true },
   { etiqueta: "Teléfono", campo: "telefono", ordenable: false },

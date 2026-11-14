@@ -7,6 +7,7 @@ import {
   SLOTS_HORAS as DEFAULT_SLOTS,
   SLOT_HEIGHT_DIA,
   esMismoDia,
+  esSlotPasado as defaultEsSlotPasado,
   procesarTurnosColocacion,
   OBTENER_ESTILOS_ESTADO,
   formatHoraSimple,
@@ -77,20 +78,33 @@ const ItemTurnoDia = memo(function ItemTurnoDia({
 
 export const VistaDia = memo(function VistaDia({
   fecha,
-  turnos,
+  fechaActual,
+  turnos = [],
   slotsHoras = DEFAULT_SLOTS,
   horaInicioAgenda,
   esSlotPasado,
   esSlotBloqueado,
   obtenerRestriccionSlot,
   isSlotSelected,
+  estaSeleccionado,
   onSlotMouseDown,
+  iniciarSeleccion,
   onSlotMouseEnter,
+  moverSeleccion,
   onTouchStart,
+  handleSlotTouchStart,
   onTouchMove,
+  handleSlotTouchMove,
   onTouchEnd,
+  handleSlotTouchEnd,
   onEventClick,
 }) {
+  const fechaEfectiva = useMemo(
+    () => fecha || fechaActual || new Date(),
+    [fecha, fechaActual],
+  );
+  const checkSlotPasado = esSlotPasado || defaultEsSlotPasado;
+
   const horaInicioReal =
     horaInicioAgenda ??
     (slotsHoras && slotsHoras.length > 0
@@ -99,14 +113,38 @@ export const VistaDia = memo(function VistaDia({
 
   const turnosPosicionados = useMemo(() => {
     const turnosDelDia = turnos.filter((t) =>
-      esMismoDia(t.fecha_hora_inicio, fecha),
+      esMismoDia(t.fecha_hora_inicio, fechaEfectiva),
     );
     return procesarTurnosColocacion(
       turnosDelDia,
       SLOT_HEIGHT_DIA,
       horaInicioReal,
     );
-  }, [turnos, fecha, horaInicioReal]);
+  }, [turnos, fechaEfectiva, horaInicioReal]);
+
+  const checkSlotSeleccionado = (d, h, idx) => {
+    if (typeof isSlotSelected === "function") return isSlotSelected(d, h);
+    if (typeof estaSeleccionado === "function") return estaSeleccionado(d, idx);
+    return false;
+  };
+
+  const handleMouseDown = (e, d, h, idx) => {
+    if (onSlotMouseDown) return onSlotMouseDown(e, d, h);
+    if (iniciarSeleccion) return iniciarSeleccion(d, idx, e);
+  };
+
+  const handleMouseEnter = (d, h, idx) => {
+    if (onSlotMouseEnter) return onSlotMouseEnter(d, h);
+    if (moverSeleccion) return moverSeleccion(d, idx);
+  };
+
+  const handleTouchStart = (e, d, h, idx) => {
+    if (onTouchStart) return onTouchStart(e, d, h);
+    if (handleSlotTouchStart) return handleSlotTouchStart(d, idx, e);
+  };
+
+  const handleTouchMove = onTouchMove || handleSlotTouchMove;
+  const handleTouchEnd = onTouchEnd || handleSlotTouchEnd;
 
   return (
     <div className="flex w-full min-w-0 bg-white dark:bg-slate-900">
@@ -126,27 +164,28 @@ export const VistaDia = memo(function VistaDia({
       {/* Columna de eventos y slots interactivos */}
       <div className="flex-1 relative min-w-0">
         {/* Grilla de slots de fondo */}
-        {slotsHoras.map((hora) => {
-          const pasado = esSlotPasado(fecha, hora);
+        {slotsHoras.map((hora, idx) => {
+          const pasado = checkSlotPasado(fechaEfectiva, hora);
           const bloqueado = esSlotBloqueado
-            ? esSlotBloqueado(fecha, hora)
+            ? esSlotBloqueado(fechaEfectiva, hora)
             : false;
           const restriccion =
             bloqueado && obtenerRestriccionSlot
-              ? obtenerRestriccionSlot(fecha, hora)
+              ? obtenerRestriccionSlot(fechaEfectiva, hora)
               : null;
-          const seleccion = isSlotSelected(fecha, hora);
+          const seleccion = checkSlotSeleccionado(fechaEfectiva, hora, idx);
 
           return (
             <div
               key={hora}
+              data-slot-idx={idx}
               data-slot-hora={hora}
               style={{ height: `${SLOT_HEIGHT_DIA}px` }}
-              onMouseDown={(e) => onSlotMouseDown(e, fecha, hora)}
-              onMouseEnter={() => onSlotMouseEnter(fecha, hora)}
-              onTouchStart={(e) => onTouchStart(e, fecha, hora)}
-              onTouchMove={onTouchMove}
-              onTouchEnd={onTouchEnd}
+              onMouseDown={(e) => handleMouseDown(e, fechaEfectiva, hora, idx)}
+              onMouseEnter={() => handleMouseEnter(fechaEfectiva, hora, idx)}
+              onTouchStart={(e) => handleTouchStart(e, fechaEfectiva, hora, idx)}
+              onTouchMove={handleTouchMove}
+              onTouchEnd={handleTouchEnd}
               className={`w-full border-b border-gray-200 dark:border-slate-800 transition-colors select-none flex items-center px-3 justify-between ${
                 pasado
                   ? "bg-slate-100/90 dark:bg-slate-950/70 text-slate-600 dark:text-slate-400 cursor-not-allowed border-slate-200 dark:border-slate-800"

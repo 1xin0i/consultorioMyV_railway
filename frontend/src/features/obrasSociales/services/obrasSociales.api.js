@@ -8,6 +8,7 @@ export const obrasSocialesApi = {
   actualizar: (id, payload) => httpClient.put(`/obras-sociales/${id}`, payload),
   cambiarEstado: (id, activo) =>
     httpClient.put(`/obras-sociales/${id}`, { activo }),
+  eliminarPermanente: (id) => httpClient.delete(`/obras-sociales/${id}`),
 };
 
 export default obrasSocialesApi;

@@ -8,7 +8,6 @@ export const COLUMNAS_CAJA = [
 ];
 
 export const COLUMNAS_GASTOS = [
-  { etiqueta: "ID", campo: "id_gasto", ordenable: true },
   { etiqueta: "Categoría", campo: "id_categoria_gasto", ordenable: false },
   { etiqueta: "Concepto", campo: "concepto", ordenable: false },
   { etiqueta: "Fecha", campo: "fecha_gasto", ordenable: true },

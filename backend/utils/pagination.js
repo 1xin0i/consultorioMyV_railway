@@ -27,8 +27,11 @@ export const parsePagination = (
   const limit = Math.min(toPositiveInt(query.limit, defaultLimit), MAX_LIMIT);
   const search = typeof query.search === "string" ? query.search.trim() : "";
 
-  const sortField = allowedSortFields.includes(query.sortField) ? query.sortField : defaultSortField;
-  const sortOrder = String(query.sortOrder || defaultSortOrder).toUpperCase() === "DESC" ? "DESC" : "ASC";
+  const inputSortField = query.sortField || query.sortBy || query.ordenarPor;
+  const inputSortOrder = query.sortOrder || query.order || query.direccion || defaultSortOrder;
+
+  const sortField = allowedSortFields.includes(inputSortField) ? inputSortField : defaultSortField;
+  const sortOrder = String(inputSortOrder).toUpperCase() === "DESC" ? "DESC" : "ASC";
 
   return { page, limit, offset: (page - 1) * limit, search, sortField, sortOrder };
 };

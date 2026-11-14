@@ -18,16 +18,20 @@ function formatearFechaNota(fechaHora) {
   return `${dia} ${mesCap}, ${horas}:${minutos} hs`;
 }
 
-export function BotonNotaTurno({ turno, onEditar }) {
+export function BotonNotaTurno({ turno, nota, onEditar }) {
   const [abierto, setAbierto] = useState(false);
   const [coords, setCoords] = useState(null);
   const botonRef = useRef(null);
   const popoverRef = useRef(null);
 
-  const notaTexto =
-    typeof turno?.notas_consulta === "string"
-      ? turno.notas_consulta.trim()
-      : "";
+  const notaRaw =
+    typeof nota === "string"
+      ? nota
+      : typeof turno?.notas_consulta === "string"
+        ? turno.notas_consulta
+        : "";
+  const notaTexto = notaRaw.trim();
+
   const tieneNota =
     notaTexto.length > 0 &&
     notaTexto.toLowerCase() !== "null" &&
@@ -148,7 +152,7 @@ export function BotonNotaTurno({ turno, onEditar }) {
 
             {/* Cuerpo de la nota con estilo de bloque */}
             <div className="bg-slate-50/80 dark:bg-slate-800/60 rounded-xl p-3 border border-slate-100 dark:border-slate-700/60 text-xs text-slate-700 dark:text-slate-200 leading-relaxed italic whitespace-pre-wrap">
-              "{turno.notas_consulta}"
+              &quot;{notaTexto}&quot;
             </div>
 
             {/* Footer con botones Cerrar y Editar nota */}

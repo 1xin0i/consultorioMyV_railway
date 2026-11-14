@@ -18,13 +18,15 @@ const LABEL_CLASS =
 const INPUT_CLASS =
   "w-full border border-teal-100 bg-slate-50/60 p-2.5 rounded-xl text-sm text-slate-800 placeholder:text-slate-400 focus:outline-none focus:bg-white focus:ring-2 focus:ring-teal-500/30 focus:border-teal-500 transition-all shadow-2xs";
 
-const MEDIOS_PAGO = [
-  { id: "Efectivo", label: "Efectivo", icon: Banknote },
-  { id: "Transferencia", label: "Transferencia", icon: Landmark },
-  { id: "Tarjeta de Débito", label: "Débito", icon: CreditCard },
-  { id: "Tarjeta de Crédito", label: "Crédito", icon: CreditCard },
-  { id: "Mercado Pago", label: "Mercado Pago", icon: Wallet },
-];
+const obtenerIconoMedioPago = (nombre) => {
+  const n = String(nombre || "").toLowerCase();
+  if (n.includes("transfer")) return Landmark;
+  if (n.includes("tarjeta") || n.includes("debito") || n.includes("credito"))
+    return CreditCard;
+  if (n.includes("mercado") || n.includes("wallet") || n.includes("billetera"))
+    return Wallet;
+  return Banknote;
+};
 
 export function ModalRegistrarPago({
   isOpen,
@@ -42,11 +44,12 @@ export function ModalRegistrarPago({
     cobrosPrevios,
     cargandoDetalle,
     enviando,
-    tipoPago,
     montoAbonar,
     setMontoAbonar,
     medioPago,
-    setMedioPago,
+    metodoPagoId,
+    metodosPagoLista,
+    seleccionarMetodoPago,
     fechaCobro,
     setFechaCobro,
     conceptoInformal,
@@ -54,7 +57,6 @@ export function ModalRegistrarPago({
     observaciones,
     setObservaciones,
     resumenFinanciero,
-    handleCambioTipoPago,
     handleSubmit,
     nombrePaciente,
     practicasDelTurno,
@@ -140,8 +142,6 @@ export function ModalRegistrarPago({
                 practicasDelTurno={practicasDelTurno}
                 resumenFinanciero={resumenFinanciero}
                 cobrosPrevios={cobrosPrevios}
-                tipoPago={tipoPago}
-                handleCambioTipoPago={handleCambioTipoPago}
                 montoAbonar={montoAbonar}
                 setMontoAbonar={setMontoAbonar}
                 cargandoDetalle={cargandoDetalle}
@@ -193,23 +193,24 @@ export function ModalRegistrarPago({
           <>
             <div>
               <label className={LABEL_CLASS}>Medio de Pago *</label>
-              <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
-                {MEDIOS_PAGO.map((mp) => {
-                  const Icono = mp.icon;
-                  const activo = medioPago === mp.id;
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                {metodosPagoLista.map((mp) => {
+                  const Icono = obtenerIconoMedioPago(mp.nombre);
+                  const activo =
+                    medioPago === mp.nombre || metodoPagoId === mp.id;
                   return (
                     <button
-                      key={mp.id}
+                      key={mp.id || mp.nombre}
                       type="button"
-                      onClick={() => setMedioPago(mp.id)}
-                      className={`flex flex-col items-center justify-center gap-1 py-2.5 px-2 rounded-xl border text-xs font-bold transition-all cursor-pointer ${
+                      onClick={() => seleccionarMetodoPago(mp)}
+                      className={`flex flex-col items-center justify-center gap-1.5 py-2.5 px-3 rounded-xl border text-xs font-bold transition-all cursor-pointer ${
                         activo
                           ? "bg-[#0d8266] text-white border-[#0d8266] shadow-xs"
                           : "bg-slate-50/70 text-slate-700 border-slate-200 hover:bg-teal-50/50 hover:border-teal-200"
                       }`}
                     >
-                      <Icono size={16} />
-                      <span className="truncate text-[11px]">{mp.label}</span>
+                      <Icono size={17} />
+                      <span className="truncate text-xs">{mp.nombre}</span>
                     </button>
                   );
                 })}
@@ -270,9 +271,7 @@ export function ModalRegistrarPago({
               ? "Registrando..."
               : tipoIngreso === "informal"
                 ? "Registrar Ingreso"
-                : tipoPago === "parcial"
-                  ? "Confirmar Entrega Parcial"
-                  : "Confirmar Pago Total"}
+                : "Confirmar Cobro"}
           </span>
         </button>
       </div>

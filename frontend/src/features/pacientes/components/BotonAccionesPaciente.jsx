@@ -1,6 +1,6 @@
 /** @format */
 
-import { Eye, Edit, UserCheck, UserX, MoreVertical } from "lucide-react";
+import { Eye, Edit, UserCheck, UserX, Trash2, MoreVertical } from "lucide-react";
 import { MenuFlotantePortal } from "@/shared/components/ui/MenuFlotantePortal";
 
 export function BotonAccionesPaciente({
@@ -8,6 +8,7 @@ export function BotonAccionesPaciente({
   abrirParaVer,
   abrirParaEditar,
   abrirParaEliminar,
+  abrirParaEliminarPermanente,
   formatearPacienteParaEditar,
 }) {
   return (
@@ -48,9 +49,9 @@ export function BotonAccionesPaciente({
               cerrarMenu();
               abrirParaEditar(paciente, formatearPacienteParaEditar);
             }}
-            className="flex items-center gap-2.5 px-3.5 py-2 hover:bg-amber-50/80 text-slate-700 hover:text-amber-800 transition-colors cursor-pointer text-left"
+            className="flex items-center gap-2.5 px-3.5 py-2 hover:bg-blue-50/80 text-slate-700 hover:text-blue-800 transition-colors cursor-pointer text-left"
           >
-            <Edit size={15} className="text-amber-600 shrink-0" />
+            <Edit size={15} className="text-blue-600 shrink-0" />
             <span>Editar Datos</span>
           </button>
 
@@ -80,6 +81,20 @@ export function BotonAccionesPaciente({
               </>
             )}
           </button>
+
+          {paciente.activo === false && abrirParaEliminarPermanente && (
+            <button
+              type="button"
+              onClick={() => {
+                cerrarMenu();
+                abrirParaEliminarPermanente(paciente);
+              }}
+              className="flex items-center gap-2.5 px-3.5 py-2 hover:bg-rose-50 text-rose-600 transition-colors cursor-pointer text-left"
+            >
+              <Trash2 size={15} className="shrink-0" />
+              <span>Eliminar Permanentemente</span>
+            </button>
+          )}
         </div>
       )}
     </MenuFlotantePortal>

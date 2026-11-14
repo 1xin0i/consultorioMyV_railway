@@ -7,6 +7,7 @@ export const practicasApi = {
   crear: (payload) => httpClient.post("/practicas", payload),
   actualizar: (id, payload) => httpClient.put(`/practicas/${id}`, payload),
   cambiarEstado: (id) => httpClient.patch(`/practicas/${id}/delete`),
+  eliminarPermanente: (id) => httpClient.delete(`/practicas/${id}`),
 };
 
 export default practicasApi;

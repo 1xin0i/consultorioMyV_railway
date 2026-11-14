@@ -27,6 +27,7 @@ router.put(
 
 router.patch("/:id/delete", validarExistencia(Practica, "id", "params"), PracticaController.togglePractica);
 
+router.delete("/:id", validarExistencia(Practica, "id", "params"), PracticaController.deletePractica);
 router.delete("/:id/delete", validarExistencia(Practica, "id", "params"), PracticaController.deletePractica);
 
 export default router;

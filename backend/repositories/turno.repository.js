@@ -135,16 +135,29 @@ export const construirOrdenListado = (sortField, sortOrder) => {
     return [
       [{ model: Paciente }, "apellido", sortOrder],
       [{ model: Paciente }, "nombre", sortOrder],
+      [sequelize.fn("DATE", sequelize.col("Turno.fecha_hora_inicio")), "DESC"],
+      [sequelize.fn("TIME", sequelize.col("Turno.fecha_hora_inicio")), "ASC"],
     ];
   }
-  if (sortField === "estado") {
-    return [[{ model: EstadoTurno }, "estado", sortOrder]];
+  if (sortField === "estado" || sortField === "id_estado") {
+    return [
+      [{ model: EstadoTurno }, "estado", sortOrder],
+      [sequelize.fn("DATE", sequelize.col("Turno.fecha_hora_inicio")), "DESC"],
+      [sequelize.fn("TIME", sequelize.col("Turno.fecha_hora_inicio")), "ASC"],
+    ];
   }
   if (sortField === "fecha" || sortField === "fecha_hora_inicio") {
-    return [["fecha_hora_inicio", sortOrder]];
+    return [
+      [sequelize.fn("DATE", sequelize.col("Turno.fecha_hora_inicio")), sortOrder],
+      [sequelize.fn("TIME", sequelize.col("Turno.fecha_hora_inicio")), "ASC"],
+    ];
   }
   if (sortField === "honorarios" || sortField === "precio_final") {
-    return [["precio_final", sortOrder]];
+    return [
+      ["precio_final", sortOrder],
+      [sequelize.fn("DATE", sequelize.col("Turno.fecha_hora_inicio")), "DESC"],
+      [sequelize.fn("TIME", sequelize.col("Turno.fecha_hora_inicio")), "ASC"],
+    ];
   }
   return [[sortField, sortOrder]];
 };

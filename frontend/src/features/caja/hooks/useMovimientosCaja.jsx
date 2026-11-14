@@ -63,18 +63,31 @@ export function useMovimientosCaja(
         };
       });
 
-      const gastosMapeados = gastosRaw.map((g) => ({
-        ...g,
-        uid: `gasto-${g.id_gasto}`,
-        id_movimiento: g.id_gasto,
-        tipo: "egreso",
-        fecha: g.fecha_gasto || g.createdAt,
-        concepto: g.detalle || g.CategoriaGasto?.nombre || "Gasto General",
-        categoria_o_medio: g.CategoriaGasto?.nombre || "Sin categoría",
-        monto: parseFloat(g.monto || 0),
-        detalle_extra: "",
-        pacienteNombre: "",
-      }));
+      const gastosMapeados = gastosRaw.map((g) => {
+        const catId =
+          g.id_categoria_gasto ||
+          g.id_categoria ||
+          g.CategoriaGasto?.id_categoria_gasto ||
+          g.CategoriaGasto?.id_categoria;
+        const textoConcepto =
+          g.concepto || g.detalle || g.CategoriaGasto?.nombre || "Gasto General";
+
+        return {
+          ...g,
+          uid: `gasto-${g.id_gasto}`,
+          id_movimiento: g.id_gasto,
+          id_categoria_gasto: catId,
+          id_categoria: catId,
+          tipo: "egreso",
+          fecha: g.fecha_gasto || g.createdAt,
+          concepto: textoConcepto,
+          detalle: g.detalle || g.concepto || "",
+          categoria_o_medio: g.CategoriaGasto?.nombre || "Sin categoría",
+          monto: parseFloat(g.monto || 0),
+          detalle_extra: "",
+          pacienteNombre: "",
+        };
+      });
 
       const tIngresos = cobrosMapeados.reduce((acc, item) => acc + item.monto, 0);
       const tEgresos = gastosMapeados.reduce((acc, item) => acc + item.monto, 0);

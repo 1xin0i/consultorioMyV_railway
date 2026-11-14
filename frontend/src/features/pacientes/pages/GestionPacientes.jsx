@@ -3,14 +3,18 @@
 import { useState, useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
 import { Users, UserPlus, CheckCircle2, XCircle } from "lucide-react";
+import toast from "react-hot-toast";
 
 import Tabla from "@/shared/components/ui/Tabla/Tabla";
-import TablaHeader from "@/shared/components/ui/Tabla/TablaHeader";
+import { BarraFiltros } from "@/shared/components/layout/BarraFiltro";
 import TablaPaginacion from "@/shared/components/ui/Tabla/TablaPaginacion";
 import TarjetaRegistro from "@/shared/components/ui/Tabla/TarjetaRegistro";
 import PageLayout from "@/shared/components/layout/PageLayout";
 import { usePaginationSearch } from "@/shared/hooks/usePaginationSearch";
 import { useCRUDModal } from "@/shared/hooks/useCRUDModal";
+import { manejarErrorApi } from "@/shared/utils/errorHandler";
+import ModalConfirmarEliminarPermanente from "@/shared/components/ui/ModalConfirmarEliminarPermanente";
+import { pacientesApi } from "../services/pacientes.api";
 import {
   obtenerColorAvatar,
   obtenerIniciales,
@@ -23,7 +27,10 @@ import {
 import { VistaPaciente } from "../components/VistaPaciente";
 import { BotonAccionesPaciente } from "../components/BotonAccionesPaciente";
 import { calcularEdad } from "../utils/calcularEdad";
-import { formatearPacienteParaEditar } from "../utils/formatearPacienteParaEditar";
+import {
+  formatearPacienteParaEditar,
+  obtenerObrasSocialesPaciente,
+} from "../utils/formatearPacienteParaEditar";
 import { verificarCompletarPaciente } from "../utils/verificarCompletarPaciente";
 import {
   COLUMNAS_TABLA,
@@ -31,6 +38,30 @@ import {
 } from "../constants/pacienteConstants";
 import { useObrasSocialesCatalogo } from "../hooks/useObrasSocialesCatalogo";
 import { usePacienteActions } from "../hooks/usePacienteActions";
+
+const TABS_ESTADO_PACIENTES = [
+  {
+    id: "",
+    label: "Todos",
+    dot: null,
+    activeClass:
+      "bg-white text-slate-900 dark:bg-white dark:text-slate-900 shadow-xs",
+  },
+  {
+    id: "true",
+    label: "Activos",
+    dot: "bg-emerald-500",
+    activeClass:
+      "bg-[#e8f7f0] text-emerald-900 border border-emerald-300/80 dark:bg-emerald-950/80 dark:text-emerald-200 dark:border-emerald-700 shadow-2xs",
+  },
+  {
+    id: "false",
+    label: "Inactivos",
+    dot: "bg-rose-500",
+    activeClass:
+      "bg-[#fff1f2] text-rose-900 border border-rose-300/80 dark:bg-rose-950/80 dark:text-rose-200 dark:border-rose-700 shadow-2xs",
+  },
+];
 
 export function GestionPacientes() {
   const {
@@ -41,7 +72,7 @@ export function GestionPacientes() {
     filtros,
     actualizarFiltro,
   } = usePaginationSearch("/pacientes", {
-    ordenPorDefecto: "id_paciente",
+    ordenPorDefecto: "apellido",
     filtrosIniciales: { activo: "true" },
   });
 
@@ -80,6 +111,27 @@ export function GestionPacientes() {
     cerrarModal,
   );
 
+  const [pacienteAEliminarPermanente, setPacienteAEliminarPermanente] =
+    useState(null);
+  const [eliminandoPermanente, setEliminandoPermanente] = useState(false);
+
+  const confirmarEliminacionPermanente = async () => {
+    if (!pacienteAEliminarPermanente) return;
+    setEliminandoPermanente(true);
+    try {
+      await pacientesApi.eliminarPermanente(
+        pacienteAEliminarPermanente.id_paciente,
+      );
+      toast.success("Paciente eliminado permanentemente");
+      setPacienteAEliminarPermanente(null);
+      recargar();
+    } catch (error) {
+      manejarErrorApi(error, "No se pudo eliminar el paciente.");
+    } finally {
+      setEliminandoPermanente(false);
+    }
+  };
+
   const agregarObraSocial = () => {
     setDatosFormulario((prev) => ({
       ...prev,
@@ -114,8 +166,9 @@ export function GestionPacientes() {
   return (
     <PageLayout
       icono={<Users size={24} />}
-      titulo="Directorio de Pacientes"
+      titulo="Gestión de Pacientes"
       subtitulo="Administrá las fichas personales, obras sociales e historial clínico."
+      onNuevo={() => abrirParaCrear()}
       accionesHeader={
         <button
           onClick={() => abrirParaCrear()}
@@ -126,38 +179,47 @@ export function GestionPacientes() {
         </button>
       }
     >
-      <div className="bg-white rounded-2xl shadow-sm border border-teal-100 overflow-hidden flex flex-col">
-        <TablaHeader
+      <div className="flex flex-col gap-2.5 sm:gap-3">
+        {/* Barra de filtros y búsqueda */}
+        <BarraFiltros
           busqueda={propsPaginacion.busqueda}
           setBusqueda={propsPaginacion.setBusqueda}
           placeholder="Buscar por nombre, apellido, DNI o teléfono..."
+          className="mb-0"
         >
-          <div className="flex bg-teal-50/70 p-1 rounded-xl border border-teal-100 w-full sm:w-auto">
-            {[
-              { id: "true", label: "Activos" },
-              { id: "false", label: "Inactivos" },
-              { id: "", label: "Todos" },
-            ].map((tab) => {
-              const activo = (filtros?.activo ?? "true") === tab.id;
+          <div className="flex items-center bg-gray-100/90 dark:bg-slate-800/90 border border-gray-200/90 dark:border-slate-700 p-1 rounded-2xl overflow-x-auto shadow-2xs">
+            {TABS_ESTADO_PACIENTES.map((tab) => {
+              const activo = String(filtros?.activo ?? "true") === String(tab.id);
               return (
                 <button
                   key={tab.id}
                   type="button"
-                  onClick={() => actualizarFiltro("activo", tab.id)}
-                  className={`flex-1 sm:flex-initial px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                  onClick={() => {
+                    actualizarFiltro("activo", tab.id);
+                    actualizarFiltro("estadoFiltrado", tab.id);
+                    propsPaginacion.irAPagina?.(1);
+                  }}
+                  className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap flex items-center gap-1.5 select-none ${
                     activo
-                      ? "bg-[#0d8266] text-white shadow-2xs"
-                      : "text-teal-800/70 hover:text-teal-950"
+                      ? tab.activeClass
+                      : "text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-white/60 dark:hover:bg-slate-700/60"
                   }`}
                 >
-                  {tab.label}
+                  {tab.dot && (
+                    <span
+                      className={`w-2 h-2 rounded-full shrink-0 ${tab.dot}`}
+                    />
+                  )}
+                  <span>{tab.label}</span>
                 </button>
               );
             })}
           </div>
-        </TablaHeader>
+        </BarraFiltros>
 
-        <Tabla
+        {/* Card exclusivo de la tabla */}
+        <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-gray-200/90 dark:border-slate-800 overflow-hidden flex flex-col">
+          <Tabla
           columnas={COLUMNAS_TABLA}
           datos={pacientes}
           cargando={cargando}
@@ -166,8 +228,9 @@ export function GestionPacientes() {
           manejarOrden={propsPaginacion.manejarOrden}
           mensajeVacio="No se encontraron pacientes registrados."
           renderTarjeta={(paciente) => {
+            const obrasSociales = obtenerObrasSocialesPaciente(paciente);
             const listaOS =
-              paciente.ObraSocials?.map((os) => os.nombre).join(", ") ||
+              obrasSociales.map((os) => os.nombre).join(", ") ||
               "Particular";
             return (
               <TarjetaRegistro
@@ -205,6 +268,9 @@ export function GestionPacientes() {
                     abrirParaVer={abrirParaVer}
                     abrirParaEditar={abrirParaEditar}
                     abrirParaEliminar={abrirParaEliminar}
+                    abrirParaEliminarPermanente={(p) =>
+                      setPacienteAEliminarPermanente(p)
+                    }
                     formatearPacienteParaEditar={formatearPacienteParaEditar}
                   />
                 }
@@ -223,15 +289,11 @@ export function GestionPacientes() {
               <tr
                 key={paciente.id_paciente}
                 onClick={() => abrirParaVer(paciente)}
-                className={`hover:bg-teal-50/40 transition-colors cursor-pointer ${
+                className={`hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer ${
                   paciente.activo === false ? "bg-slate-50/60 opacity-75" : ""
                 }`}
               >
-                <td className="px-5 py-3.5 text-teal-800/70 font-mono text-xs font-bold">
-                  #{paciente.id_paciente}
-                </td>
-
-                <td className="px-5 py-3.5 font-bold text-slate-900">
+                <td className="pl-7 sm:pl-8 pr-4 py-3.5 font-bold text-slate-900">
                   <div className="flex items-center gap-2.5">
                     <span
                       className={`w-8 h-8 rounded-full border text-xs font-bold flex items-center justify-center shrink-0 ${avatarColor.bg} ${avatarColor.text} ${avatarColor.border}`}
@@ -272,27 +334,30 @@ export function GestionPacientes() {
                 </td>
 
                 <td className="px-5 py-3.5 text-slate-600">
-                  {paciente.ObraSocials && paciente.ObraSocials.length > 0 ? (
-                    <div className="flex flex-wrap gap-1">
-                      {paciente.ObraSocials.map((os) => (
-                        <span
-                          key={os.id_obra_social}
-                          className="bg-teal-50 text-teal-900 text-xs font-bold px-2.5 py-0.5 rounded-full border border-teal-200/80"
-                          title={`Afiliado N°: ${os.PacientesPorObrasSociales?.nro_afiliado || "S/N"}`}
-                        >
-                          {os.nombre}
-                        </span>
-                      ))}
-                    </div>
-                  ) : (
-                    <span className="text-slate-400 text-xs italic">
-                      Particular
-                    </span>
-                  )}
+                  {(() => {
+                    const obrasSociales = obtenerObrasSocialesPaciente(paciente);
+                    return obrasSociales.length > 0 ? (
+                      <div className="flex flex-wrap gap-1">
+                        {obrasSociales.map((os, idx) => (
+                          <span
+                            key={os.id_obra_social || idx}
+                            className="bg-teal-50 text-teal-900 text-xs font-bold px-2.5 py-0.5 rounded-full border border-teal-200/80"
+                            title={`Afiliado N°: ${os.nro_afiliado || "S/N"}`}
+                          >
+                            {os.nombre}
+                          </span>
+                        ))}
+                      </div>
+                    ) : (
+                      <span className="text-slate-400 text-xs italic">
+                        Particular
+                      </span>
+                    );
+                  })()}
                 </td>
 
                 <td
-                  className="px-5 py-3.5 text-center"
+                  className="pl-4 pr-7 sm:pr-8 py-3.5 text-center"
                   onClick={(e) => e.stopPropagation()}
                 >
                   <div className="flex justify-center">
@@ -301,6 +366,9 @@ export function GestionPacientes() {
                       abrirParaVer={abrirParaVer}
                       abrirParaEditar={abrirParaEditar}
                       abrirParaEliminar={abrirParaEliminar}
+                      abrirParaEliminarPermanente={(p) =>
+                        setPacienteAEliminarPermanente(p)
+                      }
                       formatearPacienteParaEditar={formatearPacienteParaEditar}
                     />
                   </div>
@@ -311,6 +379,7 @@ export function GestionPacientes() {
         />
 
         <TablaPaginacion {...propsPaginacion} />
+        </div>
       </div>
 
       <FormularioCrearEditar
@@ -349,9 +418,21 @@ export function GestionPacientes() {
         abrirParaEditar={abrirParaEditar}
         formatearPacienteParaEditar={formatearPacienteParaEditar}
       />
+
+      <ModalConfirmarEliminarPermanente
+        isOpen={Boolean(pacienteAEliminarPermanente)}
+        onClose={() => setPacienteAEliminarPermanente(null)}
+        onConfirm={confirmarEliminacionPermanente}
+        titulo="¿Eliminar paciente permanentemente?"
+        nombreRegistro={
+          pacienteAEliminarPermanente
+            ? `${pacienteAEliminarPermanente.nombre} ${pacienteAEliminarPermanente.apellido}`
+            : ""
+        }
+        cargando={eliminandoPermanente}
+      />
     </PageLayout>
   );
 }
 
 export default GestionPacientes;
-

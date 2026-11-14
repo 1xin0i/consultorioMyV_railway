@@ -61,6 +61,7 @@ export function useTurnoSearchAgenda(endpoint) {
     obrasSocialesPaciente,
     cargando,
     recargar: fetchTurnos,
+    recargarCatalogos: fetchCatalogos,
     buscarOSPaciente: fetchObrasSocialesPaciente,
   };
 }

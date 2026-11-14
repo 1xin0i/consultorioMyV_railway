@@ -1,9 +1,24 @@
 /** @format */
 
 import { responderError } from "../errors/AppError.js";
+import { MetodoPago } from "../models/index.model.js";
 import * as cobroService from "../services/cobros/cobro.service.js";
 import * as solicitudCobroService from "../services/cobros/solicitudCobro.service.js";
 import * as pagoService from "../services/cobros/pago.service.js";
+
+export const getMetodosPago = async (req, res) => {
+  try {
+    const metodos = await MetodoPago.findAll({
+      order: [["id", "ASC"]],
+    });
+    return res.status(200).json({ status: "success", data: metodos });
+  } catch (error) {
+    return responderError(res, error, "Error al obtener métodos de pago:", {
+      status: "error",
+      message: "Error al obtener los métodos de pago.",
+    });
+  }
+};
 
 export const getCobroByTurnoId = async (req, res) => {
   try {

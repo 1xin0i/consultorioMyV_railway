@@ -14,15 +14,16 @@ export function Tabla({
   mensajeVacio = "No se encontraron registros.",
   compacto = false,
 }) {
-  const thPadding = compacto ? "px-3 py-2.5" : "px-5 py-3.5";
-
   return (
     <div className="w-full">
       {renderTarjeta && (
         <div className="md:hidden divide-y divide-teal-100/70 dark:divide-slate-800">
           {cargando ? (
             Array.from({ length: 4 }).map((_, idx) => (
-              <div key={idx} className="p-4 space-y-2.5 bg-white dark:bg-slate-900">
+              <div
+                key={idx}
+                className="p-4 space-y-2.5 bg-white dark:bg-slate-900"
+              >
                 <div className="flex items-center justify-between gap-2">
                   <div className="h-4 bg-teal-50 dark:bg-slate-800 rounded w-1/2 animate-pulse" />
                   <div className="h-5 bg-teal-50 dark:bg-slate-800 rounded-full w-16 animate-pulse" />
@@ -48,6 +49,11 @@ export function Tabla({
             <tr className="bg-gradient-to-r from-[#e6f5ef] to-[#f0faf6] dark:from-slate-800 dark:to-slate-800/90 border-b border-teal-200/80 dark:border-slate-700 text-teal-900 dark:text-emerald-300 text-[11px] uppercase tracking-wider font-extrabold select-none">
               {columnas.map((col, idx) => {
                 const esActiva = ordenarPor === col.campo;
+                const esPrimero = idx === 0;
+                const esUltimo = idx === columnas.length - 1;
+                const thPadding = compacto
+                  ? `${esPrimero ? "pl-6 sm:pl-7 pr-3" : esUltimo ? "pl-3 pr-6 sm:pr-7" : "px-3"} py-2.5`
+                  : `${esPrimero ? "pl-7 sm:pl-8 pr-4" : esUltimo ? "pl-4 pr-7 sm:pr-8" : "px-5"} py-3.5`;
 
                 return (
                   <th
@@ -79,10 +85,16 @@ export function Tabla({
                             />
                           )}
                           {esActiva && direccion === "ASC" && (
-                            <ArrowUp size={13} className="text-[#0d8266] dark:text-emerald-400" />
+                            <ArrowUp
+                              size={13}
+                              className="text-[#0d8266] dark:text-emerald-400"
+                            />
                           )}
                           {esActiva && direccion === "DESC" && (
-                            <ArrowDown size={13} className="text-[#0d8266] dark:text-emerald-400" />
+                            <ArrowDown
+                              size={13}
+                              className="text-[#0d8266] dark:text-emerald-400"
+                            />
                           )}
                         </span>
                       )}
@@ -96,11 +108,18 @@ export function Tabla({
             {cargando ? (
               Array.from({ length: 5 }).map((_, rowIdx) => (
                 <tr key={rowIdx}>
-                  {columnas.map((_, colIdx) => (
-                    <td key={colIdx} className={thPadding}>
-                      <div className="h-4 bg-teal-50/70 dark:bg-slate-800 rounded animate-pulse w-3/4"></div>
-                    </td>
-                  ))}
+                  {columnas.map((_, colIdx) => {
+                    const esPrimero = colIdx === 0;
+                    const esUltimo = colIdx === columnas.length - 1;
+                    const tdSkeletonPadding = compacto
+                      ? `${esPrimero ? "pl-6 sm:pl-7 pr-3" : esUltimo ? "pl-3 pr-6 sm:pr-7" : "px-3"} py-2.5`
+                      : `${esPrimero ? "pl-7 sm:pl-8 pr-4" : esUltimo ? "pl-4 pr-7 sm:pr-8" : "px-5"} py-3.5`;
+                    return (
+                      <td key={colIdx} className={tdSkeletonPadding}>
+                        <div className="h-4 bg-teal-50/70 dark:bg-slate-800 rounded animate-pulse w-3/4"></div>
+                      </td>
+                    );
+                  })}
                 </tr>
               ))
             ) : datos.length === 0 ? (
@@ -123,4 +142,3 @@ export function Tabla({
 }
 
 export default Tabla;
-

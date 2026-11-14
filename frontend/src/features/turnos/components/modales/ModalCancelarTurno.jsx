@@ -55,7 +55,7 @@ export function ModalCancelarTurno({
         isOpen={abierto}
         onClose={cerrar}
         width="max-w-xl"
-        variant={inasistente ? "warning" : "danger"}
+        variant={inasistente ? "inasistente" : "cancelando"}
         title={`${inasistente ? "Marcar Inasistido" : "Cancelar Turno"} #${turnoTarget?.id_turno || ""}${
           nombrePaciente ? ` — ${nombrePaciente}` : ""
         }`}
@@ -71,7 +71,7 @@ export function ModalCancelarTurno({
             <div className="flex items-center justify-between mb-2">
               <span className="text-xs font-bold text-slate-800">
                 Paciente:{" "}
-                <span className="text-teal-900 font-extrabold">
+                <span className="text-slate-900 font-extrabold">
                   {nombrePaciente || "Sin especificar"}
                 </span>
               </span>
@@ -96,7 +96,7 @@ export function ModalCancelarTurno({
               value={notas}
               onChange={handleTextChange}
               placeholder={`Escribe el motivo detallado de la ${inasistente ? "inasistencia" : "cancelación"}...`}
-              className="w-full border border-teal-100 bg-slate-50/60 p-3 rounded-xl text-sm text-slate-800 placeholder:text-slate-400 focus:outline-none focus:bg-white focus:ring-2 focus:ring-teal-500/30 focus:border-teal-500 transition-all shadow-2xs"
+              className="w-full border border-gray-200 dark:border-slate-700 bg-slate-50/60 dark:bg-slate-800/80 p-3 rounded-xl text-sm text-slate-800 dark:text-slate-100 placeholder:text-slate-400 focus:outline-none focus:bg-white dark:focus:bg-slate-800 focus:ring-2 focus:ring-slate-300/80 focus:border-slate-400 transition-all shadow-2xs"
             />
           </div>
         </div>

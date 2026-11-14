@@ -16,7 +16,13 @@ export const listarPaginado = async (query) => {
     },
   );
 
-  const where = { activo: true };
+  const where = {};
+
+  if (query.activo !== undefined && query.activo !== "" && query.activo !== "all") {
+    where.activo = String(query.activo) === "true" || query.activo === "1" || query.activo === true;
+  } else if (query.activo === undefined) {
+    where.activo = true;
+  }
 
   if (search !== "") {
     where[Op.or] = [
@@ -82,5 +88,9 @@ export const alternarActivo = async (categoria) => {
   await categoria.update({
     activo: !categoria.activo,
   });
+};
+
+export const eliminarPermanente = async (categoria) => {
+  await categoria.destroy();
 };
 

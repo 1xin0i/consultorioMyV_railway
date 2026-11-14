@@ -3,7 +3,18 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { esMismoDia } from "../utils/agendaStyles";
 
-export function useCalendarioSeleccion({ onSelectSlot, slotsHoras = [] }) {
+const normalizarFecha = (fecha) => {
+  const d = new Date(fecha);
+  d.setHours(0, 0, 0, 0);
+  return d;
+};
+
+export function useCalendarioSeleccion({
+  onSelectSlot,
+  onSelectDaysToBlock,
+  slotsHoras = [],
+}) {
+  // --- 1. SELECCIÓN DE SLOTS HORARIOS (VistaDía y cuerpo de VistaSemana) ---
   const [seleccion, setSeleccion] = useState(null);
   const [estaArrastrando, setEstaArrastrando] = useState(false);
 
@@ -19,6 +30,14 @@ export function useCalendarioSeleccion({ onSelectSlot, slotsHoras = [] }) {
   const autoScrollRafRef = useRef(null);
   const ultimoTouchYRef = useRef(null);
 
+  // --- 2. SELECCIÓN DE DÍAS PARA BLOQUEAR (VistaMes y cabecera de VistaSemana) ---
+  const [seleccionDias, setSeleccionDias] = useState(null); // { inicio: Date, fin: Date }
+  const seleccionDiasRef = useRef(null);
+  const holdDiaTimerRef = useRef(null);
+  const diaInicialHoldRef = useRef(null);
+  const touchDiaPosRef = useRef(null);
+  const bloqueoClickDiaRef = useRef(false);
+
   useEffect(() => {
     seleccionRef.current = seleccion;
   }, [seleccion]);
@@ -27,12 +46,23 @@ export function useCalendarioSeleccion({ onSelectSlot, slotsHoras = [] }) {
     arrastrandoRef.current = estaArrastrando;
   }, [estaArrastrando]);
 
-  const limpiarLongPress = () => {
+  useEffect(() => {
+    seleccionDiasRef.current = seleccionDias;
+  }, [seleccionDias]);
+
+  const limpiarLongPress = useCallback(() => {
     if (longPressTimerRef.current) {
       clearTimeout(longPressTimerRef.current);
       longPressTimerRef.current = null;
     }
-  };
+  }, []);
+
+  const limpiarHoldDia = useCallback(() => {
+    if (holdDiaTimerRef.current) {
+      clearTimeout(holdDiaTimerRef.current);
+      holdDiaTimerRef.current = null;
+    }
+  }, []);
 
   const detenerAutoScroll = useCallback(() => {
     if (autoScrollRafRef.current) {
@@ -102,19 +132,46 @@ export function useCalendarioSeleccion({ onSelectSlot, slotsHoras = [] }) {
     ejecutarAccionConRango(fecha, inicioIdx, finIdx);
   }, [ejecutarAccionConRango]);
 
+  const finalizarSeleccionDias = useCallback(() => {
+    limpiarHoldDia();
+    const rangoActual = seleccionDiasRef.current;
+    diaInicialHoldRef.current = null;
+    touchDiaPosRef.current = null;
+
+    if (rangoActual) {
+      setSeleccionDias(null);
+      seleccionDiasRef.current = null;
+
+      bloqueoClickDiaRef.current = true;
+      setTimeout(() => {
+        bloqueoClickDiaRef.current = false;
+      }, 350);
+
+      onSelectDaysToBlock?.(rangoActual);
+    }
+  }, [limpiarHoldDia, onSelectDaysToBlock]);
+
   useEffect(() => {
-    const handleGlobalMouseUp = () => {
+    const handleGlobalUp = () => {
       if (arrastrandoRef.current) {
         finalizarSeleccion();
       }
+      if (holdDiaTimerRef.current || seleccionDiasRef.current) {
+        finalizarSeleccionDias();
+      }
     };
-    window.addEventListener("mouseup", handleGlobalMouseUp);
+    window.addEventListener("mouseup", handleGlobalUp);
+    window.addEventListener("touchend", handleGlobalUp);
+    window.addEventListener("touchcancel", handleGlobalUp);
     return () => {
-      window.removeEventListener("mouseup", handleGlobalMouseUp);
+      window.removeEventListener("mouseup", handleGlobalUp);
+      window.removeEventListener("touchend", handleGlobalUp);
+      window.removeEventListener("touchcancel", handleGlobalUp);
       detenerAutoScroll();
     };
-  }, [finalizarSeleccion, detenerAutoScroll]);
+  }, [finalizarSeleccion, finalizarSeleccionDias, detenerAutoScroll]);
 
+  // --- Manejadores de Slots Horarios (Mouse) ---
   const iniciarSeleccion = (fecha, slotIdx, e) => {
     if (Date.now() < ignorarMouseHastaRef.current) return;
     if (e && e.button !== undefined && e.button !== 0) return;
@@ -131,6 +188,7 @@ export function useCalendarioSeleccion({ onSelectSlot, slotsHoras = [] }) {
     setSeleccion((prev) => (prev ? { ...prev, finIdx: slotIdx } : null));
   };
 
+  // --- Manejadores de Slots Horarios (Touch) ---
   const iniciarLoopAutoScroll = () => {
     if (autoScrollRafRef.current) return;
 
@@ -260,6 +318,113 @@ export function useCalendarioSeleccion({ onSelectSlot, slotsHoras = [] }) {
     ultimoTouchYRef.current = null;
   };
 
+  // --- Manejadores de Días Completos (VistaMes y Cabecera de VistaSemana) ---
+  const iniciarPresionDia = useCallback(
+    (fecha, e) => {
+      if (e?.button !== undefined && e.button !== 0) return;
+      if (!fecha) return;
+
+      const dNorm = normalizarFecha(fecha);
+      diaInicialHoldRef.current = dNorm;
+      bloqueoClickDiaRef.current = false;
+
+      if (e?.touches?.[0]) {
+        ignorarMouseHastaRef.current = Date.now() + 900;
+        touchDiaPosRef.current = {
+          x: e.touches[0].clientX,
+          y: e.touches[0].clientY,
+        };
+      }
+
+      limpiarHoldDia();
+      holdDiaTimerRef.current = setTimeout(() => {
+        if (diaInicialHoldRef.current) {
+          const rango = { inicio: dNorm, fin: dNorm };
+          setSeleccionDias(rango);
+          if (typeof navigator !== "undefined" && navigator.vibrate) {
+            navigator.vibrate(35);
+          }
+        }
+      }, 260);
+    },
+    [limpiarHoldDia],
+  );
+
+  const actualizarRangoDia = useCallback(
+    (fecha) => {
+      if (!diaInicialHoldRef.current || !fecha) return;
+      const actual = normalizarFecha(fecha);
+      const tIni = diaInicialHoldRef.current.getTime();
+      const tAct = actual.getTime();
+
+      // Si se movió a otro día antes de que el timer termine, cancelar timer e iniciar selección de rango inmediatamente
+      if (tAct !== tIni) {
+        limpiarHoldDia();
+        bloqueoClickDiaRef.current = true;
+      } else if (!seleccionDiasRef.current) {
+        return;
+      }
+
+      setSeleccionDias(
+        tAct >= tIni
+          ? { inicio: diaInicialHoldRef.current, fin: actual }
+          : { inicio: actual, fin: diaInicialHoldRef.current },
+      );
+    },
+    [limpiarHoldDia],
+  );
+
+  const moverPresionDiaMouse = useCallback(
+    (fecha) => {
+      if (Date.now() < ignorarMouseHastaRef.current) return;
+      actualizarRangoDia(fecha);
+    },
+    [actualizarRangoDia],
+  );
+
+  const moverPresionDiaTouch = useCallback(
+    (e) => {
+      const touch = e.touches?.[0];
+      if (!touch) return;
+
+      if (!seleccionDiasRef.current && touchDiaPosRef.current) {
+        const dx = Math.abs(touch.clientX - touchDiaPosRef.current.x);
+        const dy = Math.abs(touch.clientY - touchDiaPosRef.current.y);
+        if (dx > 10 || dy > 10) {
+          limpiarHoldDia();
+          diaInicialHoldRef.current = null;
+        }
+        return;
+      }
+
+      if (seleccionDiasRef.current) {
+        if (e.cancelable) e.preventDefault();
+        const el = document.elementFromPoint(touch.clientX, touch.clientY);
+        const celda = el?.closest?.("[data-dia-iso]");
+        const iso = celda?.getAttribute("data-dia-iso");
+        if (iso) {
+          const [y, m, d] = iso.split("-").map(Number);
+          actualizarRangoDia(new Date(y, m - 1, d));
+        }
+      }
+    },
+    [limpiarHoldDia, actualizarRangoDia],
+  );
+
+  const estaDiaMarcado = useCallback(
+    (fecha) => {
+      if (!seleccionDias || !fecha) return false;
+      const t = normalizarFecha(fecha).getTime();
+      return (
+        t >= seleccionDias.inicio.getTime() && t <= seleccionDias.fin.getTime()
+      );
+    },
+    [seleccionDias],
+  );
+
+  const debeIgnorarClickDia = useCallback(() => bloqueoClickDiaRef.current, []);
+
+  // --- Helpers de estado y reset ---
   const estaSeleccionado = useCallback(
     (fecha, slotIdx) => {
       if (!seleccion || !esMismoDia(fecha, seleccion.fecha)) return false;
@@ -271,12 +436,16 @@ export function useCalendarioSeleccion({ onSelectSlot, slotsHoras = [] }) {
   );
 
   const resetSeleccion = useCallback(() => {
+    limpiarLongPress();
+    limpiarHoldDia();
     setEstaArrastrando(false);
     setSeleccion(null);
-  }, []);
+    setSeleccionDias(null);
+    diaInicialHoldRef.current = null;
+  }, [limpiarLongPress, limpiarHoldDia]);
 
   return {
-    estaArrastrando,
+    estaArrastrando: estaArrastrando || Boolean(seleccionDias),
     estaSeleccionado,
     iniciarSeleccion,
     moverSeleccion,
@@ -286,6 +455,12 @@ export function useCalendarioSeleccion({ onSelectSlot, slotsHoras = [] }) {
     handleSlotTouchEnd,
     handleSlotTouchCancel,
     resetSeleccion,
+    estaDiaMarcado,
+    iniciarPresionDia,
+    moverPresionDiaMouse,
+    moverPresionDiaTouch,
+    debeIgnorarClickDia,
   };
 }
 
+export default useCalendarioSeleccion;

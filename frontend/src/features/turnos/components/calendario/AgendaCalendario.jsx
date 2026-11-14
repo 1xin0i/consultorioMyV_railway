@@ -8,7 +8,7 @@ import { AgendaHeader, AgendaFabMobile } from "./AgendaHeader";
 import ModalRestriccion from "../modales/ModalRestriccion";
 import useInteractiveSwipe from "@/shared/hooks/useInteractiveSwipe";
 import { useConfiguracion } from "@/features/configuracion";
-import { GENERAR_HORAS } from "../../utils/agendaStyles";
+import { GENERAR_HORAS, esSlotPasado } from "../../utils/agendaStyles";
 import { useRestricciones } from "../../hooks/useRestricciones";
 import { useCalendarioSeleccion } from "../../hooks/useCalendarioSeleccion";
 
@@ -46,6 +46,11 @@ export function AgendaCalendario({
     [horaInicioNum, horaFinNum, configuracion?.intervaloMinutos],
   );
 
+  const abrirModalRestriccion = useCallback((rango) => {
+    setRangoParaBloquear(rango);
+    setModalRestriccionAbierto(true);
+  }, []);
+
   const {
     estaArrastrando,
     estaSeleccionado,
@@ -57,7 +62,16 @@ export function AgendaCalendario({
     handleSlotTouchEnd,
     handleSlotTouchCancel,
     resetSeleccion,
-  } = useCalendarioSeleccion({ onSelectSlot, slotsHoras });
+    estaDiaMarcado,
+    iniciarPresionDia,
+    moverPresionDiaMouse,
+    moverPresionDiaTouch,
+    debeIgnorarClickDia,
+  } = useCalendarioSeleccion({
+    onSelectSlot,
+    onSelectDaysToBlock: abrirModalRestriccion,
+    slotsHoras,
+  });
 
   const irHoy = useCallback(() => setFechaActual(new Date()), []);
 
@@ -88,11 +102,6 @@ export function AgendaCalendario({
       disabled: estaArrastrando,
       threshold: 55,
     });
-
-  const abrirModalRestriccion = useCallback((rango) => {
-    setRangoParaBloquear(rango);
-    setModalRestriccionAbierto(true);
-  }, []);
 
   const handleSelectDayEnMes = useCallback((fecha) => {
     setFechaActual(fecha);
@@ -140,7 +149,7 @@ export function AgendaCalendario({
   }, [fechaActual]);
 
   return (
-    <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-gray-200 dark:border-slate-800 overflow-hidden flex flex-col">
+    <div className="w-full h-full flex-1 min-h-0 bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-gray-200 dark:border-slate-800 overflow-hidden flex flex-col">
       <AgendaHeader
         vista={vista}
         setVista={setVista}
@@ -154,13 +163,16 @@ export function AgendaCalendario({
 
       <div
         ref={swipeContainerRef}
-        className="flex flex-col flex-1 touch-pan-y overflow-hidden will-change-transform"
+        className={`flex-1 min-h-0 relative bg-white dark:bg-slate-900 touch-pan-y flex flex-col will-change-transform ${
+          vista === "dia" ? "overflow-y-auto" : "overflow-hidden"
+        }`}
         {...swipeHandlers}
       >
         {vista === "dia" && (
           <VistaDia
             fechaActual={fechaActual}
             turnos={turnos}
+            esSlotPasado={esSlotPasado}
             estaSeleccionado={estaSeleccionado}
             iniciarSeleccion={iniciarSeleccion}
             moverSeleccion={moverSeleccion}
@@ -186,6 +198,9 @@ export function AgendaCalendario({
           <VistaSemana
             diasSemana={diasSemana}
             turnos={turnos}
+            setFechaActual={setFechaActual}
+            setVista={setVista}
+            esSlotPasado={esSlotPasado}
             estaSeleccionado={estaSeleccionado}
             iniciarSeleccion={iniciarSeleccion}
             moverSeleccion={moverSeleccion}
@@ -203,8 +218,15 @@ export function AgendaCalendario({
             obtenerRestriccionDia={obtenerRestriccionDia}
             esSlotBloqueado={esSlotBloqueado}
             obtenerRestriccionSlot={obtenerRestriccionSlot}
-            onBloquearDia={(f) => abrirModalRestriccion({ inicio: f, fin: f })}
             onEliminarRestriccion={eliminarRestriccion}
+            onBloquearDia={(inicio, fin) =>
+              abrirModalRestriccion({ inicio, fin: fin || inicio })
+            }
+            estaDiaMarcado={estaDiaMarcado}
+            iniciarPresionDia={iniciarPresionDia}
+            moverPresionDiaMouse={moverPresionDiaMouse}
+            moverPresionDiaTouch={moverPresionDiaTouch}
+            debeIgnorarClickDia={debeIgnorarClickDia}
           />
         )}
 
@@ -215,6 +237,11 @@ export function AgendaCalendario({
             onSelectDay={handleSelectDayEnMes}
             onSelectRangeToBlock={abrirModalRestriccion}
             onEliminarRestriccion={eliminarRestriccion}
+            estaDiaMarcado={estaDiaMarcado}
+            iniciarPresionDia={iniciarPresionDia}
+            moverPresionDiaMouse={moverPresionDiaMouse}
+            moverPresionDiaTouch={moverPresionDiaTouch}
+            debeIgnorarClickDia={debeIgnorarClickDia}
           />
         )}
       </div>

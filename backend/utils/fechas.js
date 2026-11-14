@@ -30,8 +30,8 @@ export const rangoDeMes = (mesStr) => {
  * a partir de los query params de Caja.
  */
 export const resolverPeriodo = (query = {}) => {
-  let fechaDesde = query.fecha_desde;
-  let fechaHasta = query.fecha_hasta;
+  let fechaDesde = query.fecha_desde || query.fechaDesde || query.fechaInicio;
+  let fechaHasta = query.fecha_hasta || query.fechaHasta || query.fechaFin;
   let mes = query.mes ? parseInt(query.mes, 10) : null;
   let anio = query.anio ? parseInt(query.anio, 10) : null;
 
@@ -50,6 +50,21 @@ export const resolverPeriodo = (query = {}) => {
     } else {
       if (!mes) mes = hoy.getMonth() + 1;
       ({ inicio: fechaDesde, fin: fechaHasta } = rangoDeAnioMes(anio, mes));
+    }
+  } else {
+    if (fechaDesde && !(fechaDesde instanceof Date)) {
+      const d = new Date(fechaDesde);
+      if (!isNaN(d.getTime())) {
+        d.setHours(0, 0, 0, 0);
+        fechaDesde = d;
+      }
+    }
+    if (fechaHasta && !(fechaHasta instanceof Date)) {
+      const d = new Date(fechaHasta);
+      if (!isNaN(d.getTime())) {
+        d.setHours(23, 59, 59, 999);
+        fechaHasta = d;
+      }
     }
   }
 

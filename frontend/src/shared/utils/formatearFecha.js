@@ -50,5 +50,19 @@ const formatDateTimeInput = (fechaString) => {
   return `${anio}-${mes}-${dia}T${horas}:${minutos}`;
 };
 
-export { formatDateTime, formatDate, formatDateInput, formatDateTimeInput };
+const formatFechaCortaTexto = (fecha = new Date()) => {
+  const d = fecha instanceof Date ? fecha : new Date(fecha);
+  if (!d || isNaN(d.getTime())) return "";
+  const opciones = { weekday: "long", day: "numeric", month: "long" };
+  const texto = d.toLocaleDateString("es-AR", opciones);
+  return texto.charAt(0).toUpperCase() + texto.slice(1);
+};
+
+export {
+  formatDateTime,
+  formatDate,
+  formatDateInput,
+  formatDateTimeInput,
+  formatFechaCortaTexto,
+};
 

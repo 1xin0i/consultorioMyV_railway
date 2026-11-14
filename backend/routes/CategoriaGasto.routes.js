@@ -33,4 +33,15 @@ router.patch(
   CategoriaGastoController.deleteCategoriaGasto,
 );
 
+router.delete(
+  "/:id",
+  validarExistencia(CategoriaGasto, "id", "params"),
+  CategoriaGastoController.destroyCategoriaGasto,
+);
+router.delete(
+  "/:id/delete",
+  validarExistencia(CategoriaGasto, "id", "params"),
+  CategoriaGastoController.destroyCategoriaGasto,
+);
+
 export default router;

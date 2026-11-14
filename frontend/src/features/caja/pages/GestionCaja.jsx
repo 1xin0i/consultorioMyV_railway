@@ -1,7 +1,7 @@
 /** @format */
 
 import { useState, useMemo } from "react";
-import { Wallet, TrendingUp, TrendingDown, Download } from "lucide-react";
+import { Wallet, TrendingUp, TrendingDown } from "lucide-react";
 
 import TablaPaginacion from "@/shared/components/ui/Tabla/TablaPaginacion";
 import PageLayout from "@/shared/components/layout/PageLayout";
@@ -16,7 +16,6 @@ import {
   ESTADO_INICIAL_GASTO,
   ESTADO_INICIAL_COBRO,
 } from "../constants/cajaConstants";
-import { SelectorPeriodoCaja } from "../components/SelectorPeriodoCaja";
 import { Kpis } from "../components/Kpis";
 import {
   VistaTodos,
@@ -25,7 +24,6 @@ import {
   VistaPendientes,
 } from "../components/Vistas";
 import { CajaToolbar, MenuFlotanteCajaMobile } from "../components/CajaToolbar";
-import { exportarCajaCsv } from "../utils/exportarCajaCsv";
 
 import {
   FormularioCrearEditarGasto,
@@ -50,6 +48,13 @@ export function GestionCaja() {
   const [modalPagoAbierto, setModalPagoAbierto] = useState(false);
   const [turnoParaCobrar, setTurnoParaCobrar] = useState(null);
 
+  const hoy = useMemo(() => new Date(), []);
+  const mesActual = hoy.getMonth() + 1;
+  const anioActual = hoy.getFullYear();
+  const ultimoDiaMes = new Date(anioActual, mesActual, 0).getDate();
+  const fechaInicioDefault = `${anioActual}-${String(mesActual).padStart(2, "0")}-01`;
+  const fechaFinDefault = `${anioActual}-${String(mesActual).padStart(2, "0")}-${String(ultimoDiaMes).padStart(2, "0")}`;
+
   const {
     datosCrudos,
     cargando,
@@ -57,13 +62,18 @@ export function GestionCaja() {
     propsPaginacion,
     filtros,
     actualizarFiltro,
+    actualizarFiltros,
     limpiarFiltros,
   } = useCajaSearchPagination("/caja", {
     ordenPorDefecto: "fecha",
     direccionPorDefecto: "DESC",
     filtrosIniciales: {
-      fechaInicio: "",
-      fechaFin: "",
+      mes: mesActual,
+      anio: anioActual,
+      modoAnual: false,
+      periodo: "mes",
+      fechaInicio: fechaInicioDefault,
+      fechaFin: fechaFinDefault,
       medio_pago: "",
     },
   });
@@ -149,40 +159,36 @@ export function GestionCaja() {
     });
   }, [datosCrudos?.turnos]);
 
+  const totalPendienteCobro = useMemo(() => {
+    if (datosCrudos?.totales?.totalPendienteCobro !== undefined) {
+      return Number(datosCrudos.totales.totalPendienteCobro) || 0;
+    }
+    if (datosCrudos?.resumen?.totalPendienteCobro !== undefined) {
+      return Number(datosCrudos.resumen.totalPendienteCobro) || 0;
+    }
+    return turnosConSaldoPendiente.reduce((acc, t) => {
+      const sc = t.SolicitudCobro;
+      if (sc && Number(sc.saldo_pendiente) > 0)
+        return acc + Number(sc.saldo_pendiente);
+      return acc + (Number(t.precio_final) || 0);
+    }, 0);
+  }, [datosCrudos?.totales, datosCrudos?.resumen, turnosConSaldoPendiente]);
+
   const abrirModalPagoNuevo = (turnoEspecifico = null) => {
     setTurnoParaCobrar(turnoEspecifico);
     setModalPagoAbierto(true);
   };
 
-  const handleExportarCSV = () =>
-    exportarCajaCsv({
-      movimientosCompletos,
-      totalIngresos,
-      totalEgresos,
-      balanceNeto,
-      filtros,
-    });
-
   return (
     <PageLayout
       icono={<Wallet size={24} />}
-      titulo="Caja y Finanzas"
+      titulo="Cobros y Gastos"
       subtitulo="Control de ingresos por turnos, cobros particulares, gastos operativos y balance del consultorio."
       accionesHeader={
         <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
           <button
-            type="button"
-            onClick={handleExportarCSV}
-            className="flex-1 sm:flex-initial bg-white hover:bg-teal-50 text-teal-900 border border-teal-200 px-3.5 py-2 rounded-xl flex items-center justify-center gap-2 transition-all shadow-2xs font-bold text-xs sm:text-sm cursor-pointer"
-            title="Descargar reporte en Excel / CSV"
-          >
-            <Download size={16} className="text-[#0d8266]" />
-            <span>Exportar CSV</span>
-          </button>
-
-          <button
             onClick={() => abrirModalPagoNuevo(null)}
-            className="hidden sm:flex bg-[#0d8266] hover:bg-[#09664f] text-white px-4 py-2 rounded-xl items-center justify-center gap-2 transition-all shadow-sm font-bold text-xs sm:text-sm cursor-pointer active:scale-95"
+            className="flex-1 sm:flex-initial bg-[#0d8266] hover:bg-[#09664f] text-white px-4 py-2 rounded-xl flex items-center justify-center gap-2 transition-all shadow-sm font-bold text-xs sm:text-sm cursor-pointer active:scale-95"
           >
             <TrendingUp size={17} />
             <span>Nuevo Ingreso</span>
@@ -190,7 +196,7 @@ export function GestionCaja() {
 
           <button
             onClick={() => abrirCrearGasto()}
-            className="hidden sm:flex bg-rose-600 hover:bg-rose-700 text-white px-4 py-2 rounded-xl items-center justify-center gap-2 transition-all shadow-sm font-bold text-xs sm:text-sm cursor-pointer active:scale-95"
+            className="flex-1 sm:flex-initial bg-rose-600 hover:bg-rose-700 text-white px-4 py-2 rounded-xl flex items-center justify-center gap-2 transition-all shadow-sm font-bold text-xs sm:text-sm cursor-pointer active:scale-95"
           >
             <TrendingDown size={17} />
             <span>Nuevo Gasto</span>
@@ -198,36 +204,36 @@ export function GestionCaja() {
         </div>
       }
     >
-      <SelectorPeriodoCaja
-        filtros={filtros}
-        actualizarFiltro={actualizarFiltro}
-        limpiarFiltros={limpiarFiltros}
-      />
-
       <Kpis
         totalIngresos={totalIngresos}
         totalEgresos={totalEgresos}
+        totalPendienteCobro={totalPendienteCobro}
         balanceNeto={balanceNeto}
-        resumen={datosCrudos?.resumen}
+        resumen={datosCrudos?.resumen || datosCrudos?.totales}
+        totales={datosCrudos?.totales}
+        totalCobrosCount={datosCrudos?.cobros?.length || 0}
+        totalGastosCount={datosCrudos?.gastos?.length || 0}
+        totalPorCobrarCount={turnosConSaldoPendiente.length}
         onClickPorCobrar={() => {
           setVistaActiva("pendientes");
           irAPagina(1);
         }}
       />
 
-      <div className="bg-white rounded-2xl shadow-sm border border-teal-100 overflow-hidden flex flex-col">
-        <CajaToolbar
-          busqueda={propsPaginacion.busqueda}
-          setBusqueda={propsPaginacion.setBusqueda}
-          vistaActiva={vistaActiva}
-          setVistaActiva={setVistaActiva}
-          turnosConSaldoCount={turnosConSaldoPendiente.length}
-          filtros={filtros}
-          actualizarFiltro={actualizarFiltro}
-          limpiarFiltros={limpiarFiltros}
-          irAPagina={irAPagina}
-        />
+      <CajaToolbar
+        busqueda={propsPaginacion.busqueda}
+        setBusqueda={propsPaginacion.setBusqueda}
+        vistaActiva={vistaActiva}
+        setVistaActiva={setVistaActiva}
+        turnosConSaldoCount={turnosConSaldoPendiente.length}
+        filtros={filtros}
+        actualizarFiltro={actualizarFiltro}
+        actualizarFiltros={actualizarFiltros}
+        limpiarFiltros={limpiarFiltros}
+        irAPagina={irAPagina}
+      />
 
+      <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-gray-200/90 dark:border-slate-800 overflow-hidden flex flex-col">
         {vistaActiva === "todos" && (
           <VistaTodos
             columnas={COLUMNAS_CAJA}
@@ -359,4 +365,3 @@ export function GestionCaja() {
 }
 
 export default GestionCaja;
-

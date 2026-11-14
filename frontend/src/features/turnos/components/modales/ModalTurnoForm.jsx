@@ -8,7 +8,7 @@ import InputFiltro from "@/shared/components/ui/InputFiltro";
 import { calcularHoraFin } from "../../utils/calcularHoraFin";
 import { useConfiguracion } from "@/features/configuracion";
 import turnosApi from "../../services/turnos.api";
-import { ModalPacienteRapido } from "./ModalPacienteRapido";
+import { ModalCrearPaciente } from "@/features/pacientes";
 
 export function ModalTurnoForm({
   modalAbierto,
@@ -21,7 +21,7 @@ export function ModalTurnoForm({
   actualizarDatos,
   guardarTurno,
 }) {
-  const [modalPacienteRapidoAbierto, setModalPacienteRapidoAbierto] =
+  const [modalCrearPacienteAbierto, setModalCrearPacienteAbierto] =
     useState(false);
 
   const { validarTurnoHorario } = useConfiguracion();
@@ -176,12 +176,12 @@ export function ModalTurnoForm({
                 </label>
                 <button
                   type="button"
-                  onClick={() => setModalPacienteRapidoAbierto(true)}
+                  onClick={() => setModalCrearPacienteAbierto(true)}
                   className="flex items-center gap-1 text-xs font-semibold text-[#2eb086] hover:text-[#259370] bg-[#e8f7f1] px-2.5 py-1 rounded-lg transition-colors cursor-pointer"
-                  title="Crear paciente rápido"
+                  title="Registrar nuevo paciente"
                 >
                   <UserPlus size={14} />
-                  <span>+ Nuevo Paciente</span>
+                  <span>Nuevo Paciente</span>
                 </button>
               </div>
               <InputFiltro
@@ -297,7 +297,7 @@ export function ModalTurnoForm({
                   className="flex items-center gap-1 text-xs font-semibold text-[#2eb086] hover:text-[#259370] bg-[#e8f7f1] px-2.5 py-1.5 rounded-lg transition-colors cursor-pointer shrink-0"
                 >
                   <Plus size={14} />
-                  <span>+ Práctica</span>
+                  <span>Práctica</span>
                 </button>
               </div>
 
@@ -392,15 +392,16 @@ export function ModalTurnoForm({
         </div>
       </Modal>
 
-      <ModalPacienteRapido
-        isOpen={modalPacienteRapidoAbierto}
-        onClose={() => setModalPacienteRapidoAbierto(false)}
+      <ModalCrearPaciente
+        isOpen={modalCrearPacienteAbierto}
+        onClose={() => setModalCrearPacienteAbierto(false)}
         setPacientes={setPacientes}
-        onPacienteCreado={(nuevoId) =>
+        onPacienteCreado={(nuevoPaciente) =>
           actualizarDatos({
-            target: { name: "id_paciente", value: nuevoId },
+            target: { name: "id_paciente", value: nuevoPaciente.id_paciente },
           })
         }
+        desdeTurno={true}
       />
     </>
   );

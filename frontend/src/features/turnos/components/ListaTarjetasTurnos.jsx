@@ -8,7 +8,7 @@ import {
 } from "@/shared/utils/avatarColors";
 import { estadosMap } from "../utils/estadosMap";
 import { BotonAcciones } from "./BotonAcciones";
-import { AdvertenciaPacienteIncompleto } from "./AdvertenciaPacienteIncompleto";
+import { BotonNotaTurno } from "./BotonNotaTurno";
 
 export function ListaTarjetasTurnos({
   turnos = [],
@@ -70,7 +70,7 @@ export function ListaTarjetasTurnos({
           <div
             key={turno.id_turno}
             onClick={() => abrirParaVer && abrirParaVer(turno)}
-            className="p-3.5 bg-white dark:bg-slate-900 hover:bg-teal-50/30 dark:hover:bg-slate-800/60 transition-colors cursor-pointer flex flex-col gap-2"
+            className="p-3.5 bg-white dark:bg-slate-900 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer flex flex-col gap-2"
           >
             <div className="flex items-start justify-between gap-2">
               <div className="flex items-center gap-2.5 min-w-0">
@@ -84,10 +84,6 @@ export function ListaTarjetasTurnos({
                     <span className="font-bold text-slate-900 dark:text-slate-100 text-sm truncate">
                       {nombreCompleto}
                     </span>
-                    <AdvertenciaPacienteIncompleto
-                      paciente={paciente}
-                      alActualizarPaciente={recargar}
-                    />
                   </div>
                   <div className="flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400 font-medium mt-0.5">
                     <Clock size={12} className="text-[#0d8266] shrink-0" />
@@ -136,6 +132,18 @@ export function ListaTarjetasTurnos({
                     </span>
                   </span>
                 ))}
+              </div>
+            )}
+            {turno.notas_consulta && (
+              <div
+                className="pt-1.5 flex items-center"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <BotonNotaTurno
+                  turno={turno}
+                  nota={turno.notas_consulta}
+                  onEditar={abrirParaEditar}
+                />
               </div>
             )}
           </div>

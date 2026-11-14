@@ -1,5 +1,4 @@
 export const COLUMNAS_TABLA = [
-  { etiqueta: "ID", campo: "id_practica", ordenable: true },
   { etiqueta: "Código", campo: "codigo_nomenclador", ordenable: true },
   { etiqueta: "Práctica", campo: "nombre_referencia", ordenable: true },
   { etiqueta: "Especialidad", campo: "especialidad", ordenable: true },

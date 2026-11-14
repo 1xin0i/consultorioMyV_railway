@@ -151,7 +151,9 @@ export const registrarPagoTurno = async (body) => {
     observaciones,
   } = body;
 
-  const montoPago = Number(monto ?? monto_a_cobrar);
+  const montoPago = Number(
+    monto ?? monto_a_cobrar ?? body.monto_abonado ?? body.monto_pagado,
+  );
 
   if (!montoPago || montoPago <= 0) {
     throw new AppError(400, {

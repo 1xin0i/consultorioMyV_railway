@@ -65,37 +65,40 @@ export function VistaTodos({
               },
             ]}
             acciones={
-              <>
-                {esIngreso && mov.id_turno && verDetalleTurno && (
+              esIngreso && mov.id_turno ? (
+                verDetalleTurno && (
                   <button
                     onClick={() => verDetalleTurno(mov.id_turno)}
-                    className="p-1.5 text-slate-600 hover:text-teal-700 hover:bg-teal-50 rounded-lg transition-colors cursor-pointer"
+                    className="p-1.5 rounded-xl text-[#0d8266] dark:text-emerald-400 hover:text-[#09664f] hover:bg-emerald-50 dark:hover:bg-emerald-950/50 transition-colors cursor-pointer"
                     title="Ver Turno"
                   >
-                    <Eye size={16} />
+                    <Eye size={17} />
                   </button>
-                )}
-                <button
-                  onClick={() =>
-                    esIngreso
-                      ? abrirEditarCobro(mov, formatearCobroParaEditar)
-                      : abrirEditarGasto(mov, formatearGastoParaEditar)
-                  }
-                  className="p-1.5 text-slate-600 hover:text-amber-600 hover:bg-amber-50 rounded-lg transition-colors cursor-pointer"
-                  title="Editar"
-                >
-                  <Edit size={16} />
-                </button>
-                <button
-                  onClick={() =>
-                    esIngreso ? abrirEliminarCobro(mov) : abrirEliminarGasto(mov)
-                  }
-                  className="p-1.5 text-slate-600 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors cursor-pointer"
-                  title="Eliminar"
-                >
-                  <Trash2 size={16} />
-                </button>
-              </>
+                )
+              ) : (
+                <>
+                  <button
+                    onClick={() =>
+                      esIngreso
+                        ? abrirEditarCobro(mov, formatearCobroParaEditar)
+                        : abrirEditarGasto(mov, formatearGastoParaEditar)
+                    }
+                    className="p-1.5 text-blue-500 hover:text-blue-700 hover:bg-blue-50 dark:text-blue-400 dark:hover:bg-blue-950/40 rounded-lg transition-colors cursor-pointer"
+                    title="Editar"
+                  >
+                    <Edit size={16} />
+                  </button>
+                  <button
+                    onClick={() =>
+                      esIngreso ? abrirEliminarCobro(mov) : abrirEliminarGasto(mov)
+                    }
+                    className="p-1.5 text-slate-600 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors cursor-pointer"
+                    title="Eliminar"
+                  >
+                    <Trash2 size={16} />
+                  </button>
+                </>
+              )
             }
           />
         );
@@ -105,9 +108,9 @@ export function VistaTodos({
         return (
           <tr
             key={mov.uid}
-            className="hover:bg-slate-50/80 transition-colors"
+            className="hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
           >
-            <td className="px-5 py-3.5 text-slate-600 font-medium whitespace-nowrap">
+            <td className="pl-7 sm:pl-8 pr-4 py-3.5 text-slate-600 font-medium whitespace-nowrap">
               {formatDate(mov.fecha)}
             </td>
 
@@ -147,37 +150,44 @@ export function VistaTodos({
               {Number(mov.monto || 0).toLocaleString("es-AR")}
             </td>
 
-            <td className="px-5 py-3.5 text-center">
+            <td className="pl-4 pr-7 sm:pr-8 py-3.5 text-center">
               <div className="flex justify-center items-center gap-1">
-                {esIngreso && mov.id_turno && verDetalleTurno && (
-                  <button
-                    onClick={() => verDetalleTurno(mov.id_turno)}
-                    className="p-2 text-slate-500 hover:text-teal-700 hover:bg-teal-50 rounded-xl transition-colors cursor-pointer"
-                    title="Ver Turno"
-                  >
-                    <Eye size={16} />
-                  </button>
+                {esIngreso && mov.id_turno ? (
+                  verDetalleTurno && (
+                    <button
+                      onClick={() => verDetalleTurno(mov.id_turno)}
+                      className="p-2 rounded-xl text-[#0d8266] dark:text-emerald-400 hover:text-[#09664f] hover:bg-emerald-50 dark:hover:bg-emerald-950/50 transition-colors cursor-pointer"
+                      title="Ver Turno"
+                    >
+                      <Eye size={17} />
+                    </button>
+                  )
+                ) : (
+                  <>
+                    <button
+                      onClick={() =>
+                        esIngreso
+                          ? abrirEditarCobro(mov, formatearCobroParaEditar)
+                          : abrirEditarGasto(mov, formatearGastoParaEditar)
+                      }
+                      className="p-2 text-blue-500 hover:text-blue-700 hover:bg-blue-50 dark:text-blue-400 dark:hover:bg-blue-950/40 rounded-xl transition-colors cursor-pointer"
+                      title="Editar"
+                    >
+                      <Edit size={16} />
+                    </button>
+                    <button
+                      onClick={() =>
+                        esIngreso
+                          ? abrirEliminarCobro(mov)
+                          : abrirEliminarGasto(mov)
+                      }
+                      className="p-2 text-slate-500 hover:text-rose-600 hover:bg-rose-50 rounded-xl transition-colors cursor-pointer"
+                      title="Eliminar"
+                    >
+                      <Trash2 size={16} />
+                    </button>
+                  </>
                 )}
-                <button
-                  onClick={() =>
-                    esIngreso
-                      ? abrirEditarCobro(mov, formatearCobroParaEditar)
-                      : abrirEditarGasto(mov, formatearGastoParaEditar)
-                  }
-                  className="p-2 text-slate-500 hover:text-amber-600 hover:bg-amber-50 rounded-xl transition-colors cursor-pointer"
-                  title="Editar"
-                >
-                  <Edit size={16} />
-                </button>
-                <button
-                  onClick={() =>
-                    esIngreso ? abrirEliminarCobro(mov) : abrirEliminarGasto(mov)
-                  }
-                  className="p-2 text-slate-500 hover:text-rose-600 hover:bg-rose-50 rounded-xl transition-colors cursor-pointer"
-                  title="Eliminar"
-                >
-                  <Trash2 size={16} />
-                </button>
               </div>
             </td>
           </tr>
@@ -229,7 +239,7 @@ export function VistaGastos({
             <>
               <button
                 onClick={() => abrirParaEditar(gasto, formatearGastoParaEditar)}
-                className="p-1.5 text-slate-600 hover:text-amber-600 hover:bg-amber-50 rounded-lg transition-colors cursor-pointer"
+                className="p-1.5 text-blue-500 hover:text-blue-700 hover:bg-blue-50 dark:text-blue-400 dark:hover:bg-blue-950/40 rounded-lg transition-colors cursor-pointer"
                 title="Editar gasto"
               >
                 <Edit size={16} />
@@ -248,12 +258,9 @@ export function VistaGastos({
       renderFila={(gasto) => (
         <tr
           key={gasto.uid || gasto.id_gasto}
-          className="hover:bg-slate-50/80 transition-colors"
+          className="hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
         >
-          <td className="px-5 py-3.5 text-slate-400 font-mono text-xs">
-            #{gasto.id_gasto || gasto.id_movimiento}
-          </td>
-          <td className="px-5 py-3.5 font-medium text-slate-700">
+          <td className="pl-7 sm:pl-8 pr-4 py-3.5 font-medium text-slate-700">
             <span className="bg-slate-100 text-slate-700 px-2.5 py-0.5 rounded-lg text-xs font-semibold">
               {gasto.categoria_o_medio || gasto.CategoriaGasto?.nombre}
             </span>
@@ -267,11 +274,11 @@ export function VistaGastos({
           <td className="px-5 py-3.5 font-bold text-rose-600 whitespace-nowrap">
             - $ {Number(gasto.monto || 0).toLocaleString("es-AR")}
           </td>
-          <td className="px-5 py-3.5 text-center">
+          <td className="pl-4 pr-7 sm:pr-8 py-3.5 text-center">
             <div className="flex justify-center items-center gap-1">
               <button
                 onClick={() => abrirParaEditar(gasto, formatearGastoParaEditar)}
-                className="p-2 text-slate-500 hover:text-amber-600 hover:bg-amber-50 rounded-xl transition-colors cursor-pointer"
+                className="p-2 text-blue-500 hover:text-blue-700 hover:bg-blue-50 dark:text-blue-400 dark:hover:bg-blue-950/40 rounded-xl transition-colors cursor-pointer"
                 title="Editar gasto"
               >
                 <Edit size={16} />
@@ -298,7 +305,6 @@ export function VistaPendientes({
   verDetalleTurno,
 }) {
   const COLUMNAS_PENDIENTES = [
-    { etiqueta: "Turno", campo: "id_turno", ordenable: false },
     { etiqueta: "Fecha Atención", campo: "fecha_hora_inicio", ordenable: false },
     { etiqueta: "Paciente", campo: "paciente", ordenable: false },
     { etiqueta: "Total Turno", campo: "monto_total", ordenable: false },
@@ -360,10 +366,10 @@ export function VistaPendientes({
                 {verDetalleTurno && (
                   <button
                     onClick={() => verDetalleTurno(t.id_turno)}
-                    className="p-1.5 text-slate-600 hover:text-teal-700 hover:bg-teal-50 rounded-lg transition-colors cursor-pointer"
+                    className="p-1.5 rounded-xl text-[#0d8266] dark:text-emerald-400 hover:text-[#09664f] hover:bg-emerald-50 dark:hover:bg-emerald-950/50 transition-colors cursor-pointer"
                     title="Ver Turno"
                   >
-                    <Eye size={16} />
+                    <Eye size={17} />
                   </button>
                 )}
                 <button
@@ -395,13 +401,9 @@ export function VistaPendientes({
         return (
           <tr
             key={t.id_turno}
-            className="hover:bg-amber-50/30 transition-colors"
+            className="hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
           >
-            <td className="px-5 py-3.5 font-mono text-xs font-bold text-teal-800">
-              #{t.id_turno}
-            </td>
-
-            <td className="px-5 py-3.5 text-slate-600 font-medium whitespace-nowrap">
+            <td className="pl-7 sm:pl-8 pr-4 py-3.5 text-slate-600 font-medium whitespace-nowrap">
               <div className="inline-flex items-center gap-1.5">
                 <Calendar size={14} className="text-slate-400" />
                 <span>{formatDate(t.fecha_hora_inicio)}</span>
@@ -442,15 +444,15 @@ export function VistaPendientes({
               </span>
             </td>
 
-            <td className="px-5 py-3.5 text-center">
+            <td className="pl-4 pr-7 sm:pr-8 py-3.5 text-center">
               <div className="flex justify-center items-center gap-1.5">
                 {verDetalleTurno && (
                   <button
                     onClick={() => verDetalleTurno(t.id_turno)}
-                    className="p-2 text-slate-500 hover:text-teal-700 hover:bg-teal-50 rounded-xl transition-colors cursor-pointer"
+                    className="p-2 rounded-xl text-[#0d8266] dark:text-emerald-400 hover:text-[#09664f] hover:bg-emerald-50 dark:hover:bg-emerald-950/50 transition-colors cursor-pointer"
                     title="Ver Turno"
                   >
-                    <Eye size={16} />
+                    <Eye size={17} />
                   </button>
                 )}
                 <button

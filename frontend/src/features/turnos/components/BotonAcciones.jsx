@@ -30,15 +30,23 @@ export function BotonAcciones({
 
   const esProgramado = idEstado === 1 || estadoNombre === "Programado";
   const esAtendido = idEstado === 2 || estadoNombre === "Atendido";
+  const esCancelado = idEstado === 3 || estadoNombre === "Cancelado";
+  const esInasistido =
+    idEstado === 4 ||
+    estadoNombre === "Inasistido" ||
+    estadoNombre === "Inasistente";
 
-  const solicitudCobro = turno.SolicitudCobro || turno.Cobro;
-  const tieneSaldoPendiente =
-    esAtendido &&
-    (!solicitudCobro ||
-      (solicitudCobro.estado !== "saldado" &&
-        Number(
-          solicitudCobro.saldo_pendiente ?? turno.precio_final ?? 0,
-        ) > 0));
+  const sc = turno.SolicitudCobro || turno.Cobro;
+  const montoTotal = Number(
+    sc?.monto_total ?? sc?.monto_a_cobrar ?? turno.precio_final ?? 0,
+  );
+  const saldoPendiente =
+    sc?.saldo_pendiente !== undefined
+      ? Number(sc.saldo_pendiente)
+      : esAtendido
+        ? montoTotal
+        : 0;
+  const tieneDeuda = esAtendido && saldoPendiente > 0;
 
   return (
     <MenuFlotantePortal
@@ -76,6 +84,8 @@ export function BotonAcciones({
 
           {esProgramado && (
             <>
+              <div className="my-1 border-t border-slate-100 dark:border-slate-800" />
+
               <button
                 type="button"
                 onClick={() => {
@@ -124,50 +134,83 @@ export function BotonAcciones({
                 <span>Cancelar Turno</span>
               </button>
 
-              <div className="my-1 border-t border-slate-100 dark:border-slate-800" />
+              {abrirParaEditar && (
+                <>
+                  <div className="my-1 border-t border-slate-100 dark:border-slate-800" />
+                  <button
+                    type="button"
+                    onClick={() => {
+                      cerrarMenu();
+                      abrirParaEditar(turno);
+                    }}
+                    className="flex items-center gap-2.5 px-3.5 py-2 hover:bg-blue-50/80 dark:hover:bg-blue-950/40 text-slate-700 dark:text-slate-200 hover:text-blue-800 transition-colors cursor-pointer text-left"
+                  >
+                    <Edit size={15} className="text-blue-600 shrink-0" />
+                    <span>Editar Turno</span>
+                  </button>
+                </>
+              )}
             </>
           )}
 
-          {tieneSaldoPendiente && abrirParaCobrar && (
+          {esAtendido && (
             <>
-              <button
-                type="button"
-                onClick={() => {
-                  cerrarMenu();
-                  abrirParaCobrar(turno);
-                }}
-                className="flex items-center gap-2.5 px-3.5 py-2 hover:bg-emerald-50 dark:hover:bg-emerald-950/50 text-[#0d8266] dark:text-emerald-300 font-bold transition-colors cursor-pointer text-left"
-              >
-                <Banknote size={15} className="shrink-0" />
-                <span>Registrar Pago</span>
-              </button>
               <div className="my-1 border-t border-slate-100 dark:border-slate-800" />
+
+              {tieneDeuda ? (
+                abrirParaCobrar && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      cerrarMenu();
+                      abrirParaCobrar(turno);
+                    }}
+                    className="flex items-center gap-2.5 px-3.5 py-2 hover:bg-emerald-50 dark:hover:bg-emerald-950/50 text-[#0d8266] dark:text-emerald-300 font-bold transition-colors cursor-pointer text-left"
+                  >
+                    <Banknote size={15} className="shrink-0" />
+                    <span>Cobrar Turno</span>
+                  </button>
+                )
+              ) : (
+                <div className="flex items-center gap-2.5 px-3.5 py-2 text-emerald-700 dark:text-emerald-400 font-bold select-none cursor-default bg-emerald-50/50 dark:bg-emerald-950/30">
+                  <CheckCircle size={15} className="shrink-0 text-[#2eb086]" />
+                  <span>Turno pagado</span>
+                </div>
+              )}
             </>
           )}
 
-          <button
-            type="button"
-            onClick={() => {
-              cerrarMenu();
-              abrirParaEditar(turno);
-            }}
-            className="flex items-center gap-2.5 px-3.5 py-2 hover:bg-amber-50/80 dark:hover:bg-amber-950/40 text-slate-700 dark:text-slate-200 hover:text-amber-800 transition-colors cursor-pointer text-left"
-          >
-            <Edit size={15} className="text-amber-600 shrink-0" />
-            <span>Editar Turno</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => {
-              cerrarMenu();
-              abrirParaEliminar(turno);
-            }}
-            className="flex items-center gap-2.5 px-3.5 py-2 hover:bg-rose-50 dark:hover:bg-rose-950/50 text-rose-600 dark:text-rose-400 transition-colors cursor-pointer text-left"
-          >
-            <Trash2 size={15} className="shrink-0" />
-            <span>Eliminar Turno</span>
-          </button>
+          {(esCancelado || esInasistido) && (
+            <>
+              <div className="my-1 border-t border-slate-100 dark:border-slate-800" />
+              {abrirParaReprogramar && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    cerrarMenu();
+                    abrirParaReprogramar(turno, formatearTurnoParaReprogramar);
+                  }}
+                  className="flex items-center gap-2.5 px-3.5 py-2 hover:bg-sky-50 dark:hover:bg-sky-950/50 text-sky-700 dark:text-sky-300 transition-colors cursor-pointer text-left"
+                >
+                  <CalendarClock size={15} className="shrink-0" />
+                  <span>Reprogramar</span>
+                </button>
+              )}
+              {abrirParaEliminar && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    cerrarMenu();
+                    abrirParaEliminar(turno);
+                  }}
+                  className="flex items-center gap-2.5 px-3.5 py-2 hover:bg-rose-50 dark:hover:bg-rose-950/50 text-rose-600 dark:text-rose-400 transition-colors cursor-pointer text-left"
+                >
+                  <Trash2 size={15} className="shrink-0" />
+                  <span>Eliminar Turno</span>
+                </button>
+              )}
+            </>
+          )}
         </div>
       )}
     </MenuFlotantePortal>

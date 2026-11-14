@@ -32,6 +32,11 @@ router.patch(
 );
 
 router.delete(
+  "/:id",
+  validarExistencia(ObraSocial, "id", "params"),
+  ObraSocialController.deleteObraSocial,
+);
+router.delete(
   "/:id/delete",
   validarExistencia(ObraSocial, "id", "params"),
   ObraSocialController.deleteObraSocial,

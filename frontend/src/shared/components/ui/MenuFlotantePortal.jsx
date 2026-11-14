@@ -10,50 +10,67 @@ export function MenuFlotantePortal({
   alineacion = "derecha",
 }) {
   const [abierto, setAbierto] = useState(false);
-  const [coords, setCoords] = useState({
-    top: 0,
-    left: 0,
-    transformOrigin: "top right",
-  });
+  const [coords, setCoords] = useState(null);
   const triggerRef = useRef(null);
   const menuRef = useRef(null);
 
-  const calcularPosicion = useCallback(() => {
-    if (!triggerRef.current) return;
-    const rect = triggerRef.current.getBoundingClientRect();
-    const viewportHeight = window.innerHeight;
-    const viewportWidth = window.innerWidth;
+  const calcularCoords = useCallback(
+    (targetEl) => {
+      const el = targetEl || triggerRef.current;
+      if (!el) return null;
+      const rect = el.getBoundingClientRect();
+      if (
+        !rect ||
+        (rect.width === 0 &&
+          rect.height === 0 &&
+          rect.top === 0 &&
+          rect.left === 0)
+      ) {
+        return null;
+      }
+      const viewportHeight = window.innerHeight;
+      const viewportWidth = window.innerWidth;
 
-    const alturaEstimada = menuRef.current?.offsetHeight || 220;
-    const espacioAbajo = viewportHeight - rect.bottom;
-    const abrirHaciaArriba =
-      espacioAbajo < alturaEstimada + 16 && rect.top > alturaEstimada;
+      const alturaEstimada = menuRef.current?.offsetHeight || 220;
+      const espacioAbajo = viewportHeight - rect.bottom;
+      const abrirHaciaArriba =
+        espacioAbajo < alturaEstimada + 16 && rect.top > alturaEstimada;
 
-    const top = abrirHaciaArriba
-      ? Math.max(8, rect.top - alturaEstimada - 6)
-      : rect.bottom + 6;
+      const top = abrirHaciaArriba
+        ? Math.max(8, rect.top - alturaEstimada - 6)
+        : rect.bottom + 6;
 
-    let left =
-      alineacion === "derecha" ? rect.right - ancho : rect.left;
+      let left =
+        alineacion === "derecha" ? rect.right - ancho : rect.left;
 
-    if (left < 8) left = 8;
-    if (left + ancho > viewportWidth - 8) {
-      left = viewportWidth - ancho - 8;
-    }
+      if (left < 8) left = 8;
+      if (left + ancho > viewportWidth - 8) {
+        left = viewportWidth - ancho - 8;
+      }
 
-    setCoords({
-      top,
-      left,
-      transformOrigin: abrirHaciaArriba ? "bottom right" : "top right",
-    });
-  }, [ancho, alineacion]);
+      return {
+        top,
+        left,
+        transformOrigin: abrirHaciaArriba ? "bottom right" : "top right",
+      };
+    },
+    [ancho, alineacion],
+  );
 
   const toggleMenu = useCallback(
     (e) => {
       if (e) e.stopPropagation();
-      setAbierto((prev) => !prev);
+      const targetEl = e?.currentTarget || triggerRef.current;
+      setAbierto((prev) => {
+        if (!prev) {
+          const nuevasCoords = calcularCoords(targetEl);
+          if (nuevasCoords) setCoords(nuevasCoords);
+          return true;
+        }
+        return false;
+      });
     },
-    [],
+    [calcularCoords],
   );
 
   const cerrarMenu = useCallback(() => {
@@ -63,8 +80,8 @@ export function MenuFlotantePortal({
   useEffect(() => {
     if (!abierto) return;
 
-    calcularPosicion();
-    const raf = requestAnimationFrame(calcularPosicion);
+    const pos = calcularCoords();
+    if (pos) setCoords(pos);
 
     const handleClickOutside = (e) => {
       if (
@@ -77,7 +94,8 @@ export function MenuFlotantePortal({
       }
     };
 
-    const handleScrollOrResize = () => {
+    const handleScrollOrResize = (e) => {
+      if (menuRef.current && menuRef.current.contains(e.target)) return;
       setAbierto(false);
     };
 
@@ -91,13 +109,12 @@ export function MenuFlotantePortal({
     window.addEventListener("keydown", handleKeyDown);
 
     return () => {
-      cancelAnimationFrame(raf);
       document.removeEventListener("mousedown", handleClickOutside);
       window.removeEventListener("scroll", handleScrollOrResize, true);
       window.removeEventListener("resize", handleScrollOrResize);
       window.removeEventListener("keydown", handleKeyDown);
     };
-  }, [abierto, calcularPosicion]);
+  }, [abierto, calcularCoords]);
 
   return (
     <div ref={triggerRef} className="inline-flex">
@@ -106,6 +123,7 @@ export function MenuFlotantePortal({
         : trigger}
 
       {abierto &&
+        coords &&
         createPortal(
           <div
             ref={menuRef}

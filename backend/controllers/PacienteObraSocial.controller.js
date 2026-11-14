@@ -26,14 +26,23 @@ export const getObrasSocialesByPacienteID = async (req, res) => {
       include: [
         {
           model: ObraSocial,
-          attributes: ["nombre"],
+          attributes: ["id_obra_social", "nombre"],
         },
       ],
     });
 
+    const data = obrasSocialesPaciente.map((pos) => {
+      const plain = pos.get ? pos.get({ plain: true }) : pos;
+      return {
+        ...plain,
+        id_relacion: plain.id_paciente_obra_social,
+        nombre: plain.ObraSocial?.nombre || "Obra Social",
+      };
+    });
+
     res.status(200).json({
       status: "success",
-      data: obrasSocialesPaciente,
+      data,
     });
   } catch (error) {
     console.error("Error al obtener la obra social del paciente:", error);

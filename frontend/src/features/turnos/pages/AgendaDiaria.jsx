@@ -1,10 +1,11 @@
 /** @format */
 
-import { useState } from "react";
-import { CalendarDays, X } from "lucide-react";
+import { useState, useMemo } from "react";
+import { CalendarDays, X, AlertTriangle } from "lucide-react";
 
 import PageLayout from "@/shared/components/layout/PageLayout";
 import { useCRUDModal } from "@/shared/hooks/useCRUDModal";
+import { formatFechaCortaTexto } from "@/shared/utils/formatearFecha";
 
 import { AgendaCalendario } from "../components/calendario/AgendaCalendario";
 import { VistaTurno } from "../components/modales/VistaTurno";
@@ -13,6 +14,8 @@ import { ModalAtenderTurno } from "../components/modales/ModalAtenderTurno";
 import { ModalCancelarTurno } from "../components/modales/ModalCancelarTurno";
 import { ModalReprogramarTurno } from "../components/modales/ModalReprogramarTurno";
 import { ModalEliminarTurno } from "../components/modales/ModalEliminarTurno";
+import { ModalFichasIncompletas } from "../components/modales/ModalFichasIncompletas";
+import { obtenerCamposFaltantesPaciente } from "../utils/pacienteIncompletoUtils";
 
 import { useTurnoSearchAgenda } from "../hooks/useTurnoSearchAgenda";
 import { useTurnoActions } from "../hooks/useTurnoActions";
@@ -24,6 +27,7 @@ export function AgendaDiaria() {
   const [turnoReprogramando, setTurnoReprogramando] = useState(null);
   const [modalPagoAbierto, setModalPagoAbierto] = useState(false);
   const [turnoParaCobrar, setTurnoParaCobrar] = useState(null);
+  const [modalFichasIncompletas, setModalFichasIncompletas] = useState(false);
 
   const {
     turnos,
@@ -31,6 +35,7 @@ export function AgendaDiaria() {
     setPacientes,
     practicasLista,
     recargar,
+    recargarCatalogos,
   } = useTurnoSearchAgenda("/turnos");
 
   const {
@@ -76,11 +81,35 @@ export function AgendaDiaria() {
     setModalPagoAbierto(true);
   };
 
+  const fechaHoyTexto = useMemo(() => formatFechaCortaTexto(new Date()), []);
+
+  const pacientesIncompletos = useMemo(() => {
+    return (pacientes || []).filter(
+      (p) => p.activo !== false && obtenerCamposFaltantesPaciente(p).length > 0,
+    );
+  }, [pacientes]);
+
   return (
     <PageLayout
-      icono={<CalendarDays size={24} />}
-      titulo="Agenda Clínica"
-      subtitulo="Seleccioná o arrastrá bloques horarios en la grilla para agendar nuevos turnos rápidamente."
+      titulo="Agenda de Turnos"
+      badge={fechaHoyTexto}
+      alerta={
+        pacientesIncompletos.length > 0 ? (
+          <button
+            type="button"
+            onClick={() => setModalFichasIncompletas(true)}
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold bg-[#fffdf0] dark:bg-amber-950/60 text-amber-800 dark:text-amber-300 border border-amber-300 dark:border-amber-700/80 hover:bg-amber-100/90 dark:hover:bg-amber-900/60 transition-all shadow-2xs cursor-pointer active:scale-95"
+            title="Pacientes con datos incompletos"
+          >
+            <AlertTriangle
+              size={13}
+              className="text-amber-600 dark:text-amber-400 shrink-0"
+            />
+            <span>{pacientesIncompletos.length} incompletos</span>
+          </button>
+        ) : null
+      }
+      containerClassName="overflow-hidden"
     >
       {/* Banner flotante cuando se está eligiendo un nuevo horario para reprogramar */}
       {turnoReprogramando && (
@@ -220,9 +249,26 @@ export function AgendaDiaria() {
         turnoPreseleccionado={turnoParaCobrar}
         onPagoExitoso={recargar}
       />
+
+      {/* Modal Fichas Incompletas */}
+      <ModalFichasIncompletas
+        isOpen={modalFichasIncompletas}
+        onClose={() => setModalFichasIncompletas(false)}
+        pacientes={pacientes}
+        onPacienteActualizado={(pacienteActualizado) => {
+          setPacientes((prev) =>
+            prev.map((p) =>
+              p.id_paciente === pacienteActualizado.id_paciente
+                ? pacienteActualizado
+                : p,
+            ),
+          );
+          recargar();
+          recargarCatalogos();
+        }}
+      />
     </PageLayout>
   );
 }
 
 export default AgendaDiaria;
-

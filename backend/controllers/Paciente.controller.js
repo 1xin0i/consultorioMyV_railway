@@ -16,15 +16,14 @@ export const getAllPacientes = async (req, res) => {
       allowedSortFields: [...Object.keys(Paciente.rawAttributes), "paciente"],
     });
 
-    const estadoFiltrado = req.query.estadoFiltrado;
+    const estadoFiltrado = req.query.estadoFiltrado ?? req.query.activo;
     const where = {};
 
     if (estadoFiltrado === "inactivos" || estadoFiltrado === "false" || estadoFiltrado === "0") {
       where.activo = false;
-    } else if (estadoFiltrado === "todos" || estadoFiltrado === "all") {
+    } else if (estadoFiltrado === "todos" || estadoFiltrado === "all" || estadoFiltrado === "") {
       // mostrar todos (activos e inactivos)
-    } else {
-      // por defecto solo activos
+    } else if (estadoFiltrado === "activos" || estadoFiltrado === "true" || estadoFiltrado === "1") {
       where.activo = true;
     }
 
@@ -55,6 +54,7 @@ export const getAllPacientes = async (req, res) => {
       limit,
       offset,
       order: orderClause,
+      distinct: true,
       include: [
         {
           model: PacienteObraSocial,
@@ -69,10 +69,32 @@ export const getAllPacientes = async (req, res) => {
       ],
     });
 
+    const data = pacientes.map((p) => {
+      const plain = p.get ? p.get({ plain: true }) : p;
+      const obrasSociales = (plain.PacienteObraSocials || []).map((pos) => ({
+        id_paciente_obra_social: pos.id_paciente_obra_social,
+        id_relacion: pos.id_paciente_obra_social,
+        id_obra_social: pos.id_obra_social,
+        nro_afiliado: pos.nro_afiliado,
+        nombre: pos.ObraSocial?.nombre || "Obra Social",
+        ObraSocial: pos.ObraSocial,
+        PacientesPorObrasSociales: {
+          id_relacion: pos.id_paciente_obra_social,
+          nro_afiliado: pos.nro_afiliado,
+        },
+      }));
+
+      return {
+        ...plain,
+        ObraSocials: obrasSociales,
+        PacientesPorObrasSociales: obrasSociales,
+        obras_sociales: obrasSociales,
+      };
+    });
 
     res.status(200).json({
       status: "success",
-      data: pacientes,
+      data,
       meta: buildPaginationMeta(count, page, limit),
     });
   } catch (error) {
@@ -88,11 +110,47 @@ export const getAllPacientes = async (req, res) => {
 // Obtener un paciente por su ID
 export const getPacienteById = async (req, res) => {
   try {
-    const paciente = req.paciente;
+    const pacienteEncontrado = await Paciente.findByPk(req.paciente.id_paciente, {
+      include: [
+        {
+          model: PacienteObraSocial,
+          attributes: ["id_paciente_obra_social", "id_paciente", "id_obra_social", "nro_afiliado"],
+          include: [
+            {
+              model: ObraSocial,
+              attributes: ["id_obra_social", "nombre"],
+            },
+          ],
+        },
+      ],
+    });
+
+    if (!pacienteEncontrado) {
+      return res.status(404).json({ error: "Paciente no encontrado" });
+    }
+
+    const plain = pacienteEncontrado.get ? pacienteEncontrado.get({ plain: true }) : pacienteEncontrado;
+    const obrasSociales = (plain.PacienteObraSocials || []).map((pos) => ({
+      id_paciente_obra_social: pos.id_paciente_obra_social,
+      id_relacion: pos.id_paciente_obra_social,
+      id_obra_social: pos.id_obra_social,
+      nro_afiliado: pos.nro_afiliado,
+      nombre: pos.ObraSocial?.nombre || "Obra Social",
+      ObraSocial: pos.ObraSocial,
+      PacientesPorObrasSociales: {
+        id_relacion: pos.id_paciente_obra_social,
+        nro_afiliado: pos.nro_afiliado,
+      },
+    }));
 
     res.status(200).json({
       status: "success",
-      data: paciente,
+      data: {
+        ...plain,
+        ObraSocials: obrasSociales,
+        PacientesPorObrasSociales: obrasSociales,
+        obras_sociales: obrasSociales,
+      },
     });
   } catch (error) {
     console.error("Error al obtener el paciente:", error);
@@ -190,7 +248,7 @@ export const updatePaciente = async (req, res) => {
   }
 };
 
-// Eliminar un paciente existente
+// Alternar estado de paciente (baja lógica / reactivación)
 export const deletePaciente = async (req, res) => {
   try {
     const paciente = req.paciente;
@@ -199,9 +257,30 @@ export const deletePaciente = async (req, res) => {
       activo: !paciente.activo,
     });
 
-    res.status(200).json({ message: "Paciente eliminado correctamente" });
+    res.status(200).json({ message: "Estado de paciente actualizado correctamente" });
   } catch (error) {
-    console.error("Error al eliminar el paciente:", error);
+    console.error("Error al actualizar estado del paciente:", error);
+    res.status(500).json({ error: "Error al actualizar estado del paciente" });
+  }
+};
+
+// Eliminar un paciente permanentemente
+export const destroyPaciente = async (req, res) => {
+  try {
+    const paciente = req.paciente;
+
+    await paciente.destroy();
+
+    res.status(200).json({ message: "Paciente eliminado permanentemente" });
+  } catch (error) {
+    if (error.name === "SequelizeForeignKeyConstraintError") {
+      return res.status(409).json({
+        status: "error",
+        message:
+          "No se puede eliminar permanentemente el paciente porque tiene turnos o historial clínico asociado. Podés mantenerlo inactivo.",
+      });
+    }
+    console.error("Error al eliminar permanentemente el paciente:", error);
     res.status(500).json({ error: "Error al eliminar el paciente" });
   }
 };

@@ -15,10 +15,13 @@ export const getAllObrasSociales = async (req, res) => {
     });
     const where = {};
 
-    const estadoFiltrado = req.query.estadoFiltrado;
-    if (estadoFiltrado === "inactivas" || estadoFiltrado === "false" || estadoFiltrado === "0") {
+    const estadoFiltrado = req.query.estadoFiltrado ?? req.query.activo;
+    if (estadoFiltrado === "inactivas" || estadoFiltrado === "inactivos" || estadoFiltrado === "false" || estadoFiltrado === "0") {
       where.activo = false;
-    } else if (estadoFiltrado === "activas" || estadoFiltrado === "true" || estadoFiltrado === "1") {
+    } else if (estadoFiltrado === "todas" || estadoFiltrado === "todos" || estadoFiltrado === "all" || estadoFiltrado === "") {
+      // mostrar todas
+    } else {
+      // por defecto solo activas
       where.activo = true;
     }
 
@@ -137,15 +140,22 @@ export const toggleObraSocial = async (req, res) => {
   }
 };
 
-// Eliminar una obra social existente
+// Eliminar una obra social existente permanentemente
 export const deleteObraSocial = async (req, res) => {
   try {
     const obraSocial = req.obraSocial;
 
     await obraSocial.destroy();
 
-    res.status(200).json({ message: "Obra social eliminada correctamente" });
+    res.status(200).json({ message: "Obra social eliminada permanentemente" });
   } catch (error) {
+    if (error.name === "SequelizeForeignKeyConstraintError") {
+      return res.status(409).json({
+        status: "error",
+        message:
+          "No se puede eliminar permanentemente la obra social porque tiene pacientes o aranceles asociados. Podés mantenerla desactivada.",
+      });
+    }
     console.error("Error al eliminar la obra social:", error);
     res.status(500).json({ error: "Error al eliminar la obra social" });
   }

@@ -7,27 +7,51 @@ import { X } from "lucide-react";
 const VARIANT_STYLES = {
   teal: {
     headerBg:
-      "bg-gradient-to-r from-[#0d8266] to-[#149678] text-white border-b border-teal-700/40",
-    titleText: "text-white",
+      "bg-[#e8f7f0] dark:bg-emerald-950/60 text-emerald-950 dark:text-emerald-100",
+    titleText: "text-emerald-950 dark:text-emerald-100",
     closeBtn:
-      "text-teal-100 hover:text-white hover:bg-white/15 focus:ring-white/30",
-    accentBar: "bg-emerald-300",
+      "text-emerald-700 dark:text-emerald-300 hover:text-emerald-950 hover:bg-emerald-200/50 dark:hover:bg-emerald-900/50 focus:ring-emerald-500/30",
+    accentBar: "bg-[#2eb086]",
+  },
+  atendiendo: {
+    headerBg:
+      "bg-[#e8f7f0] dark:bg-emerald-950/60 text-emerald-950 dark:text-emerald-100",
+    titleText: "text-emerald-950 dark:text-emerald-100",
+    closeBtn:
+      "text-emerald-700 dark:text-emerald-300 hover:text-emerald-950 hover:bg-emerald-200/50 dark:hover:bg-emerald-900/50 focus:ring-emerald-500/30",
+    accentBar: "bg-[#2eb086]",
   },
   danger: {
     headerBg:
-      "bg-gradient-to-r from-rose-600 to-rose-500 text-white border-b border-rose-700/40",
-    titleText: "text-white",
+      "bg-[#fff1f2] dark:bg-rose-950/60 text-rose-950 dark:text-rose-100",
+    titleText: "text-rose-950 dark:text-rose-100",
     closeBtn:
-      "text-rose-100 hover:text-white hover:bg-white/15 focus:ring-white/30",
-    accentBar: "bg-rose-200",
+      "text-rose-600 dark:text-rose-300 hover:text-rose-900 hover:bg-rose-200/50 dark:hover:bg-rose-900/50 focus:ring-rose-500/30",
+    accentBar: "bg-rose-500",
+  },
+  cancelando: {
+    headerBg:
+      "bg-[#fff1f2] dark:bg-rose-950/60 text-rose-950 dark:text-rose-100",
+    titleText: "text-rose-950 dark:text-rose-100",
+    closeBtn:
+      "text-rose-600 dark:text-rose-300 hover:text-rose-900 hover:bg-rose-200/50 dark:hover:bg-rose-900/50 focus:ring-rose-500/30",
+    accentBar: "bg-rose-500",
   },
   warning: {
     headerBg:
-      "bg-gradient-to-r from-amber-600 to-amber-500 text-white border-b border-amber-700/40",
-    titleText: "text-white",
+      "bg-[#fffbeb] dark:bg-amber-950/60 text-amber-950 dark:text-amber-100",
+    titleText: "text-amber-950 dark:text-amber-100",
     closeBtn:
-      "text-amber-100 hover:text-white hover:bg-white/15 focus:ring-white/30",
-    accentBar: "bg-amber-200",
+      "text-amber-700 dark:text-amber-300 hover:text-amber-950 hover:bg-amber-200/50 dark:hover:bg-amber-900/50 focus:ring-amber-500/30",
+    accentBar: "bg-amber-500",
+  },
+  inasistente: {
+    headerBg:
+      "bg-[#fffbeb] dark:bg-amber-950/60 text-amber-950 dark:text-amber-100",
+    titleText: "text-amber-950 dark:text-amber-100",
+    closeBtn:
+      "text-amber-700 dark:text-amber-300 hover:text-amber-950 hover:bg-amber-200/50 dark:hover:bg-amber-900/50 focus:ring-amber-500/30",
+    accentBar: "bg-amber-500",
   },
 };
 
@@ -39,6 +63,7 @@ export function Modal({
   onSubmit,
   width = "max-w-lg",
   variant = "teal",
+  headerClassName,
 }) {
   const onCloseRef = useRef(onClose);
   useEffect(() => {
@@ -68,18 +93,18 @@ export function Modal({
       onClick={onClose}
     >
       <div
-        className={`bg-white dark:bg-slate-900 rounded-t-3xl sm:rounded-2xl shadow-2xl shadow-teal-950/20 w-full ${width} overflow-hidden flex flex-col max-h-[92vh] sm:max-h-[90vh] border border-teal-100 dark:border-slate-800`}
+        className={`bg-white dark:bg-slate-900 rounded-t-3xl sm:rounded-2xl shadow-2xl w-full ${width} overflow-hidden flex flex-col max-h-[92vh] sm:max-h-[90vh]`}
         onClick={(e) => e.stopPropagation()}
       >
         <div
-          className={`flex justify-between items-center px-5 py-3.5 sm:px-6 sm:py-4 ${vStyle.headerBg} shrink-0`}
+          className={`flex justify-between items-center px-5 py-3.5 sm:px-6 sm:py-4 ${headerClassName || vStyle.headerBg} shrink-0`}
         >
           <div className="flex items-center gap-2.5 min-w-0">
             <span
               className={`w-1.5 h-5 rounded-full ${vStyle.accentBar} shrink-0`}
             />
             <h2
-              className={`text-base sm:text-lg font-extrabold tracking-tight truncate ${vStyle.titleText}`}
+              className={`text-base sm:text-lg font-bold tracking-tight truncate ${vStyle.titleText}`}
             >
               {title}
             </h2>
@@ -111,4 +136,3 @@ export function Modal({
 }
 
 export default Modal;
-

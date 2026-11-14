@@ -73,7 +73,7 @@ export const obtenerCajaConsolidada = async (query = {}) => {
       limit: paginacionGasto.limit,
       offset: paginacionGasto.offset,
       order: [["fecha_gasto", "DESC"]],
-      atributosCategoria: ["nombre"],
+      atributosCategoria: ["id_categoria_gasto", "nombre"],
       subQuery: false,
     }),
 

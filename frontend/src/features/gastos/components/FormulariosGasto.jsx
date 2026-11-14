@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Modal from "@/shared/components/ui/Modal";
 import InputFiltro from "@/shared/components/ui/InputFiltro";
-import { AlertTriangle, Plus, Tag, TrendingDown } from "lucide-react";
+import { AlertTriangle, Plus, Tag } from "lucide-react";
 import gastosApi from "../services/gastos.api";
 import toast from "react-hot-toast";
 import { manejarErrorApi } from "@/shared/utils/errorHandler";
@@ -69,21 +69,6 @@ export function FormularioCrearEditar({
         title={editando ? "Editar Gasto" : "Registrar Nuevo Gasto"}
       >
         <div className="flex flex-col gap-4">
-          <div className="bg-gradient-to-br from-rose-50/70 to-amber-50/30 border border-rose-200/80 rounded-2xl p-3.5 flex items-center gap-3 shadow-2xs">
-            <div className="w-10 h-10 rounded-xl bg-rose-600 text-white flex items-center justify-center shrink-0 shadow-xs">
-              <TrendingDown size={20} />
-            </div>
-            <div className="flex flex-col">
-              <span className="text-xs font-extrabold text-rose-950">
-                Egreso de Caja
-              </span>
-              <span className="text-[11px] text-rose-800/80">
-                Registrá compras de insumos, mantenimiento o servicios del
-                consultorio.
-              </span>
-            </div>
-          </div>
-
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
             <div className="col-span-1 md:col-span-2">
               <div className="flex items-center justify-between mb-1">
@@ -102,15 +87,26 @@ export function FormularioCrearEditar({
                 camposFiltrado={["nombre", "descripcion"]}
                 formatoVisual={(cat) => cat.nombre}
                 placeholder="Buscar o seleccionar categoría..."
-                alSeleccionar={(cat) =>
+                alSeleccionar={(cat) => {
+                  const val = cat?.id_categoria_gasto || cat?.id_categoria || "";
                   actualizarDatos({
                     target: {
                       name: "id_categoria",
-                      value: cat?.id_categoria || "",
+                      value: val,
                     },
-                  })
+                  });
+                  actualizarDatos({
+                    target: {
+                      name: "id_categoria_gasto",
+                      value: val,
+                    },
+                  });
+                }}
+                valorInicial={
+                  datosFormulario?.id_categoria_gasto ||
+                  datosFormulario?.id_categoria ||
+                  ""
                 }
-                valorInicial={datosFormulario?.id_categoria || ""}
               />
             </div>
 
@@ -152,8 +148,15 @@ export function FormularioCrearEditar({
                 name="detalle"
                 rows={3}
                 placeholder="Ej. Compra de insumos descartables, pago de servicio..."
-                value={datosFormulario?.detalle || ""}
-                onChange={actualizarDatos}
+                value={datosFormulario?.detalle ?? datosFormulario?.concepto ?? ""}
+                onChange={(e) => {
+                  actualizarDatos({
+                    target: { name: "detalle", value: e.target.value },
+                  });
+                  actualizarDatos({
+                    target: { name: "concepto", value: e.target.value },
+                  });
+                }}
                 className={INPUT_CLASS}
               />
             </div>
