@@ -116,6 +116,11 @@ export function useTurnoActions(recargar, cerrarModal) {
         (p) => p && p.id_practica,
       );
 
+      if (!(parseFloat(datosAtencion.precio_final) > 0)) {
+        toast.error("El monto a cobrar debe ser mayor a $0.");
+        return;
+      }
+
       const payloadAtencion = {
         notas_consulta: datosAtencion.notas_consulta?.trim() || undefined,
         precio_final: parseFloat(datosAtencion.precio_final || 0),

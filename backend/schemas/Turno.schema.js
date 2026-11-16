@@ -125,7 +125,7 @@ export const atenderTurnoSchema = z.object({
       required_error: "El precio final es obligatorio",
       invalid_type_error: "El precio final debe ser un número",
     })
-    .positive("El precio final debe ser mayor a 0")
+    .positive("El monto a cobrar debe ser mayor a $0.")
     .refine((val) => Number.isInteger(val * 100), {
       message: "El precio no puede tener más de 2 decimales",
     })

@@ -143,7 +143,7 @@ export function FormularioCrearEditar({
             </div>
 
             <div className="col-span-1 md:col-span-2">
-              <label className={LABEL_CLASS}>Detalle / Concepto</label>
+              <label className={LABEL_CLASS}>Detalle / Concepto *</label>
               <textarea
                 name="detalle"
                 rows={3}

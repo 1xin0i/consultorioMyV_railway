@@ -57,11 +57,31 @@ export function useCajaSearchPagination(endpoint, opciones = {}) {
       const respuesta = await cajaApi.listar(params);
       const data = respuesta.data.data || respuesta.data || {};
 
+      // Turnos atendidos por cobrar = sin ningún cobro + con pago parcial
+      const turnosSinCobro = data.turnosPendientes || data.turnos || [];
+      const idsSinCobro = new Set(turnosSinCobro.map((t) => t.id_turno));
+      const turnosConPagoParcial = (data.solicitudesPendientes || [])
+        .filter((s) => s.turno_id && s.Turno && !idsSinCobro.has(s.turno_id))
+        .map((s) => ({
+          ...s.Turno,
+          id_turno: s.turno_id,
+          id_paciente: s.paciente_id,
+          id_estado: 2,
+          EstadoTurno: { estado: "Atendido" },
+          precio_final: s.monto_total,
+          Paciente: s.Paciente,
+          SolicitudCobro: s,
+        }));
+      const turnosPorCobrar = [...turnosSinCobro, ...turnosConPagoParcial].sort(
+        (a, b) =>
+          new Date(b.fecha_hora_inicio || 0) - new Date(a.fecha_hora_inicio || 0),
+      );
+
       setDatosCrudos({
         cobros: data.cobros || [],
         gastos: data.gastos || [],
-        turnos: data.turnos || data.turnosPendientes || [],
-        turnosPendientes: data.turnosPendientes || data.turnos || [],
+        turnos: turnosPorCobrar,
+        turnosPendientes: turnosPorCobrar,
         resumen: data.resumen || data.totales || null,
         totales: data.totales || data.resumen || null,
         meta: respuesta.data.meta || null,

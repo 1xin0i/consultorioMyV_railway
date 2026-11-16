@@ -15,6 +15,11 @@ export const manejarErrorApi = (
     if (Array.isArray(data.errors) && data.errors.length > 0) {
       mensajeMostrar = data.errors[0].msg || data.errors[0].message || data.errors[0];
     }
+    // 1b. Errores de validación como objeto { campo: "mensaje" } (validateSchema del backend)
+    else if (data.errors && typeof data.errors === "object") {
+      const primero = Object.values(data.errors).find((m) => typeof m === "string");
+      mensajeMostrar = primero || data.message || mensajePorDefecto;
+    }
     // 2. Si el backend devuelve el mensaje en la propiedad 'error' o 'message' o 'mensaje'
     else if (typeof data.error === "string") {
       mensajeMostrar = data.error;

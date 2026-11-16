@@ -16,6 +16,9 @@ export function useGastoActions(recargar, cerrarModal) {
       if (!datosFormulario.monto || Number(datosFormulario.monto) <= 0) {
         return "El monto del egreso debe ser mayor a 0.";
       }
+      if (!datosFormulario.detalle?.trim() && !datosFormulario.concepto?.trim()) {
+        return "Ingresá un detalle del egreso.";
+      }
       if (!datosFormulario.fecha_gasto) {
         return "La fecha del egreso es obligatoria.";
       }
