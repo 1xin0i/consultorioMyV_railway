@@ -261,7 +261,7 @@ export function GestionCaja() {
           />
         )}
 
-        {vistaActiva === "gastos" && (
+        {vistaActiva === "egresos" && (
           <VistaTodos
             columnas={COLUMNAS_CAJA}
             datos={datosPaginados}

@@ -95,7 +95,7 @@ export function useMovimientosCaja(
       let listaSegunVista;
       if (vistaActiva === "ingresos") {
         listaSegunVista = cobrosMapeados;
-      } else if (vistaActiva === "Egresos") {
+      } else if (vistaActiva === "egresos") {
         listaSegunVista = gastosMapeados;
       } else {
         listaSegunVista = [...cobrosMapeados, ...gastosMapeados];

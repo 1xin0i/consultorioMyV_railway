@@ -80,7 +80,7 @@ export function CajaToolbar({
               "bg-[#e8f7f0] text-emerald-900 border border-emerald-300/80 dark:bg-emerald-950/80 dark:text-emerald-200 dark:border-emerald-700 shadow-2xs",
           },
           {
-            id: "gastos",
+            id: "egresos",
             label: "Egresos",
             dot: "bg-rose-500",
             activeClass:
