@@ -42,7 +42,6 @@ export function Sidebar() {
     rutasConfig.some((ruta) => pathname.startsWith(ruta)),
   );
 
-  console.log(usuario);
   const nombreUsuario = usuario?.nombre_usuario || "Administrador";
   const rolUsuario = usuario?.rol || "Odontología";
   const inicialUsuario = nombreUsuario.charAt(0).toUpperCase();
