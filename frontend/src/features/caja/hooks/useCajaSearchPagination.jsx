@@ -50,6 +50,10 @@ export function useCajaSearchPagination(endpoint, opciones = {}) {
       if (filtros.modoAnual) params.periodo = "anio";
       if (filtros.medio_pago) params.medio_pago = filtros.medio_pago;
 
+      // El backend pagina de a 10 por defecto; pedimos el máximo (100) y paginamos en el navegador
+      params.limitCobro = 100;
+      params.limitGasto = 100;
+
       const respuesta = await cajaApi.listar(params);
       const data = respuesta.data.data || respuesta.data || {};
 
@@ -60,6 +64,7 @@ export function useCajaSearchPagination(endpoint, opciones = {}) {
         turnosPendientes: data.turnosPendientes || data.turnos || [],
         resumen: data.resumen || data.totales || null,
         totales: data.totales || data.resumen || null,
+        meta: respuesta.data.meta || null,
       });
     } catch (error) {
       console.error("Error cargando datos de Caja:", error);

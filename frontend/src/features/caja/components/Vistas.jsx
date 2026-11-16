@@ -56,7 +56,7 @@ export function VistaTodos({
             }
             campos={[
               {
-                etiqueta: esIngreso ? "Medio de Pago" : "Categoría",
+                etiqueta: "Medio de pago",
                 valor: mov.categoria_o_medio,
               },
               {

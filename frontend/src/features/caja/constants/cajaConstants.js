@@ -2,7 +2,7 @@ export const COLUMNAS_CAJA = [
   { etiqueta: "Fecha", campo: "fecha", ordenable: true },
   { etiqueta: "Tipo", campo: "tipo", ordenable: false },
   { etiqueta: "Concepto", campo: "concepto", ordenable: false },
-  { etiqueta: "Medio / Cat.", campo: "categoria_o_medio", ordenable: false },
+  { etiqueta: "Medio", campo: "categoria_o_medio", ordenable: false },
   { etiqueta: "Monto", campo: "monto", ordenable: true },
   { etiqueta: "Acciones", campo: null, ordenable: false, centrado: true },
 ];

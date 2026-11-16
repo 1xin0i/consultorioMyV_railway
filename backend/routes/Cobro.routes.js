@@ -33,12 +33,8 @@ router.post(
   CobroController.createCobroInmediato,
 );
 
-router.post(
-  "/informal",
-  validarExistencia(Turno, "id_turno", "body"),
-  validarExistencia(Paciente, "id_paciente", "body"),
-  CobroController.createCobroInformal,
-);
+// Ingreso sin turno (no requiere turno ni paciente)
+router.post("/informal", CobroController.createCobroInformal);
 
 router.post("/registrar-pago", CobroController.registrarPagoTurno);
 

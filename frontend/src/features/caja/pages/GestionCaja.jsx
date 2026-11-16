@@ -12,7 +12,6 @@ import { useCajaSearchPagination } from "../hooks/useCajaSearchPagination";
 import { useMovimientosCaja } from "../hooks/useMovimientosCaja";
 import {
   COLUMNAS_CAJA,
-  COLUMNAS_GASTOS,
   ESTADO_INICIAL_GASTO,
   ESTADO_INICIAL_COBRO,
 } from "../constants/cajaConstants";
@@ -20,7 +19,6 @@ import { Kpis } from "../components/Kpis";
 import {
   VistaTodos,
   VistaIngresos,
-  VistaGastos,
   VistaPendientes,
 } from "../components/Vistas";
 import { CajaToolbar, MenuFlotanteCajaMobile } from "../components/CajaToolbar";
@@ -205,14 +203,14 @@ export function GestionCaja() {
       }
     >
       <Kpis
-        totalIngresos={totalIngresos}
-        totalEgresos={totalEgresos}
+        totalIngresos={datosCrudos?.totales?.totalIngresos ?? totalIngresos}
+        totalEgresos={datosCrudos?.totales?.totalEgresos ?? totalEgresos}
         totalPendienteCobro={totalPendienteCobro}
         balanceNeto={balanceNeto}
         resumen={datosCrudos?.resumen || datosCrudos?.totales}
         totales={datosCrudos?.totales}
-        totalCobrosCount={datosCrudos?.cobros?.length || 0}
-        totalGastosCount={datosCrudos?.gastos?.length || 0}
+        totalCobrosCount={datosCrudos?.meta?.cobros?.total ?? datosCrudos?.cobros?.length ?? 0}
+        totalGastosCount={datosCrudos?.meta?.gastos?.total ?? datosCrudos?.gastos?.length ?? 0}
         totalPorCobrarCount={turnosConSaldoPendiente.length}
         onClickPorCobrar={() => {
           setVistaActiva("pendientes");
@@ -233,7 +231,7 @@ export function GestionCaja() {
         irAPagina={irAPagina}
       />
 
-      <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-gray-200/90 dark:border-slate-800 overflow-hidden flex flex-col">
+      <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-gray-200/90 dark:border-slate-800 overflow-hidden flex flex-col shrink-0">
         {vistaActiva === "todos" && (
           <VistaTodos
             columnas={COLUMNAS_CAJA}
@@ -264,13 +262,13 @@ export function GestionCaja() {
         )}
 
         {vistaActiva === "gastos" && (
-          <VistaGastos
-            columnas={COLUMNAS_GASTOS}
+          <VistaTodos
+            columnas={COLUMNAS_CAJA}
             datos={datosPaginados}
             cargando={cargando}
             propsPaginacion={propsPaginacion}
-            abrirParaEditar={abrirEditarGasto}
-            abrirParaEliminar={abrirEliminarGasto}
+            abrirEditarGasto={abrirEditarGasto}
+            abrirEliminarGasto={abrirEliminarGasto}
             formatearGastoParaEditar={formatearGastoParaEditar}
           />
         )}

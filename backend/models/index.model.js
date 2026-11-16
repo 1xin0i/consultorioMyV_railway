@@ -122,6 +122,11 @@ const sincronizarModelos = async () => {
       )
       .catch(() => {});
 
+    // Ingresos sin turno: la solicitud de cobro puede no tener paciente
+    await sequelize
+      .query(`ALTER TABLE solicitudes_cobro MODIFY paciente_id INT NULL`)
+      .catch(() => {});
+
     // 1. Seed de métodos de pago base
     try {
       const metodosBase = [

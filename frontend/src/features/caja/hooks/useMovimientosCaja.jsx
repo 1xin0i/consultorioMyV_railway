@@ -56,8 +56,8 @@ export function useMovimientosCaja(
           tipo: "ingreso",
           fecha: c.fecha_cobro || c.createdAt,
           concepto: conceptoTexto,
-          categoria_o_medio: c.medio_pago || "Efectivo",
-          monto: parseFloat(c.monto_pagado || 0),
+          categoria_o_medio: c.metodo_pago || c.medio_pago || "Efectivo",
+          monto: Number(c.monto ?? c.monto_cobrado ?? c.monto_pagado ?? 0) || 0,
           detalle_extra: obsLimpia,
           pacienteNombre: nombrePaciente || "",
         };
@@ -82,9 +82,9 @@ export function useMovimientosCaja(
           fecha: g.fecha_gasto || g.createdAt,
           concepto: textoConcepto,
           detalle: g.detalle || g.concepto || "",
-          categoria_o_medio: g.CategoriaGasto?.nombre || "Sin categoría",
+          categoria_o_medio: g.metodo_pago || "Efectivo",
           monto: parseFloat(g.monto || 0),
-          detalle_extra: "",
+          detalle_extra: g.CategoriaGasto?.nombre || "",
           pacienteNombre: "",
         };
       });

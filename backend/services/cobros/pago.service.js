@@ -77,62 +77,80 @@ export const registrarCobroInmediato = async (
  */
 export const registrarCobroInformal = async (
   body,
-  { turno, paciente } = {},
+  { paciente } = {},
 ) => {
-  const {
-    monto_a_cobrar,
-    monto_total,
-    entrega_inicial,
-    metodo_pago,
-    metodo_pago_id,
-    observaciones,
-  } = body;
-  const turno_id =
-    turno?.id_turno ?? body.turno_id ?? body.id_turno ?? null;
+  // Ingreso sin turno: se registra ya cobrado (solicitud saldada + un cobro).
+  const concepto = String(body.concepto || "").trim();
+  const monto =
+    Number(
+      body.monto_pagado ?? body.monto ?? body.monto_total ?? body.monto_a_cobrar,
+    ) || 0;
+
+  if (!concepto) {
+    throw new AppError(400, {
+      status: "error",
+      message: "El concepto del ingreso es obligatorio.",
+    });
+  }
+  if (monto <= 0) {
+    throw new AppError(400, {
+      status: "error",
+      message: "El monto del ingreso debe ser mayor a 0.",
+    });
+  }
+
   const paciente_id =
-    paciente?.id_paciente ?? body.paciente_id ?? body.id_paciente;
+    paciente?.id_paciente ?? body.paciente_id ?? body.id_paciente ?? null;
+  const metodoId = resolverMetodoPagoId(
+    body.metodo_pago_id,
+    body.metodo_pago ?? body.medio_pago,
+  );
 
-  await assertSinSolicitud(turno_id);
+  // El frontend reconoce estos ingresos por el prefijo "[Ingreso Informal]".
+  const extra = String(body.observaciones || "").trim();
+  const observacionesCobro = `[Ingreso Informal] ${concepto}${
+    extra ? ` - ${extra}` : ""
+  }`.slice(0, 255);
 
-  const total = Number(monto_total ?? monto_a_cobrar) || 0;
-  const entrega = Math.min(total, Math.max(0, Number(entrega_inicial) || 0));
-  const metodoId = resolverMetodoPagoId(metodo_pago_id, metodo_pago);
-  const estadoInicial = calcularEstadoSolicitud(total, entrega);
+  // Fecha elegida en el formulario (YYYY-MM-DD); si no viene, ahora.
+  let fechaCobro = new Date();
+  const partes = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(body.fecha_cobro || ""));
+  if (partes) {
+    const elegida = new Date(+partes[1], +partes[2] - 1, +partes[3], 12, 0, 0);
+    const hoy = new Date();
+    if (elegida.toDateString() !== hoy.toDateString()) fechaCobro = elegida;
+  }
 
   const resultado = await sequelize.transaction(async (t) => {
     const solicitud = await solicitudRepo.crear(
       {
-        turno_id,
+        turno_id: null,
         paciente_id,
-        monto_total: total,
-        estado: estadoInicial,
-        observaciones: observaciones || null,
+        monto_total: monto,
+        estado: ESTADOS_SOLICITUD.SALDADO,
+        observaciones: observacionesCobro,
       },
       t,
     );
 
-    let cobroInicial = null;
-    if (entrega > 0) {
-      cobroInicial = await cobroRepo.crear(
-        {
-          solicitud_cobro_id: solicitud.id,
-          monto: entrega,
-          metodo_pago_id: metodoId,
-          fecha_cobro: new Date(),
-          observaciones:
-            observaciones ||
-            (estadoInicial === ESTADOS_SOLICITUD.SALDADO
-              ? "Pago total"
-              : "Entrega inicial"),
-        },
-        t,
-      );
-    }
+    const cobro = await cobroRepo.crear(
+      {
+        solicitud_cobro_id: solicitud.id,
+        monto,
+        metodo_pago_id: metodoId,
+        fecha_cobro: fechaCobro,
+        observaciones: observacionesCobro,
+      },
+      t,
+    );
 
-    return { solicitud, cobroInicial };
+    return { solicitud, cobro };
   });
 
-  return formatearSolicitudConSaldos(resultado.solicitud);
+  return {
+    ...formatearSolicitudConSaldos(resultado.solicitud),
+    cobro: formatearCobroConDetalles(resultado.cobro),
+  };
 };
 
 /**
