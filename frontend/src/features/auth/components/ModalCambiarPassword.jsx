@@ -174,14 +174,14 @@ export function ModalCambiarPassword({ isOpen, onClose }) {
           type="button"
           onClick={handleClose}
           disabled={enviando}
-          className="px-4 py-2 rounded-xl text-xs font-semibold text-slate-600 hover:bg-slate-100 transition-colors cursor-pointer"
+          className="px-4 py-2.5 rounded-xl text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200/80 dark:hover:bg-slate-700 font-bold text-xs transition-colors cursor-pointer"
         >
           Cancelar
         </button>
         <button
           type="submit"
           disabled={enviando}
-          className="px-4 py-2 rounded-xl text-xs font-semibold text-white bg-[#2eb086] hover:bg-[#259670] shadow-sm shadow-[#2eb086]/25 flex items-center gap-1.5 transition-all disabled:opacity-60 cursor-pointer"
+          className="px-4 py-2 rounded-xl text-xs font-semibold text-white bg-[#0d8266] hover:bg-[#09664f] shadow-sm shadow-teal-900/20 flex items-center gap-1.5 transition-all disabled:opacity-60 cursor-pointer"
         >
           {enviando ? (
             <>

@@ -49,7 +49,7 @@ export function ReloadPrompt() {
         <button
           type="button"
           onClick={() => updateServiceWorker(true)}
-          className="px-3 py-1.5 rounded-xl bg-[#2eb086] hover:bg-[#259370] text-white text-xs font-bold transition-colors cursor-pointer"
+          className="px-3 py-1.5 rounded-xl bg-[#0d8266] hover:bg-[#09664f] text-white text-xs font-bold transition-colors cursor-pointer"
         >
           Actualizar
         </button>

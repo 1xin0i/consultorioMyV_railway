@@ -131,7 +131,7 @@ export function Login() {
           <button
             type="submit"
             disabled={enviando}
-            className="w-full mt-2 py-2.5 px-4 rounded-xl bg-[#2eb086] hover:bg-[#259670] active:scale-[0.99] text-white font-semibold text-sm shadow-md shadow-[#2eb086]/25 flex items-center justify-center gap-2 transition-all disabled:opacity-60 cursor-pointer"
+            className="w-full mt-2 py-2.5 px-4 rounded-xl bg-[#0d8266] hover:bg-[#09664f] active:scale-[0.99] text-white font-semibold text-sm shadow-md shadow-teal-900/20 flex items-center justify-center gap-2 transition-all disabled:opacity-60 cursor-pointer"
           >
             {enviando ? (
               <>

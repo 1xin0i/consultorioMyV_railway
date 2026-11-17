@@ -210,7 +210,7 @@ export const VistaTurno = memo(function VistaTurno({
               <button
                 type="button"
                 onClick={() => abrirParaAtender?.(turno)}
-                className="w-full sm:w-auto px-5 py-2.5 text-xs sm:text-sm font-bold text-white bg-[#0d8266] hover:bg-[#0b6f57] rounded-xl shadow-xs active:scale-95 transition-all cursor-pointer flex items-center justify-center gap-2 whitespace-nowrap"
+                className="w-full sm:w-auto px-5 py-2.5 text-xs sm:text-sm font-bold text-white bg-[#0d8266] hover:bg-[#09664f] rounded-xl shadow-xs active:scale-95 transition-all cursor-pointer flex items-center justify-center gap-2 whitespace-nowrap"
               >
                 <CheckCircle2 size={16} />
                 <span>Atender</span>
@@ -221,7 +221,7 @@ export const VistaTurno = memo(function VistaTurno({
               <button
                 type="button"
                 onClick={() => abrirParaCobrar?.(turno)}
-                className="w-full sm:w-auto px-5 py-2.5 text-xs sm:text-sm font-bold text-white bg-[#0d8266] hover:bg-[#0b6f57] rounded-xl shadow-xs active:scale-95 transition-all cursor-pointer flex items-center justify-center gap-2 whitespace-nowrap"
+                className="w-full sm:w-auto px-5 py-2.5 text-xs sm:text-sm font-bold text-white bg-[#0d8266] hover:bg-[#09664f] rounded-xl shadow-xs active:scale-95 transition-all cursor-pointer flex items-center justify-center gap-2 whitespace-nowrap"
               >
                 <Banknote size={16} />
                 <span>Cobrar</span>

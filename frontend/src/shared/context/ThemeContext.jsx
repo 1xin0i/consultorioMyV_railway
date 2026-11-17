@@ -30,6 +30,11 @@ export function ThemeProvider({ children }) {
     } else {
       root.classList.remove("dark");
     }
+    // Color de las barras del sistema en el celular, igual que el menú
+    const metaTema = document.querySelector('meta[name="theme-color"]');
+    if (metaTema) {
+      metaTema.setAttribute("content", theme === "dark" ? "#0f172a" : "#3B7A94");
+    }
     try {
       localStorage.setItem("theme", theme);
     } catch {

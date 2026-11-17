@@ -172,7 +172,7 @@ export function BotonNotaTurno({ turno, nota, onEditar }) {
                     onEditar(turno);
                   }
                 }}
-                className="text-xs font-semibold bg-[#0d8266] hover:bg-[#0b6f57] text-white px-3.5 py-1.5 rounded-xl shadow-xs transition-colors cursor-pointer"
+                className="text-xs font-semibold bg-[#0d8266] hover:bg-[#09664f] text-white px-3.5 py-1.5 rounded-xl shadow-xs transition-colors cursor-pointer"
               >
                 Editar nota
               </button>

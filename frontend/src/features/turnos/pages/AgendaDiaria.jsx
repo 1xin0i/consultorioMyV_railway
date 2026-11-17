@@ -1,7 +1,7 @@
 /** @format */
 
 import { useState, useMemo } from "react";
-import { CalendarDays, X, AlertTriangle } from "lucide-react";
+import { CalendarDays, CalendarPlus, X, AlertTriangle } from "lucide-react";
 
 import PageLayout from "@/shared/components/layout/PageLayout";
 import { useCRUDModal } from "@/shared/hooks/useCRUDModal";
@@ -91,8 +91,20 @@ export function AgendaDiaria() {
 
   return (
     <PageLayout
+      icono={<CalendarDays size={24} />}
       titulo="Agenda de Turnos"
+      subtitulo="Calendario de turnos por día, semana o mes, con los días y horarios sin atención."
       badge={fechaHoyTexto}
+      onNuevo={() => abrirParaCrear()}
+      accionesHeader={
+        <button
+          onClick={() => abrirParaCrear()}
+          className="w-full sm:w-auto bg-[#0d8266] hover:bg-[#09664f] text-white px-4 py-2 rounded-xl flex items-center justify-center gap-2 transition-all shadow-sm font-bold text-xs sm:text-sm cursor-pointer active:scale-95"
+        >
+          <CalendarPlus size={18} />
+          <span>Agendar Turno</span>
+        </button>
+      }
       alerta={
         pacientesIncompletos.length > 0 ? (
           <button

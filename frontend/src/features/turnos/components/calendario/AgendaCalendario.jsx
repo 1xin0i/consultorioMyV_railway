@@ -12,6 +12,15 @@ import { GENERAR_HORAS, esSlotPasado } from "../../utils/agendaStyles";
 import { useRestricciones } from "../../hooks/useRestricciones";
 import { useCalendarioSeleccion } from "../../hooks/useCalendarioSeleccion";
 
+const capitalizar = (texto) =>
+  texto ? texto.charAt(0).toUpperCase() + texto.slice(1) : texto;
+
+const esTurnoCancelado = (t) => {
+  const estado = (t.EstadoTurno?.estado || "").toLowerCase();
+  if (estado) return estado.includes("cancelado");
+  return Number(t.id_estado) === 3;
+};
+
 export function AgendaCalendario({
   turnos = [],
   onSelectSlot,
@@ -20,6 +29,30 @@ export function AgendaCalendario({
 }) {
   const [vista, setVista] = useState("dia");
   const [fechaActual, setFechaActual] = useState(() => new Date());
+
+  // Los cancelados no ocupan la franja: se ocultan salvo que se pida verlos
+  const [mostrarCancelados, setMostrarCancelados] = useState(() => {
+    try {
+      return localStorage.getItem("agenda_mostrar_cancelados") === "1";
+    } catch {
+      return false;
+    }
+  });
+
+  const cambiarMostrarCancelados = useCallback((valor) => {
+    setMostrarCancelados(valor);
+    try {
+      localStorage.setItem("agenda_mostrar_cancelados", valor ? "1" : "0");
+    } catch {
+      // sin almacenamiento: la preferencia dura mientras la página esté abierta
+    }
+  }, []);
+
+  const turnosVisibles = useMemo(
+    () =>
+      mostrarCancelados ? turnos : turnos.filter((t) => !esTurnoCancelado(t)),
+    [turnos, mostrarCancelados],
+  );
 
   const [modalRestriccionAbierto, setModalRestriccionAbierto] = useState(false);
   const [rangoParaBloquear, setRangoParaBloquear] = useState(null);
@@ -135,6 +168,19 @@ export function AgendaCalendario({
     });
   }, [fechaActual, vista]);
 
+  const tituloLargo = useMemo(() => capitalizar(tituloPeriodo), [tituloPeriodo]);
+
+  const tituloCorto = useMemo(() => {
+    if (vista !== "dia") return tituloLargo;
+    return capitalizar(
+      fechaActual.toLocaleDateString("es-AR", {
+        weekday: "short",
+        day: "numeric",
+        month: "short",
+      }),
+    );
+  }, [vista, fechaActual, tituloLargo]);
+
   const diasSemana = useMemo(() => {
     const diaSemana = fechaActual.getDay();
     const diffLunes = diaSemana === 0 ? -6 : 1 - diaSemana;
@@ -153,7 +199,10 @@ export function AgendaCalendario({
       <AgendaHeader
         vista={vista}
         setVista={setVista}
-        tituloPeriodo={tituloPeriodo}
+        tituloPeriodo={tituloLargo}
+        tituloCorto={tituloCorto}
+        mostrarCancelados={mostrarCancelados}
+        setMostrarCancelados={cambiarMostrarCancelados}
         irAnterior={irAnterior}
         irHoy={irHoy}
         irSiguiente={irSiguiente}
@@ -171,7 +220,7 @@ export function AgendaCalendario({
         {vista === "dia" && (
           <VistaDia
             fechaActual={fechaActual}
-            turnos={turnos}
+            turnos={turnosVisibles}
             esSlotPasado={esSlotPasado}
             estaSeleccionado={estaSeleccionado}
             iniciarSeleccion={iniciarSeleccion}
@@ -197,7 +246,7 @@ export function AgendaCalendario({
         {vista === "semana" && (
           <VistaSemana
             diasSemana={diasSemana}
-            turnos={turnos}
+            turnos={turnosVisibles}
             setFechaActual={setFechaActual}
             setVista={setVista}
             esSlotPasado={esSlotPasado}

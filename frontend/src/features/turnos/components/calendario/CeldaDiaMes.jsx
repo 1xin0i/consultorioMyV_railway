@@ -61,7 +61,7 @@ export function CeldaDiaMes({
       }}
       className={`rounded-2xl p-2 sm:p-2.5 flex flex-col justify-between min-h-[90px] sm:min-h-[110px] transition-all cursor-pointer relative overflow-hidden select-none ${
         seleccionado
-          ? "border-2 !border-black dark:!border-white ring-2 ring-black dark:ring-white z-20 shadow-md bg-slate-50 dark:bg-slate-800"
+          ? "border-2 !border-[#0d8266] dark:!border-emerald-400 ring-2 ring-[#0d8266]/30 z-20 shadow-md bg-emerald-50 dark:bg-emerald-950/40"
           : diaBloqueado
             ? "bg-slate-50/80 dark:bg-slate-900/60 border border-slate-200/80 dark:border-slate-800 text-slate-500 dark:text-slate-400"
             : esHoy
@@ -97,7 +97,7 @@ export function CeldaDiaMes({
           {diaBloqueado && (
             <span className="text-[10px] text-slate-600 dark:text-slate-300 font-semibold flex items-center gap-1 bg-slate-100 dark:bg-slate-800 border border-slate-200/80 dark:border-slate-700/80 px-1.5 py-0.5 rounded-md">
               <Lock size={10} className="shrink-0 text-slate-500" />
-              <span className="truncate max-w-[85px] sm:max-w-[120px]">
+              <span className="hidden sm:inline truncate max-w-[120px]">
                 {restriccion?.motivo ||
                   (!diaLaboral ? "Día no laboral" : "Sin atención")}
               </span>
@@ -125,7 +125,7 @@ export function CeldaDiaMes({
       {!diaBloqueado && (
         <div className="flex flex-col items-end gap-1 w-full mt-2">
           <span
-            className={`text-[10px] font-bold px-2 py-0.5 rounded-md border flex items-center gap-1 truncate ${
+            className={`hidden sm:flex text-[10px] font-bold px-2 py-0.5 rounded-md border items-center gap-1 truncate ${
               modulosOcupados === 0
                 ? "text-gray-400 bg-gray-50/70 border-gray-200/80 dark:bg-slate-800/40 dark:border-slate-700 dark:text-slate-400"
                 : estilosOcupacion?.badgeColor ||
@@ -150,7 +150,7 @@ export function CeldaDiaMes({
           </span>
 
           {porcentaje > 0 && (
-            <div className="w-full h-1 bg-gray-100 dark:bg-slate-800 rounded-full overflow-hidden">
+            <div className="w-full h-1.5 sm:h-1 bg-gray-100 dark:bg-slate-800 rounded-full overflow-hidden">
               <div
                 style={{ width: `${porcentaje}%` }}
                 className={`h-full rounded-full transition-all ${

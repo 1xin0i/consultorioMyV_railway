@@ -160,7 +160,7 @@ export function GestionHorarios() {
             type="button"
             disabled={guardando}
             onClick={handleGuardar}
-            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-[#2eb086] hover:bg-[#259370] text-white font-bold text-xs sm:text-sm transition-all shadow-sm cursor-pointer active:scale-95 disabled:opacity-60"
+            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-[#0d8266] hover:bg-[#09664f] text-white font-bold text-xs sm:text-sm transition-all shadow-sm cursor-pointer active:scale-95 disabled:opacity-60"
           >
             <Save size={16} />
             <span>{guardando ? "Guardando..." : "Guardar Cambios"}</span>

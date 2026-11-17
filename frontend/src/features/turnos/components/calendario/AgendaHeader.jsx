@@ -10,6 +10,8 @@ import {
   Plus,
   CalendarPlus,
   Lock,
+  Eye,
+  EyeOff,
 } from "lucide-react";
 
 export function AgendaHeader({
@@ -20,6 +22,9 @@ export function AgendaHeader({
   irHoy,
   irSiguiente,
   resetSeleccion,
+  tituloCorto,
+  mostrarCancelados = false,
+  setMostrarCancelados,
 }) {
   return (
     <div className="p-2.5 sm:p-4 border-b border-gray-200 dark:border-slate-800 bg-gray-50/60 dark:bg-slate-900 flex flex-col gap-2 sm:gap-3">
@@ -51,13 +56,14 @@ export function AgendaHeader({
             </button>
           </div>
 
-          <div className="flex items-center gap-1.5 text-gray-800 dark:text-slate-100 font-bold text-xs sm:text-base capitalize">
+          <div className="flex items-center gap-1.5 text-gray-800 dark:text-slate-100 font-bold text-xs sm:text-base">
             <CalendarIcon
               size={16}
               className="text-[#2eb086] hidden sm:inline shrink-0"
             />
             <span className="truncate max-w-[170px] xs:max-w-[230px] sm:max-w-none">
-              {tituloPeriodo}
+              <span className="sm:hidden">{tituloCorto || tituloPeriodo}</span>
+              <span className="hidden sm:inline">{tituloPeriodo}</span>
             </span>
           </div>
         </div>
@@ -78,7 +84,7 @@ export function AgendaHeader({
                 }}
                 className={`flex-1 sm:flex-initial px-2.5 sm:px-3 py-1.5 rounded-lg text-xs transition-all cursor-pointer ${
                   vista === item.id
-                    ? "bg-white text-black border-2 border-black font-bold shadow-xs"
+                    ? "bg-white text-slate-900 dark:bg-white dark:text-slate-900 font-bold shadow-xs"
                     : "text-gray-600 font-semibold dark:text-slate-300 hover:bg-gray-100 dark:hover:bg-slate-700"
                 }`}
               >
@@ -86,6 +92,27 @@ export function AgendaHeader({
               </button>
             ))}
           </div>
+
+          {setMostrarCancelados && vista !== "mes" && (
+            <button
+              type="button"
+              onClick={() => setMostrarCancelados(!mostrarCancelados)}
+              aria-pressed={mostrarCancelados}
+              title={
+                mostrarCancelados
+                  ? "Ocultar turnos cancelados"
+                  : "Mostrar turnos cancelados"
+              }
+              className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl border text-xs font-bold transition-all cursor-pointer shrink-0 ${
+                mostrarCancelados
+                  ? "bg-[#fff1f2] text-rose-900 border-rose-300/80 dark:bg-rose-950/80 dark:text-rose-200 dark:border-rose-700"
+                  : "bg-white text-slate-600 border-gray-200 hover:bg-gray-50 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700 dark:hover:bg-slate-700"
+              }`}
+            >
+              {mostrarCancelados ? <Eye size={14} /> : <EyeOff size={14} />}
+              <span className="hidden sm:inline">Cancelados</span>
+            </button>
+          )}
         </div>
       </div>
     </div>
