@@ -213,7 +213,7 @@ export function AgendaCalendario({
       <div
         ref={swipeContainerRef}
         className={`flex-1 min-h-0 relative bg-white dark:bg-slate-900 touch-pan-y flex flex-col will-change-transform ${
-          vista === "dia" ? "overflow-y-auto" : "overflow-hidden"
+          vista === "semana" ? "overflow-hidden" : "overflow-y-auto"
         }`}
         {...swipeHandlers}
       >

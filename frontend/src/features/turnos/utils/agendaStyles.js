@@ -94,6 +94,7 @@ export const OBTENER_ESTILOS_OCUPACION_MES = (
     return {
       dotColor: "bg-emerald-500",
       barColor: "bg-emerald-500",
+      borderColor: "border-emerald-400 dark:border-emerald-600",
       badgeColor: "text-emerald-800 dark:text-emerald-300 bg-emerald-50/70 dark:bg-emerald-950/60 border-emerald-200/80 dark:border-emerald-800/60",
       etiqueta: `${porcentaje}%`,
     };
@@ -102,6 +103,7 @@ export const OBTENER_ESTILOS_OCUPACION_MES = (
     return {
       dotColor: "bg-amber-500",
       barColor: "bg-amber-500",
+      borderColor: "border-amber-400 dark:border-amber-600",
       badgeColor: "text-amber-800 dark:text-amber-300 bg-amber-50/80 dark:bg-amber-950/60 border-amber-200 dark:border-amber-800/60",
       etiqueta: `${porcentaje}%`,
     };
@@ -109,6 +111,7 @@ export const OBTENER_ESTILOS_OCUPACION_MES = (
   return {
     dotColor: "bg-rose-500",
     barColor: "bg-rose-500",
+    borderColor: "border-rose-400 dark:border-rose-600",
     badgeColor: "text-rose-800 dark:text-rose-300 bg-rose-50/80 dark:bg-rose-950/60 border-rose-200 dark:border-rose-800/60",
     etiqueta: `${porcentaje}%`,
   };

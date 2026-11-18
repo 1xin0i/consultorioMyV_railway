@@ -38,7 +38,10 @@ const ItemTurnoSemana = memo(function ItemTurnoSemana({
       title={`${paciente} (${horaInicio} - ${horaFin} hs) - ${estado}`}
       className={`absolute pointer-events-auto p-0.5 sm:p-1 md:p-1.5 text-[9px] sm:text-[10px] md:text-[11px] rounded sm:rounded-md shadow-2xs border truncate font-bold flex flex-col justify-between cursor-pointer hover:shadow-md transition-shadow z-10 overflow-hidden leading-tight ${estilos.bg} ${estilos.border} ${estilos.text}`}
     >
-      <div className="flex items-center gap-0.5 sm:gap-1 min-w-0">
+      <span
+        className={`sm:hidden absolute inset-y-0 left-0 w-1 ${estilos.indicator}`}
+      />
+      <div className="hidden sm:flex items-center gap-0.5 sm:gap-1 min-w-0">
         <span
           className={`w-1 h-1 sm:w-1.5 sm:h-1.5 rounded-full shrink-0 ${estilos.indicator}`}
         />
@@ -46,7 +49,7 @@ const ItemTurnoSemana = memo(function ItemTurnoSemana({
       </div>
 
       {duracionMinutos >= 45 && (
-        <div className="flex items-center gap-0.5 text-[8px] sm:text-[9px] md:text-[10px] opacity-80 font-normal truncate mt-0.5">
+        <div className="hidden sm:flex items-center gap-0.5 text-[8px] sm:text-[9px] md:text-[10px] opacity-80 font-normal truncate mt-0.5">
           <Clock size={9} className="shrink-0 hidden sm:inline" />
           <span className="truncate">
             {horaInicio} - {horaFin}

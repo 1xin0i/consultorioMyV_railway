@@ -34,6 +34,8 @@ export function CeldaDiaMes({
 
   const diaBloqueado = bloqueado || !diaLaboral;
   const modulosLibres = Math.max(0, capacidadDia - modulosOcupados);
+  const bordeOcupacion =
+    modulosOcupados > 0 ? estilosOcupacion?.borderColor : null;
 
   const fechaIsoAttr = `${fecha.getFullYear()}-${String(
     fecha.getMonth() + 1,
@@ -66,13 +68,15 @@ export function CeldaDiaMes({
             ? "bg-slate-50/80 dark:bg-slate-900/60 border border-slate-200/80 dark:border-slate-800 text-slate-500 dark:text-slate-400"
             : esHoy
               ? "bg-emerald-50/20 dark:bg-emerald-950/20 border-2 border-[#2eb086] ring-2 ring-[#2eb086]/20 z-10"
-              : esDiaPasado
-                ? "bg-white/80 dark:bg-slate-900/60 border border-gray-200/80 dark:border-slate-800 opacity-80 hover:bg-gray-50/80 dark:hover:bg-slate-800/60"
-                : "bg-white dark:bg-slate-900 border border-gray-200/90 dark:border-slate-800 hover:border-gray-300 dark:hover:border-slate-700 hover:shadow-xs"
+              : bordeOcupacion
+                ? `bg-white dark:bg-slate-900 border-2 ${bordeOcupacion} hover:shadow-xs ${esDiaPasado ? "opacity-80" : ""}`
+                : esDiaPasado
+                  ? "bg-white/80 dark:bg-slate-900/60 border border-gray-200/80 dark:border-slate-800 opacity-80 hover:bg-gray-50/80 dark:hover:bg-slate-800/60"
+                  : "bg-white dark:bg-slate-900 border border-gray-200/90 dark:border-slate-800 hover:border-gray-300 dark:hover:border-slate-700 hover:shadow-xs"
       }`}
     >
       {/* Cabecera de la celda: Número a la izquierda y Motivo/Bloqueo a la derecha */}
-      <div className="flex items-center justify-between gap-1">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center sm:justify-between gap-1">
         {esHoy ? (
           <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-[#2eb086] text-white font-extrabold text-xs shadow-xs">
             {fecha.getDate()}
@@ -95,7 +99,7 @@ export function CeldaDiaMes({
 
         <div className="flex items-center gap-1">
           {diaBloqueado && (
-            <span className="text-[10px] text-slate-600 dark:text-slate-300 font-semibold flex items-center gap-1 bg-slate-100 dark:bg-slate-800 border border-slate-200/80 dark:border-slate-700/80 px-1.5 py-0.5 rounded-md">
+            <span className="text-[10px] text-slate-600 dark:text-slate-300 font-semibold flex items-center gap-1 sm:bg-slate-100 sm:dark:bg-slate-800 sm:border sm:border-slate-200/80 sm:dark:border-slate-700/80 sm:px-1.5 sm:py-0.5 rounded-md">
               <Lock size={10} className="shrink-0 text-slate-500" />
               <span className="hidden sm:inline truncate max-w-[120px]">
                 {restriccion?.motivo ||
@@ -113,7 +117,7 @@ export function CeldaDiaMes({
                 onEliminarRestriccion(restriccion.id);
               }}
               title="Habilitar atención"
-              className="p-0.5 rounded text-rose-500 hover:text-rose-700 hover:bg-rose-50 dark:hover:bg-rose-950/50 transition-colors cursor-pointer"
+              className="hidden sm:inline-flex p-0.5 rounded text-rose-500 hover:text-rose-700 hover:bg-rose-50 dark:hover:bg-rose-950/50 transition-colors cursor-pointer"
             >
               <Unlock size={11} />
             </button>

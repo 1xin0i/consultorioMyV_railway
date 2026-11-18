@@ -16,7 +16,8 @@ import {
 
 /* ───────────── Consultas ───────────── */
 
-export const obtenerAgenda = () => turnoRepo.findAgenda();
+export const obtenerAgenda = async () =>
+  (await turnoRepo.findAgenda()).map(formatearTurnoConCobro);
 
 export const listarPaginado = async (query) => {
   const { page, limit, offset, search, sortField, sortOrder } = parsePagination(

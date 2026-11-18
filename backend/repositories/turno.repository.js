@@ -175,7 +175,12 @@ export const camposOrdenables = () => [
 export const findAgenda = () =>
   Turno.findAll({
     where: { activo: true },
-    include: [incluirPaciente(), incluirEstado(), incluirPracticas()],
+    include: [
+      incluirPaciente(),
+      incluirEstado(),
+      incluirPracticas(),
+      incluirSolicitudResumen(),
+    ],
   });
 
 export const findPaginado = ({ where, limit, offset, order }) =>

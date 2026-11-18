@@ -36,7 +36,7 @@ export function AgendaDiaria() {
     practicasLista,
     recargar,
     recargarCatalogos,
-  } = useTurnoSearchAgenda("/turnos");
+  } = useTurnoSearchAgenda("/turnos/agenda");
 
   const {
     modalCrearEditar,
@@ -110,14 +110,21 @@ export function AgendaDiaria() {
           <button
             type="button"
             onClick={() => setModalFichasIncompletas(true)}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold bg-[#fffdf0] dark:bg-amber-950/60 text-amber-800 dark:text-amber-300 border border-amber-300 dark:border-amber-700/80 hover:bg-amber-100/90 dark:hover:bg-amber-900/60 transition-all shadow-2xs cursor-pointer active:scale-95"
-            title="Pacientes con datos incompletos"
+            className="inline-flex items-center gap-1.5 p-2 sm:px-3 sm:py-1.5 rounded-xl text-xs font-bold bg-[#fffdf0] dark:bg-amber-950/60 text-amber-800 dark:text-amber-300 border border-amber-300 dark:border-amber-700/80 hover:bg-amber-100/90 dark:hover:bg-amber-900/60 transition-all shadow-2xs cursor-pointer active:scale-95"
+            title={`${pacientesIncompletos.length} pacientes con datos incompletos`}
+            aria-label={`${pacientesIncompletos.length} pacientes con datos incompletos`}
           >
             <AlertTriangle
-              size={13}
-              className="text-amber-600 dark:text-amber-400 shrink-0"
+              size={24}
+              className="sm:hidden text-amber-600 dark:text-amber-400 shrink-0"
             />
-            <span>{pacientesIncompletos.length} incompletos</span>
+            <AlertTriangle
+              size={13}
+              className="hidden sm:block text-amber-600 dark:text-amber-400 shrink-0"
+            />
+            <span className="hidden sm:inline">
+              {pacientesIncompletos.length} incompletos
+            </span>
           </button>
         ) : null
       }
