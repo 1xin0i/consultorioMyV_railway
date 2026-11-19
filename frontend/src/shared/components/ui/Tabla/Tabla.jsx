@@ -104,7 +104,7 @@ export function Tabla({
               })}
             </tr>
           </thead>
-          <tbody className="divide-y divide-teal-100/60 dark:divide-slate-800 text-xs sm:text-sm bg-white dark:bg-slate-900">
+          <tbody className="divide-y divide-teal-100/60 dark:divide-slate-800 text-xs sm:text-sm bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-200">
             {cargando ? (
               Array.from({ length: 5 }).map((_, rowIdx) => (
                 <tr key={rowIdx}>

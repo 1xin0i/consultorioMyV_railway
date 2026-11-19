@@ -220,147 +220,49 @@ export function GestionPacientes() {
         {/* Card exclusivo de la tabla */}
         <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-gray-200/90 dark:border-slate-800 overflow-hidden flex flex-col">
           <Tabla
-          columnas={COLUMNAS_TABLA}
-          datos={pacientes}
-          cargando={cargando}
-          ordenarPor={propsPaginacion.ordenarPor}
-          direccion={propsPaginacion.direccion}
-          manejarOrden={propsPaginacion.manejarOrden}
-          mensajeVacio="No se encontraron pacientes registrados."
-          renderTarjeta={(paciente) => {
-            const obrasSociales = obtenerObrasSocialesPaciente(paciente);
-            const listaOS =
-              obrasSociales.map((os) => os.nombre).join(", ") ||
-              "Particular";
-            return (
-              <TarjetaRegistro
-                key={paciente.id_paciente}
-                inactivo={paciente.activo === false}
-                onClick={() => abrirParaVer(paciente)}
-                titulo={`${paciente.nombre} ${paciente.apellido}`}
-                subtitulo={`DNI: ${paciente.dni || "S/D"} · Tel: ${paciente.telefono || "-"}`}
-                badge={
-                  paciente.activo !== false ? (
-                    <span className="inline-flex items-center gap-1 bg-emerald-50 text-emerald-800 border border-emerald-200 px-2 py-0.5 rounded-full text-[10px] font-bold">
-                      <CheckCircle2 size={11} /> Activo
-                    </span>
-                  ) : (
-                    <span className="inline-flex items-center gap-1 bg-rose-50 text-rose-700 border border-rose-200 px-2 py-0.5 rounded-full text-[10px] font-bold">
-                      <XCircle size={11} /> Inactivo
-                    </span>
-                  )
-                }
-                campos={[
-                  {
-                    etiqueta: "Edad",
-                    valor: paciente.fecha_nacimiento
-                      ? `${calcularEdad(paciente.fecha_nacimiento)} años`
-                      : "-",
-                  },
-                  {
-                    etiqueta: "Obra Social",
-                    valor: listaOS,
-                  },
-                ]}
-                acciones={
-                  <BotonAccionesPaciente
-                    paciente={paciente}
-                    abrirParaVer={abrirParaVer}
-                    abrirParaEditar={abrirParaEditar}
-                    abrirParaEliminar={abrirParaEliminar}
-                    abrirParaEliminarPermanente={(p) =>
-                      setPacienteAEliminarPermanente(p)
-                    }
-                    formatearPacienteParaEditar={formatearPacienteParaEditar}
-                  />
-                }
-              />
-            );
-          }}
-          renderFila={(paciente) => {
-            const avatarColor = obtenerColorAvatar(
-              `${paciente.nombre} ${paciente.apellido}`,
-            );
-            const iniciales = obtenerIniciales(
-              paciente.nombre,
-              paciente.apellido,
-            );
-            return (
-              <tr
-                key={paciente.id_paciente}
-                onClick={() => abrirParaVer(paciente)}
-                className={`hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer ${
-                  paciente.activo === false ? "bg-slate-50/60 opacity-75" : ""
-                }`}
-              >
-                <td className="pl-7 sm:pl-8 pr-4 py-3.5 font-bold text-slate-900">
-                  <div className="flex items-center gap-2.5">
-                    <span
-                      className={`w-8 h-8 rounded-full border text-xs font-bold flex items-center justify-center shrink-0 ${avatarColor.bg} ${avatarColor.text} ${avatarColor.border}`}
-                    >
-                      {iniciales}
-                    </span>
-                    <div className="flex flex-col">
-                      <div className="flex items-center gap-2">
-                        <span>
-                          {paciente.nombre} {paciente.apellido}
-                        </span>
-                        {paciente.activo === false && (
-                          <span className="text-[10px] bg-rose-50 text-rose-700 border border-rose-200 px-1.5 py-0.5 rounded-md font-bold">
-                            Inactivo
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                </td>
-
-                <td className="px-5 py-3.5 text-slate-600 font-medium">
-                  {paciente.dni || "-"}
-                </td>
-
-                <td className="px-5 py-3.5 text-slate-700 font-semibold">
-                  {paciente.telefono || "-"}
-                </td>
-
-                <td className="px-5 py-3.5 text-slate-600 font-medium">
-                  {paciente.fecha_nacimiento
-                    ? `${calcularEdad(paciente.fecha_nacimiento)} años`
-                    : "-"}
-                </td>
-
-                <td className="px-5 py-3.5 text-slate-600 max-w-[180px] truncate">
-                  {paciente.domicilio || "-"}
-                </td>
-
-                <td className="px-5 py-3.5 text-slate-600">
-                  {(() => {
-                    const obrasSociales = obtenerObrasSocialesPaciente(paciente);
-                    return obrasSociales.length > 0 ? (
-                      <div className="flex flex-wrap gap-1">
-                        {obrasSociales.map((os, idx) => (
-                          <span
-                            key={os.id_obra_social || idx}
-                            className="bg-teal-50 text-teal-900 text-xs font-bold px-2.5 py-0.5 rounded-full border border-teal-200/80"
-                            title={`Afiliado N°: ${os.nro_afiliado || "S/N"}`}
-                          >
-                            {os.nombre}
-                          </span>
-                        ))}
-                      </div>
-                    ) : (
-                      <span className="text-slate-400 text-xs italic">
-                        Particular
+            columnas={COLUMNAS_TABLA}
+            datos={pacientes}
+            cargando={cargando}
+            ordenarPor={propsPaginacion.ordenarPor}
+            direccion={propsPaginacion.direccion}
+            manejarOrden={propsPaginacion.manejarOrden}
+            mensajeVacio="No se encontraron pacientes registrados."
+            renderTarjeta={(paciente) => {
+              const obrasSociales = obtenerObrasSocialesPaciente(paciente);
+              const listaOS =
+                obrasSociales.map((os) => os.nombre).join(", ") ||
+                "Particular";
+              return (
+                <TarjetaRegistro
+                  key={paciente.id_paciente}
+                  inactivo={paciente.activo === false}
+                  onClick={() => abrirParaVer(paciente)}
+                  titulo={`${paciente.nombre} ${paciente.apellido}`}
+                  subtitulo={`DNI: ${paciente.dni || "S/D"} · Tel: ${paciente.telefono || "-"}`}
+                  badge={
+                    paciente.activo !== false ? (
+                      <span className="inline-flex items-center gap-1 bg-emerald-50 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 px-2 py-0.5 rounded-full text-[10px] font-bold">
+                        <CheckCircle2 size={11} /> Activo
                       </span>
-                    );
-                  })()}
-                </td>
-
-                <td
-                  className="pl-4 pr-7 sm:pr-8 py-3.5 text-center"
-                  onClick={(e) => e.stopPropagation()}
-                >
-                  <div className="flex justify-center">
+                    ) : (
+                      <span className="inline-flex items-center gap-1 bg-rose-50 dark:bg-rose-950/60 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-800 px-2 py-0.5 rounded-full text-[10px] font-bold">
+                        <XCircle size={11} /> Inactivo
+                      </span>
+                    )
+                  }
+                  campos={[
+                    {
+                      etiqueta: "Edad",
+                      valor: paciente.fecha_nacimiento
+                        ? `${calcularEdad(paciente.fecha_nacimiento)} años`
+                        : "-",
+                    },
+                    {
+                      etiqueta: "Obra Social",
+                      valor: listaOS,
+                    },
+                  ]}
+                  acciones={
                     <BotonAccionesPaciente
                       paciente={paciente}
                       abrirParaVer={abrirParaVer}
@@ -371,14 +273,114 @@ export function GestionPacientes() {
                       }
                       formatearPacienteParaEditar={formatearPacienteParaEditar}
                     />
-                  </div>
-                </td>
-              </tr>
-            );
-          }}
-        />
+                  }
+                />
+              );
+            }}
+            renderFila={(paciente) => {
+              const avatarColor = obtenerColorAvatar(
+                `${paciente.nombre} ${paciente.apellido}`,
+              );
+              const iniciales = obtenerIniciales(
+                paciente.nombre,
+                paciente.apellido,
+              );
+              return (
+                <tr
+                  key={paciente.id_paciente}
+                  onClick={() => abrirParaVer(paciente)}
+                  className={`hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer ${
+                    paciente.activo === false
+                      ? "bg-slate-50/60 dark:bg-slate-800/40 opacity-75"
+                      : ""
+                  }`}
+                >
+                  <td className="pl-7 sm:pl-8 pr-4 py-3.5 font-bold text-slate-900 dark:text-slate-100">
+                    <div className="flex items-center gap-2.5">
+                      <span
+                        className={`w-8 h-8 rounded-full border text-xs font-bold flex items-center justify-center shrink-0 ${avatarColor.bg} ${avatarColor.text} ${avatarColor.border}`}
+                      >
+                        {iniciales}
+                      </span>
+                      <div className="flex flex-col">
+                        <div className="flex items-center gap-2">
+                          <span>
+                            {paciente.nombre} {paciente.apellido}
+                          </span>
+                          {paciente.activo === false && (
+                            <span className="text-[10px] bg-rose-50 dark:bg-rose-950/60 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-800 px-1.5 py-0.5 rounded-md font-bold">
+                              Inactivo
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  </td>
 
-        <TablaPaginacion {...propsPaginacion} />
+                  <td className="px-5 py-3.5 text-slate-600 dark:text-slate-300 font-medium">
+                    {paciente.dni || "-"}
+                  </td>
+
+                  <td className="px-5 py-3.5 text-slate-700 dark:text-slate-200 font-semibold">
+                    {paciente.telefono || "-"}
+                  </td>
+
+                  <td className="px-5 py-3.5 text-slate-600 dark:text-slate-300 font-medium">
+                    {paciente.fecha_nacimiento
+                      ? `${calcularEdad(paciente.fecha_nacimiento)} años`
+                      : "-"}
+                  </td>
+
+                  <td className="px-5 py-3.5 text-slate-600 dark:text-slate-300 max-w-[180px] truncate">
+                    {paciente.domicilio || "-"}
+                  </td>
+
+                  <td className="px-5 py-3.5 text-slate-600 dark:text-slate-300">
+                    {(() => {
+                      const obrasSociales = obtenerObrasSocialesPaciente(paciente);
+                      return obrasSociales.length > 0 ? (
+                        <div className="flex flex-wrap gap-1">
+                          {obrasSociales.map((os, idx) => (
+                            <span
+                              key={os.id_obra_social || idx}
+                              className="bg-teal-50 dark:bg-teal-950/60 text-teal-900 dark:text-emerald-300 text-xs font-bold px-2.5 py-0.5 rounded-full border border-teal-200/80 dark:border-teal-800"
+                              title={`Afiliado N°: ${os.nro_afiliado || "S/N"}`}
+                            >
+                              {os.nombre}
+                            </span>
+                          ))}
+                        </div>
+                      ) : (
+                        <span className="text-slate-400 dark:text-slate-500 text-xs italic">
+                          Particular
+                        </span>
+                      );
+                    })()}
+                  </td>
+
+                  <td
+                    className="pl-4 pr-7 sm:pr-8 py-3.5 text-center"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <div className="flex justify-center">
+                      <BotonAccionesPaciente
+                        paciente={paciente}
+                        abrirParaVer={abrirParaVer}
+                        abrirParaEditar={abrirParaEditar}
+                        abrirParaEliminar={abrirParaEliminar}
+                        abrirParaEliminarPermanente={(p) =>
+                          setPacienteAEliminarPermanente(p)
+                        }
+                        formatearPacienteParaEditar={formatearPacienteParaEditar}
+                      />
+                    </div>
+                  </td>
+                </tr>
+              );
+            }}
+          />
+
+          <TablaPaginacion {...propsPaginacion} />
         </div>
       </div>
 

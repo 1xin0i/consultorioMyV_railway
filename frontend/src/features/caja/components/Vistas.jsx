@@ -45,11 +45,11 @@ export function VistaTodos({
             subtitulo={formatDate(mov.fecha)}
             badge={
               esIngreso ? (
-                <span className="inline-flex items-center gap-1 bg-emerald-50 text-emerald-700 border border-emerald-200 px-2 py-0.5 rounded-full text-[10px] font-bold">
+                <span className="inline-flex items-center gap-1 bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 px-2 py-0.5 rounded-full text-[10px] font-bold">
                   <ArrowUpRight size={11} /> Ingreso
                 </span>
               ) : (
-                <span className="inline-flex items-center gap-1 bg-rose-50 text-rose-700 border border-rose-200 px-2 py-0.5 rounded-full text-[10px] font-bold">
+                <span className="inline-flex items-center gap-1 bg-rose-50 dark:bg-rose-950/60 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-800 px-2 py-0.5 rounded-full text-[10px] font-bold">
                   <ArrowDownRight size={11} /> Egreso
                 </span>
               )
@@ -92,7 +92,7 @@ export function VistaTodos({
                     onClick={() =>
                       esIngreso ? abrirEliminarCobro(mov) : abrirEliminarGasto(mov)
                     }
-                    className="p-1.5 text-slate-600 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors cursor-pointer"
+                    className="p-1.5 text-slate-600 dark:text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 rounded-lg transition-colors cursor-pointer"
                     title="Eliminar"
                   >
                     <Trash2 size={16} />
@@ -110,18 +110,18 @@ export function VistaTodos({
             key={mov.uid}
             className="hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
           >
-            <td className="pl-7 sm:pl-8 pr-4 py-3.5 text-slate-600 font-medium whitespace-nowrap">
+            <td className="pl-7 sm:pl-8 pr-4 py-3.5 text-slate-600 dark:text-slate-300 font-medium whitespace-nowrap">
               {formatDate(mov.fecha)}
             </td>
 
             <td className="px-5 py-3.5">
               {esIngreso ? (
-                <span className="inline-flex items-center gap-1 bg-emerald-50 text-emerald-700 border border-emerald-200 px-2.5 py-0.5 rounded-full text-xs font-semibold">
+                <span className="inline-flex items-center gap-1 bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 px-2.5 py-0.5 rounded-full text-xs font-semibold">
                   <ArrowUpRight size={13} />
                   Ingreso
                 </span>
               ) : (
-                <span className="inline-flex items-center gap-1 bg-rose-50 text-rose-700 border border-rose-200 px-2.5 py-0.5 rounded-full text-xs font-semibold">
+                <span className="inline-flex items-center gap-1 bg-rose-50 dark:bg-rose-950/60 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-800 px-2.5 py-0.5 rounded-full text-xs font-semibold">
                   <ArrowDownRight size={13} />
                   Egreso
                 </span>
@@ -129,21 +129,27 @@ export function VistaTodos({
             </td>
 
             <td className="px-5 py-3.5">
-              <div className="font-semibold text-slate-800">{mov.concepto}</div>
+              <div className="font-semibold text-slate-800 dark:text-slate-100">
+                {mov.concepto}
+              </div>
               {mov.detalle_extra && (
-                <div className="text-xs text-slate-500">{mov.detalle_extra}</div>
+                <div className="text-xs text-slate-500 dark:text-slate-400">
+                  {mov.detalle_extra}
+                </div>
               )}
             </td>
 
             <td className="px-5 py-3.5">
-              <span className="inline-flex items-center px-2.5 py-0.5 rounded-lg text-xs font-medium bg-slate-100 text-slate-700">
+              <span className="inline-flex items-center px-2.5 py-0.5 rounded-lg text-xs font-medium bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-transparent dark:border-slate-700">
                 {mov.categoria_o_medio}
               </span>
             </td>
 
             <td
               className={`px-5 py-3.5 font-bold whitespace-nowrap ${
-                esIngreso ? "text-emerald-700" : "text-rose-600"
+                esIngreso
+                  ? "text-emerald-700 dark:text-emerald-400"
+                  : "text-rose-600 dark:text-rose-400"
               }`}
             >
               {esIngreso ? "+" : "-"} ${" "}
@@ -181,7 +187,7 @@ export function VistaTodos({
                           ? abrirEliminarCobro(mov)
                           : abrirEliminarGasto(mov)
                       }
-                      className="p-2 text-slate-500 hover:text-rose-600 hover:bg-rose-50 rounded-xl transition-colors cursor-pointer"
+                      className="p-2 text-slate-500 dark:text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 rounded-xl transition-colors cursor-pointer"
                       title="Eliminar"
                     >
                       <Trash2 size={16} />
@@ -225,7 +231,7 @@ export function VistaGastos({
           titulo={gasto.concepto || gasto.detalle || "Egreso"}
           subtitulo={formatDate(gasto.fecha || gasto.fecha_gasto)}
           badge={
-            <span className="bg-rose-50 text-rose-700 border border-rose-200 px-2 py-0.5 rounded-full text-[10px] font-bold">
+            <span className="bg-rose-50 dark:bg-rose-950/60 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-800 px-2 py-0.5 rounded-full text-[10px] font-bold">
               {gasto.categoria_o_medio || gasto.CategoriaGasto?.nombre}
             </span>
           }
@@ -246,7 +252,7 @@ export function VistaGastos({
               </button>
               <button
                 onClick={() => abrirParaEliminar(gasto)}
-                className="p-1.5 text-slate-600 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors cursor-pointer"
+                className="p-1.5 text-slate-600 dark:text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 rounded-lg transition-colors cursor-pointer"
                 title="Eliminar egreso"
               >
                 <Trash2 size={16} />
@@ -260,18 +266,18 @@ export function VistaGastos({
           key={gasto.uid || gasto.id_gasto}
           className="hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
         >
-          <td className="pl-7 sm:pl-8 pr-4 py-3.5 font-medium text-slate-700">
-            <span className="bg-slate-100 text-slate-700 px-2.5 py-0.5 rounded-lg text-xs font-semibold">
+          <td className="pl-7 sm:pl-8 pr-4 py-3.5 font-medium text-slate-700 dark:text-slate-300">
+            <span className="bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-transparent dark:border-slate-700 px-2.5 py-0.5 rounded-lg text-xs font-semibold">
               {gasto.categoria_o_medio || gasto.CategoriaGasto?.nombre}
             </span>
           </td>
-          <td className="px-5 py-3.5 text-slate-800 font-medium">
+          <td className="px-5 py-3.5 text-slate-800 dark:text-slate-100 font-medium">
             {gasto.detalle || gasto.concepto || "-"}
           </td>
-          <td className="px-5 py-3.5 text-slate-600 whitespace-nowrap">
+          <td className="px-5 py-3.5 text-slate-600 dark:text-slate-300 whitespace-nowrap">
             {formatDate(gasto.fecha_gasto || gasto.fecha)}
           </td>
-          <td className="px-5 py-3.5 font-bold text-rose-600 whitespace-nowrap">
+          <td className="px-5 py-3.5 font-bold text-rose-600 dark:text-rose-400 whitespace-nowrap">
             - $ {Number(gasto.monto || 0).toLocaleString("es-AR")}
           </td>
           <td className="pl-4 pr-7 sm:pr-8 py-3.5 text-center">
@@ -285,7 +291,7 @@ export function VistaGastos({
               </button>
               <button
                 onClick={() => abrirParaEliminar(gasto)}
-                className="p-2 text-slate-500 hover:text-rose-600 hover:bg-rose-50 rounded-xl transition-colors cursor-pointer"
+                className="p-2 text-slate-500 dark:text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 rounded-xl transition-colors cursor-pointer"
                 title="Eliminar egreso"
               >
                 <Trash2 size={16} />
@@ -343,8 +349,8 @@ export function VistaPendientes({
               <span
                 className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold border ${
                   esParcial
-                    ? "bg-amber-50 text-amber-800 border-amber-300"
-                    : "bg-rose-50 text-rose-700 border-rose-200"
+                    ? "bg-amber-50 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300 border-amber-300 dark:border-amber-800"
+                    : "bg-rose-50 dark:bg-rose-950/60 text-rose-700 dark:text-rose-300 border-rose-200 dark:border-rose-800"
                 }`}
               >
                 <Clock size={11} />
@@ -403,31 +409,33 @@ export function VistaPendientes({
             key={t.id_turno}
             className="hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
           >
-            <td className="pl-7 sm:pl-8 pr-4 py-3.5 text-slate-600 font-medium whitespace-nowrap">
+            <td className="pl-7 sm:pl-8 pr-4 py-3.5 text-slate-600 dark:text-slate-300 font-medium whitespace-nowrap">
               <div className="inline-flex items-center gap-1.5">
-                <Calendar size={14} className="text-slate-400" />
+                <Calendar size={14} className="text-slate-400 dark:text-slate-500" />
                 <span>{formatDate(t.fecha_hora_inicio)}</span>
               </div>
             </td>
 
             <td className="px-5 py-3.5">
-              <div className="font-bold text-slate-900">{pac}</div>
+              <div className="font-bold text-slate-900 dark:text-slate-100">
+                {pac}
+              </div>
               {t.Paciente?.dni && (
-                <div className="text-xs text-slate-500">
+                <div className="text-xs text-slate-500 dark:text-slate-400">
                   DNI {t.Paciente.dni}
                 </div>
               )}
             </td>
 
-            <td className="px-5 py-3.5 font-semibold text-slate-700 whitespace-nowrap">
+            <td className="px-5 py-3.5 font-semibold text-slate-700 dark:text-slate-300 whitespace-nowrap">
               $ {total.toLocaleString("es-AR")}
             </td>
 
-            <td className="px-5 py-3.5 font-semibold text-emerald-700 whitespace-nowrap">
+            <td className="px-5 py-3.5 font-semibold text-emerald-700 dark:text-emerald-400 whitespace-nowrap">
               $ {abonado.toLocaleString("es-AR")}
             </td>
 
-            <td className="px-5 py-3.5 font-black text-amber-800 whitespace-nowrap">
+            <td className="px-5 py-3.5 font-black text-amber-800 dark:text-amber-300 whitespace-nowrap">
               $ {saldo.toLocaleString("es-AR")}
             </td>
 
@@ -435,8 +443,8 @@ export function VistaPendientes({
               <span
                 className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold border ${
                   esParcial
-                    ? "bg-amber-50 text-amber-800 border-amber-300"
-                    : "bg-rose-50 text-rose-700 border-rose-200"
+                    ? "bg-amber-50 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300 border-amber-300 dark:border-amber-800"
+                    : "bg-rose-50 dark:bg-rose-950/60 text-rose-700 dark:text-rose-300 border-rose-200 dark:border-rose-800"
                 }`}
               >
                 <Clock size={12} />

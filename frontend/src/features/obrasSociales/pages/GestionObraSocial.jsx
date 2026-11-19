@@ -194,11 +194,11 @@ export function GestionObraSocial() {
                 subtitulo={`ID #${os.id_obra_social}`}
                 badge={
                   os.activo ? (
-                    <span className="inline-flex items-center gap-1 bg-emerald-50 text-emerald-800 border border-emerald-200 px-2 py-0.5 rounded-full text-[10px] font-bold">
+                    <span className="inline-flex items-center gap-1 bg-emerald-50 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 px-2 py-0.5 rounded-full text-[10px] font-bold">
                       <CheckCircle2 size={11} /> Activa
                     </span>
                   ) : (
-                    <span className="inline-flex items-center gap-1 bg-rose-50 text-rose-700 border border-rose-200 px-2 py-0.5 rounded-full text-[10px] font-bold">
+                    <span className="inline-flex items-center gap-1 bg-rose-50 dark:bg-rose-950/60 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-800 px-2 py-0.5 rounded-full text-[10px] font-bold">
                       <XCircle size={11} /> Inactiva
                     </span>
                   )
@@ -248,10 +248,12 @@ export function GestionObraSocial() {
               <tr
                 key={os.id_obra_social}
                 className={`hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors ${
-                  !os.activo ? "bg-slate-50/60 opacity-75" : ""
+                  !os.activo
+                    ? "bg-slate-50/60 dark:bg-slate-800/40 opacity-75"
+                    : ""
                 }`}
               >
-                <td className="pl-7 sm:pl-8 pr-4 py-3.5 font-bold text-slate-900">
+                <td className="pl-7 sm:pl-8 pr-4 py-3.5 font-bold text-slate-900 dark:text-slate-100">
                   <div className="flex items-center gap-2.5">
                     <Building2 size={16} className="text-[#0d8266] shrink-0" />
                     <span>{os.nombre}</span>
@@ -260,12 +262,12 @@ export function GestionObraSocial() {
 
                 <td className="px-5 py-3.5 text-center">
                   {os.activo ? (
-                    <span className="inline-flex items-center gap-1.5 bg-emerald-50 text-emerald-800 border border-emerald-200 px-2.5 py-1 rounded-full text-xs font-bold shadow-2xs">
+                    <span className="inline-flex items-center gap-1.5 bg-emerald-50 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 px-2.5 py-1 rounded-full text-xs font-bold shadow-2xs">
                       <CheckCircle2 size={13} />
                       Activa
                     </span>
                   ) : (
-                    <span className="inline-flex items-center gap-1.5 bg-rose-50 text-rose-700 border border-rose-200 px-2.5 py-1 rounded-full text-xs font-bold">
+                    <span className="inline-flex items-center gap-1.5 bg-rose-50 dark:bg-rose-950/60 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-800 px-2.5 py-1 rounded-full text-xs font-bold">
                       <XCircle size={13} />
                       Inactiva
                     </span>
