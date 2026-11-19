@@ -48,4 +48,3 @@ export function ModalConfirmarLogout({ isOpen, onClose, onConfirm }) {
 }
 
 export default ModalConfirmarLogout;
-

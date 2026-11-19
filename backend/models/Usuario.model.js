@@ -30,6 +30,10 @@ export const Usuario = sequelize.define(
         },
       },
     },
+    pin: {
+      type: DataTypes.STRING,
+      allowNull: true,
+    },
     reset_token: {
       type: DataTypes.STRING,
       allowNull: true,

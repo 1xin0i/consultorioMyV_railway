@@ -7,6 +7,8 @@ import * as UsuarioController from "../controllers/Usuario.controller.js";
 import { validateSchema } from "../middleware/validateSchema.js";
 import { verificarToken } from "../middleware/auth.middleware.js";
 import {
+  pinRateLimiter,
+  authRateLimiter,
   mailResetLimiter,
   verifyCodeLimiter,
 } from "../middleware/rateLimit.middleware.js";
@@ -16,6 +18,9 @@ import {
   updateUsuarioSchema,
   recuperarPasswordSchema,
   restablecerPasswordSchema,
+  validarPinSchema,
+  verificarPasswordSchema,
+  recuperarPinSchema,
 } from "../schemas/Usuario.schema.js";
 
 // 1. Autenticación y Sesión
@@ -27,6 +32,33 @@ router.post(
 );
 router.post("/refresh-token", UsuarioController.refreshToken);
 router.post("/refreshToken", UsuarioController.refreshToken);
+router.post("/refresh", UsuarioController.refreshToken);
+
+// 1.1. Seguridad y Desbloqueo por PIN de 4 dígitos
+router.post(
+  "/validar-pin",
+  pinRateLimiter,
+  validateSchema(validarPinSchema),
+  UsuarioController.validarPin,
+);
+router.post(
+  "/verificar-password",
+  authRateLimiter,
+  validateSchema(verificarPasswordSchema),
+  UsuarioController.verificarPassword,
+);
+router.post(
+  "/recuperar-pin",
+  authRateLimiter,
+  validateSchema(recuperarPinSchema),
+  UsuarioController.recuperarPin,
+);
+router.post(
+  "/cambiar-pin",
+  verificarToken,
+  validateSchema(recuperarPinSchema),
+  UsuarioController.recuperarPin,
+);
 
 // 2. Perfil de Usuario Autenticado
 router.get("/me", verificarToken, UsuarioController.obtenerUsuarioActual);

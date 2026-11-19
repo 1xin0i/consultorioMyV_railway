@@ -1,6 +1,55 @@
 /** @format */
 
-import rateLimit from "express-rate-limit";
+import rateLimit, { ipKeyGenerator } from "express-rate-limit";
+
+// Limitador estricto para el PIN de 4 dígitos (máximo 3 intentos cada 15 minutos)
+export const pinRateLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 3,
+  skipSuccessfulRequests: true,
+  message: {
+    status: "error",
+    mensaje:
+      "Demasiados intentos de PIN fallidos. El acceso por PIN ha sido bloqueado por 15 minutos.",
+  },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+/**
+ * Resetea completamente el rate limiter de PIN para la IP/terminal solicitante.
+ * @param {import('express').Request} req
+ */
+export const resetearPinRateLimit = async (req) => {
+  if (!pinRateLimiter || typeof pinRateLimiter.resetKey !== "function") return;
+  try {
+    const rawIps = [
+      req?.ip,
+      req?.socket?.remoteAddress,
+      req?.headers?.["x-forwarded-for"]?.split(",")[0]?.trim(),
+      "127.0.0.1",
+      "::1",
+      "::ffff:127.0.0.1",
+    ].filter(Boolean);
+
+    const keysToReset = new Set();
+    for (const rawIp of rawIps) {
+      keysToReset.add(rawIp);
+      try {
+        if (typeof ipKeyGenerator === "function") {
+          const genKey = ipKeyGenerator(rawIp);
+          if (genKey) keysToReset.add(genKey);
+        }
+      } catch (_) {}
+    }
+
+    for (const key of keysToReset) {
+      await pinRateLimiter.resetKey(key);
+    }
+  } catch (err) {
+    console.warn("No se pudo resetear el rate limiter de PIN:", err?.message);
+  }
+};
 
 // Limitador para inicio de sesión y verificación de credenciales (máximo 10 intentos cada 15 minutos)
 export const authRateLimiter = rateLimit({

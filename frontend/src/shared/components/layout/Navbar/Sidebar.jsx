@@ -9,6 +9,7 @@ import {
   LogOut,
   Download,
   KeyRound,
+  ShieldCheck,
   Moon,
   Sun,
 } from "lucide-react";
@@ -16,8 +17,9 @@ import { SidebarContext } from "@/shared/context/SidebarProvider";
 import { NAV_LINKS } from "@/shared/constants/navigation";
 import {
   useAuth,
+  usePinLock,
   ModalCambiarPassword,
-  ModalConfirmarLogout,
+  RecuperarPinModal,
 } from "@/features/auth";
 import { useTheme } from "@/shared/context/ThemeContext";
 import { ToothLogo } from "@/shared/components/layout/ToothLogo";
@@ -25,11 +27,12 @@ import { usePWAInstall } from "@/shared/hooks/usePWAInstall";
 
 export function Sidebar() {
   const { expandido, alternarSidebar } = useContext(SidebarContext);
-  const { usuario, logout } = useAuth();
+  const { usuario } = useAuth();
+  const { lock } = usePinLock();
   const { isDark, toggleTheme } = useTheme();
   const { isInstallable, promptInstall } = usePWAInstall();
   const [modalPasswordAbierto, setModalPasswordAbierto] = useState(false);
-  const [modalLogoutAbierto, setModalLogoutAbierto] = useState(false);
+  const [modalPinAbierto, setModalPinAbierto] = useState(false);
 
   const { pathname } = useLocation();
   const rutasConfig = [
@@ -289,6 +292,15 @@ export function Sidebar() {
 
               <button
                 type="button"
+                onClick={() => setModalPinAbierto(true)}
+                title="Cambiar PIN"
+                className="p-1.5 rounded-lg text-white/80 hover:bg-white/10 hover:text-white transition-colors cursor-pointer"
+              >
+                <ShieldCheck size={15} />
+              </button>
+
+              <button
+                type="button"
                 onClick={() => setModalPasswordAbierto(true)}
                 title="Cambiar contraseña"
                 className="p-1.5 rounded-lg text-white/80 hover:bg-white/10 hover:text-white transition-colors cursor-pointer"
@@ -298,8 +310,8 @@ export function Sidebar() {
 
               <button
                 type="button"
-                onClick={() => setModalLogoutAbierto(true)}
-                title="Cerrar sesión"
+                onClick={lock}
+                title="Bloquear sesión (PIN)"
                 className="p-1.5 rounded-lg text-rose-400 hover:bg-rose-500/15 hover:text-rose-200 transition-colors cursor-pointer"
               >
                 <LogOut size={15} />
@@ -314,13 +326,10 @@ export function Sidebar() {
         onClose={() => setModalPasswordAbierto(false)}
       />
 
-      <ModalConfirmarLogout
-        isOpen={modalLogoutAbierto}
-        onClose={() => setModalLogoutAbierto(false)}
-        onConfirm={() => {
-          setModalLogoutAbierto(false);
-          logout();
-        }}
+      <RecuperarPinModal
+        isOpen={modalPinAbierto}
+        onClose={() => setModalPinAbierto(false)}
+        usuarioActual={usuario?.nombre_usuario || usuario?.nombre}
       />
     </>
   );

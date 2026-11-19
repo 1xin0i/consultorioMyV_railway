@@ -7,6 +7,7 @@ import nodemailer from "nodemailer";
 import { Op } from "sequelize";
 import sequelize from "../config/database.js";
 import { Usuario } from "../models/Usuario.model.js";
+import { resetearPinRateLimit } from "../middleware/rateLimit.middleware.js";
 
 const JWT_SECRET =
   process.env.JWT_SECRET || "clave_secreta_super_segura_myv_2026";
@@ -46,23 +47,52 @@ const getTransporter = () => {
  */
 const asegurarUsuarioPorDefecto = async () => {
   try {
+    const emailDefault =
+      process.env.ADMIN_RECOVERY_EMAIL?.trim() ||
+      process.env.EMAIL_USER?.trim() ||
+      "admin@consultorio.com";
+    const defaultPin = process.env.ADMIN_DEFAULT_PIN?.trim() || "1234";
+
     const cantidad = await Usuario.count();
     if (cantidad === 0) {
       const salt = await bcrypt.genSalt(10);
       const hashPassword = await bcrypt.hash("Admin123!", salt);
-      const emailDefault =
-        process.env.ADMIN_RECOVERY_EMAIL?.trim() ||
-        process.env.EMAIL_USER?.trim() ||
-        null;
+      const hashPin = await bcrypt.hash(defaultPin, salt);
       await Usuario.create({
         nombre_usuario: "admin",
         contraseña: hashPassword,
         email: emailDefault,
+        pin: hashPin,
         rol: "admin",
       });
       console.log(
-        "[AUTH] Usuario inicial creado: usuario 'admin' / contraseña 'Admin123!'",
+        `[AUTH] Usuario inicial creado: usuario 'admin' / contraseña 'Admin123!' / PIN '${defaultPin}' (email: ${emailDefault})`,
       );
+    } else {
+      const adminExistente = await Usuario.findOne({
+        where: { nombre_usuario: "admin" },
+      });
+      if (adminExistente) {
+        let huboCambios = false;
+        if (!adminExistente.email) {
+          adminExistente.email = emailDefault;
+          huboCambios = true;
+          console.log(
+            `[AUTH] Email asignado a usuario admin existente: ${emailDefault}`,
+          );
+        }
+        if (!adminExistente.pin) {
+          const salt = await bcrypt.genSalt(10);
+          adminExistente.pin = await bcrypt.hash(defaultPin, salt);
+          huboCambios = true;
+          console.log(
+            `[AUTH] PIN por defecto asignado a usuario admin existente: ${defaultPin}`,
+          );
+        }
+        if (huboCambios) {
+          await adminExistente.save();
+        }
+      }
     }
   } catch (err) {
     console.error(
@@ -302,6 +332,293 @@ export const obtenerUsuarioActual = async (req, res) => {
 };
 
 /**
+ * 3.1. Validar PIN de 4 dígitos para desbloqueo operativo
+ */
+export const validarPin = async (req, res) => {
+  try {
+    const rawPin = req.body.pin || req.body.codigo || "";
+    const pin = String(rawPin).trim();
+
+    if (!pin || pin.length !== 4) {
+      return res.status(400).json({
+        status: "error",
+        mensaje: "El PIN debe tener exactamente 4 dígitos.",
+      });
+    }
+
+    // Si viene autenticado por JWT o en cabecera Authorization
+    let usuario = null;
+    if (req.user?.id) {
+      usuario = await Usuario.findByPk(req.user.id);
+    } else {
+      const authHeader =
+        req.headers["authorization"] || req.headers["Authorization"];
+      const token =
+        authHeader && authHeader.startsWith("Bearer ")
+          ? authHeader.slice(7).trim()
+          : authHeader;
+      if (token) {
+        try {
+          const decoded = jwt.verify(token, JWT_SECRET);
+          if (decoded?.id) {
+            usuario = await Usuario.findByPk(decoded.id);
+          }
+        } catch (_) {}
+      }
+    }
+
+    // Fallback: si no hay token, buscar por identificador (usuario o email)
+    if (!usuario) {
+      const identificador =
+        req.body.usuario || req.body.email || req.body.nombre_usuario;
+      if (identificador) {
+        usuario = await Usuario.findOne({
+          where: {
+            [Op.or]: [
+              { nombre_usuario: identificador },
+              sequelize.where(
+                sequelize.fn("LOWER", sequelize.col("email")),
+                String(identificador).toLowerCase(),
+              ),
+            ],
+          },
+        });
+      }
+    }
+
+    // Fallback general: buscar usuario admin u operativo
+    if (!usuario) {
+      usuario = await Usuario.findOne({ where: { rol: "admin" } });
+    }
+    if (!usuario) {
+      usuario = await Usuario.findOne();
+    }
+
+    if (!usuario) {
+      return res.status(404).json({
+        status: "error",
+        mensaje: "Usuario no encontrado",
+      });
+    }
+
+    // Si el usuario no cuenta aún con PIN configurado, inicializar con el PIN por defecto (1234)
+    if (!usuario.pin) {
+      const defaultPin = process.env.ADMIN_DEFAULT_PIN?.trim() || "1234";
+      const salt = await bcrypt.genSalt(10);
+      usuario.pin = await bcrypt.hash(defaultPin, salt);
+      await usuario.save();
+      console.log(
+        `[AUTH] PIN por defecto (${defaultPin}) generado para usuario '${usuario.nombre_usuario}'`,
+      );
+    }
+
+    const match = await bcrypt.compare(pin, usuario.pin);
+    if (!match) {
+      const restantes = req.rateLimit ? req.rateLimit.remaining : undefined;
+      return res.status(401).json({
+        status: "error",
+        mensaje: "PIN incorrecto",
+        intentosRestantes: restantes,
+      });
+    }
+
+    // PIN correcto: resetear penalizaciones de rate limit
+    await resetearPinRateLimit(req);
+
+    return res.status(200).json({
+      status: "success",
+      mensaje: "Acceso autorizado",
+      desbloqueado: true,
+    });
+  } catch (error) {
+    console.error("Error en validarPin:", error);
+    return res.status(500).json({
+      status: "error",
+      mensaje: "Error interno al validar PIN",
+    });
+  }
+};
+
+/**
+ * 3.2. Verificar Contraseña Maestra (para autorizar cambio de PIN)
+ */
+export const verificarPassword = async (req, res) => {
+  try {
+    const rawContraseña =
+      req.body.contraseña ||
+      req.body.contrasenia ||
+      req.body.password ||
+      "";
+    const rawUser =
+      req.body.nombre_usuario ||
+      req.body.usuario ||
+      req.body.email ||
+      "";
+
+    let usuario = null;
+    if (req.user?.id) {
+      usuario = await Usuario.findByPk(req.user.id);
+    } else {
+      const authHeader =
+        req.headers["authorization"] || req.headers["Authorization"];
+      const token =
+        authHeader && authHeader.startsWith("Bearer ")
+          ? authHeader.slice(7).trim()
+          : authHeader;
+      if (token) {
+        try {
+          const decoded = jwt.verify(token, JWT_SECRET);
+          if (decoded?.id) {
+            usuario = await Usuario.findByPk(decoded.id);
+          }
+        } catch (_) {}
+      }
+    }
+
+    if (!usuario && rawUser) {
+      usuario = await Usuario.findOne({
+        where: {
+          [Op.or]: [
+            { nombre_usuario: rawUser },
+            sequelize.where(
+              sequelize.fn("LOWER", sequelize.col("email")),
+              rawUser.toLowerCase(),
+            ),
+          ],
+        },
+      });
+    } else {
+      usuario = await Usuario.findOne({ where: { rol: "admin" } });
+    }
+
+    if (!usuario) {
+      return res.status(404).json({
+        status: "error",
+        mensaje: "Usuario no encontrado",
+      });
+    }
+
+    const match = await bcrypt.compare(rawContraseña, usuario.contraseña);
+    if (!match) {
+      return res.status(401).json({
+        status: "error",
+        mensaje: "Contraseña incorrecta",
+      });
+    }
+
+    return res.status(200).json({
+      status: "success",
+      mensaje: "Contraseña validada con éxito",
+      autorizada: true,
+    });
+  } catch (error) {
+    console.error("Error en verificarPassword:", error);
+    return res.status(500).json({
+      status: "error",
+      mensaje: "Error interno al verificar contraseña",
+    });
+  }
+};
+
+/**
+ * 3.3. Cambiar/Recuperar PIN validando contraseña maestra
+ */
+export const recuperarPin = async (req, res) => {
+  try {
+    const rawContraseña =
+      req.body.contraseña ||
+      req.body.contrasenia ||
+      req.body.password ||
+      "";
+    const rawNuevoPin =
+      req.body.nuevo_pin ||
+      req.body.nuevoPin ||
+      req.body.pin ||
+      "";
+    const rawUser =
+      req.body.nombre_usuario ||
+      req.body.usuario ||
+      req.body.email ||
+      "";
+
+    let usuario = null;
+    if (req.user?.id) {
+      usuario = await Usuario.findByPk(req.user.id);
+    } else {
+      const authHeader =
+        req.headers["authorization"] || req.headers["Authorization"];
+      const token =
+        authHeader && authHeader.startsWith("Bearer ")
+          ? authHeader.slice(7).trim()
+          : authHeader;
+      if (token) {
+        try {
+          const decoded = jwt.verify(token, JWT_SECRET);
+          if (decoded?.id) {
+            usuario = await Usuario.findByPk(decoded.id);
+          }
+        } catch (_) {}
+      }
+    }
+
+    if (!usuario && rawUser) {
+      usuario = await Usuario.findOne({
+        where: {
+          [Op.or]: [
+            { nombre_usuario: rawUser },
+            sequelize.where(
+              sequelize.fn("LOWER", sequelize.col("email")),
+              rawUser.toLowerCase(),
+            ),
+          ],
+        },
+      });
+    } else {
+      usuario = await Usuario.findOne({ where: { rol: "admin" } });
+    }
+
+    if (!usuario) {
+      return res.status(404).json({
+        status: "error",
+        mensaje: "Usuario no encontrado",
+      });
+    }
+
+    const match = await bcrypt.compare(rawContraseña, usuario.contraseña);
+    if (!match) {
+      return res.status(401).json({
+        status: "error",
+        mensaje: "Contraseña incorrecta",
+      });
+    }
+
+    if (!rawNuevoPin || !/^\d{4}$/.test(rawNuevoPin)) {
+      return res.status(400).json({
+        status: "error",
+        mensaje: "El PIN debe tener exactamente 4 dígitos numéricos.",
+      });
+    }
+
+    const salt = await bcrypt.genSalt(10);
+    usuario.pin = await bcrypt.hash(rawNuevoPin, salt);
+    await usuario.save();
+
+    await resetearPinRateLimit(req);
+
+    return res.status(200).json({
+      status: "success",
+      mensaje: "PIN actualizado exitosamente",
+    });
+  } catch (error) {
+    console.error("Error en recuperarPin:", error);
+    return res.status(500).json({
+      status: "error",
+      mensaje: "Error interno al actualizar PIN",
+    });
+  }
+};
+
+/**
  * 4. Solicitar Recuperación de Contraseña (búsqueda por usuario o email con Op.or)
  */
 export const solicitarRecuperacionPassword = async (req, res) => {
@@ -358,12 +675,18 @@ export const solicitarRecuperacionPassword = async (req, res) => {
     usuario.reset_token_expires = new Date(Date.now() + 15 * 60 * 1000);
     await usuario.save();
 
-    // Correo destino: prioriza usuario.email, con fallback a ADMIN_RECOVERY_EMAIL o EMAIL_USER
+    // Correo destino: prioriza usuario.email, luego el identificador si es email, luego variables de entorno o admin default
     const destinoEmail =
       usuario.email?.trim() ||
+      (identificador.includes("@") ? identificador : null) ||
       process.env.ADMIN_RECOVERY_EMAIL?.trim() ||
       process.env.EMAIL_USER?.trim() ||
-      null;
+      "admin@consultorio.com";
+
+    if (!usuario.email && destinoEmail) {
+      usuario.email = destinoEmail;
+      await usuario.save();
+    }
 
     console.log(
       `[AUTH] Código de recuperación generado para usuario '${usuario.nombre_usuario}' (ID: ${usuario.id_usuario}, destino: ${destinoEmail || "consola"}): [ ${pinRecuperacion} ]`,
@@ -448,7 +771,10 @@ export const restablecerPassword = async (req, res) => {
     const rawPass =
       req.body.nueva_contraseña ||
       req.body.nuevaContrasenia ||
+      req.body.nuevaPassword ||
+      req.body.passwordNueva ||
       req.body.password ||
+      req.body.contraseña ||
       "";
     const nueva_contraseña = rawPass.toString();
 

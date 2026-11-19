@@ -12,6 +12,7 @@ import {
   X,
   Download,
   KeyRound,
+  ShieldCheck,
   Moon,
   Sun,
   ClipboardCheck,
@@ -21,8 +22,9 @@ import {
 } from "lucide-react";
 import {
   useAuth,
+  usePinLock,
   ModalCambiarPassword,
-  ModalConfirmarLogout,
+  RecuperarPinModal,
 } from "@/features/auth";
 import { useTheme } from "@/shared/context/ThemeContext";
 import { usePWAInstall } from "@/shared/hooks/usePWAInstall";
@@ -46,8 +48,9 @@ const PAGINAS_CONFIG = [
 export function Bottombar() {
   const [menuMasAbierto, setMenuMasAbierto] = useState(false);
   const [modalPasswordAbierto, setModalPasswordAbierto] = useState(false);
-  const [modalLogoutAbierto, setModalLogoutAbierto] = useState(false);
-  const { logout, usuario } = useAuth();
+  const [modalPinAbierto, setModalPinAbierto] = useState(false);
+  const { usuario } = useAuth();
+  const { lock } = usePinLock();
   const { isDark, toggleTheme } = useTheme();
   const { isInstallable, promptInstall } = usePWAInstall();
   const location = useLocation();
@@ -167,8 +170,20 @@ export function Bottombar() {
             </button>
           )}
 
-          {/* Cambiar contraseña y Cerrar sesión separados por una línea */}
+          {/* Cambiar contraseña, PIN y Bloqueo de sesión */}
           <div className="mt-3 pt-2.5 border-t border-white/15 flex flex-col gap-1.5">
+            <button
+              type="button"
+              onClick={() => {
+                setMenuMasAbierto(false);
+                setModalPinAbierto(true);
+              }}
+              className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-semibold text-white/90 hover:bg-white/15 transition-colors cursor-pointer text-left"
+            >
+              <ShieldCheck size={16} className="text-[#a5f3fc] shrink-0" />
+              <span>Cambiar PIN</span>
+            </button>
+
             <button
               type="button"
               onClick={() => {
@@ -187,12 +202,12 @@ export function Bottombar() {
               type="button"
               onClick={() => {
                 setMenuMasAbierto(false);
-                setModalLogoutAbierto(true);
+                lock();
               }}
               className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-semibold bg-rose-500/15 text-rose-100 border border-rose-400/25 hover:bg-rose-500/30 hover:text-white transition-colors cursor-pointer text-left shadow-2xs"
             >
               <LogOut size={16} className="text-rose-300 shrink-0" />
-              <span>Cerrar sesión</span>
+              <span>Bloquear sesión (PIN)</span>
             </button>
           </div>
         </div>
@@ -258,13 +273,10 @@ export function Bottombar() {
         onClose={() => setModalPasswordAbierto(false)}
       />
 
-      <ModalConfirmarLogout
-        isOpen={modalLogoutAbierto}
-        onClose={() => setModalLogoutAbierto(false)}
-        onConfirm={() => {
-          setModalLogoutAbierto(false);
-          logout();
-        }}
+      <RecuperarPinModal
+        isOpen={modalPinAbierto}
+        onClose={() => setModalPinAbierto(false)}
+        usuarioActual={usuario?.nombre_usuario || usuario?.nombre}
       />
     </div>
   );

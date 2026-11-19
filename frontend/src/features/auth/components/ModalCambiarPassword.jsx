@@ -40,8 +40,13 @@ export function ModalCambiarPassword({ isOpen, onClose }) {
       return;
     }
 
-    if (passwordNueva.length < 6) {
-      toast.error("La nueva contraseña debe tener al menos 6 caracteres.");
+    if (passwordNueva.length < 8) {
+      toast.error("La nueva contraseña debe tener al menos 8 caracteres.");
+      return;
+    }
+
+    if (!/[A-Z]/.test(passwordNueva) || !/[a-z]/.test(passwordNueva) || !/[0-9]/.test(passwordNueva)) {
+      toast.error("La contraseña debe incluir al menos una mayúscula, minúscula y un número.");
       return;
     }
 
@@ -76,8 +81,8 @@ export function ModalCambiarPassword({ isOpen, onClose }) {
           <ShieldCheck size={18} />
         </div>
         <p className="leading-relaxed">
-          Ingresá tu contraseña actual y elegí una nueva clave de al menos{" "}
-          <span className="font-semibold text-slate-800">6 caracteres</span>.
+          Ingresá tu contraseña actual y elegí una nueva clave segura de al menos{" "}
+          <span className="font-semibold text-slate-800">8 caracteres</span>.
         </p>
       </div>
 
@@ -123,7 +128,7 @@ export function ModalCambiarPassword({ isOpen, onClose }) {
             type={verNueva ? "text" : "password"}
             value={passwordNueva}
             onChange={(e) => setPasswordNueva(e.target.value)}
-            placeholder="Mínimo 6 caracteres"
+            placeholder="Mínimo 8 caracteres"
             autoComplete="new-password"
             disabled={enviando}
             className="w-full pl-10 pr-10 py-2.5 rounded-xl border border-slate-200 bg-slate-50/60 text-sm text-slate-800 placeholder:text-slate-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#2eb086]/30 focus:border-[#2eb086] transition-all"
@@ -198,4 +203,3 @@ export function ModalCambiarPassword({ isOpen, onClose }) {
 }
 
 export default ModalCambiarPassword;
-

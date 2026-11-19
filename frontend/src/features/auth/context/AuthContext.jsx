@@ -16,7 +16,9 @@ export function AuthProvider({ children }) {
   const [usuario, setUsuario] = useState(() => {
     try {
       const guardado = localStorage.getItem("usuario");
-      return guardado ? JSON.parse(guardado) : null;
+      if (!guardado) return null;
+      const parsed = JSON.parse(guardado);
+      return parsed.usuario || parsed;
     } catch {
       return null;
     }
@@ -37,9 +39,10 @@ export function AuthProvider({ children }) {
     authApi
       .getMe()
       .then((res) => {
-        const datosUsuario = res.data?.data || res.data;
-        setUsuario(datosUsuario.usuario);
-        localStorage.setItem("usuario", JSON.stringify(datosUsuario));
+        const payload = res.data?.data || res.data;
+        const usuarioData = payload.usuario || payload;
+        setUsuario(usuarioData);
+        localStorage.setItem("usuario", JSON.stringify(usuarioData));
       })
       .catch(() => {
         limpiarSesion();
@@ -59,11 +62,18 @@ export function AuthProvider({ children }) {
     if (payload.refreshToken) {
       localStorage.setItem("refreshToken", payload.refreshToken);
     }
-    localStorage.setItem("usuario", JSON.stringify(payload.usuario));
+    const usuarioData = payload.usuario || payload;
+    localStorage.setItem("usuario", JSON.stringify(usuarioData));
+
+    // Inicializar estado de PIN desbloqueado y timestamp de actividad
+    sessionStorage.setItem("pin_unlocked", "true");
+    localStorage.setItem("pin_last_activity", String(Date.now()));
+    localStorage.removeItem("pin_bloqueado_hasta");
+    localStorage.removeItem("pin_intentos_fallidos");
 
     setToken(payload.token);
-    setUsuario(payload.usuario);
-    return payload.usuario;
+    setUsuario(usuarioData);
+    return usuarioData;
   }, []);
 
   const cambiarPassword = useCallback(
@@ -80,6 +90,10 @@ export function AuthProvider({ children }) {
 
   const logout = useCallback(() => {
     limpiarSesion();
+    sessionStorage.removeItem("pin_unlocked");
+    localStorage.removeItem("pin_last_activity");
+    localStorage.removeItem("pin_bloqueado_hasta");
+    localStorage.removeItem("pin_intentos_fallidos");
     setToken(null);
     setUsuario(null);
   }, []);
@@ -108,3 +122,5 @@ export function useAuth() {
   }
   return ctx;
 }
+
+export default AuthContext;

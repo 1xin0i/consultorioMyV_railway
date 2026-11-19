@@ -109,7 +109,10 @@ export const restablecerPasswordSchema = z
     pin: z.string().optional(),
     nueva_contraseña: z.string().optional(),
     nuevaContrasenia: z.string().optional(),
+    nuevaPassword: z.string().optional(),
+    passwordNueva: z.string().optional(),
     password: z.string().optional(),
+    confirmarPassword: z.string().optional(),
   })
   .refine(
     (data) => {
@@ -127,6 +130,8 @@ export const restablecerPasswordSchema = z
     const pass = (
       data.nueva_contraseña ||
       data.nuevaContrasenia ||
+      data.nuevaPassword ||
+      data.passwordNueva ||
       data.password ||
       ""
     ).toString();
@@ -173,7 +178,11 @@ export const restablecerPasswordSchema = z
       codigo: cod,
       token: cod,
       nueva_contraseña:
-        data.nueva_contraseña || data.nuevaContrasenia || data.password,
+        data.nueva_contraseña ||
+        data.nuevaContrasenia ||
+        data.nuevaPassword ||
+        data.passwordNueva ||
+        data.password,
     };
   });
 
@@ -218,3 +227,64 @@ export const updateUsuarioSchema = z.object({
 });
 
 export const loginMaestroSchema = loginSchema;
+
+export const validarPinSchema = z.object({
+  pin: z
+    .string({ required_error: "El PIN es obligatorio" })
+    .length(4, "El PIN debe tener 4 dígitos")
+    .regex(/^\d{4}$/, "El PIN debe contener únicamente 4 dígitos numéricos"),
+});
+
+export const verificarPasswordSchema = z
+  .object({
+    nombre_usuario: z.string().trim().optional(),
+    usuario: z.string().trim().optional(),
+    email: z.string().trim().optional(),
+    contraseña: z.string().optional(),
+    contrasenia: z.string().optional(),
+    password: z.string().optional(),
+  })
+  .refine(
+    (data) => Boolean(data.contraseña || data.contrasenia || data.password),
+    {
+      message: "La contraseña es obligatoria",
+      path: ["contraseña"],
+    },
+  )
+  .transform((data) => ({
+    nombre_usuario:
+      (data.nombre_usuario || data.usuario || data.email || "").trim() ||
+      undefined,
+    contraseña: data.contraseña || data.contrasenia || data.password,
+  }));
+
+export const recuperarPinSchema = z
+  .object({
+    nombre_usuario: z.string().trim().optional(),
+    usuario: z.string().trim().optional(),
+    email: z.string().trim().optional(),
+    contraseña: z.string().optional(),
+    contrasenia: z.string().optional(),
+    password: z.string().optional(),
+    nuevo_pin: z.string().length(4).regex(/^\d{4}$/).optional(),
+    nuevoPin: z.string().length(4).regex(/^\d{4}$/).optional(),
+    pin: z.string().length(4).regex(/^\d{4}$/).optional(),
+  })
+  .refine(
+    (data) => Boolean(data.contraseña || data.contrasenia || data.password),
+    {
+      message: "La contraseña maestra es obligatoria",
+      path: ["contraseña"],
+    },
+  )
+  .refine((data) => Boolean(data.nuevo_pin || data.nuevoPin || data.pin), {
+    message: "El nuevo PIN de 4 dígitos es obligatorio",
+    path: ["nuevo_pin"],
+  })
+  .transform((data) => ({
+    nombre_usuario:
+      (data.nombre_usuario || data.usuario || data.email || "").trim() ||
+      undefined,
+    contraseña: data.contraseña || data.contrasenia || data.password,
+    nuevo_pin: data.nuevo_pin || data.nuevoPin || data.pin,
+  }));

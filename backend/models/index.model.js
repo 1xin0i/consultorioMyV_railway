@@ -96,9 +96,12 @@ const sincronizarModelos = async () => {
       .query(`ALTER TABLE gasto DROP COLUMN notas`)
       .catch(() => {});
 
-    // Nuevas columnas en tabla usuario (email, recuperación por PIN y refresh_token)
+    // Nuevas columnas en tabla usuario (email, PIN, recuperación y refresh_token)
     await sequelize
       .query(`ALTER TABLE usuario ADD COLUMN email VARCHAR(255) NULL UNIQUE`)
+      .catch(() => {});
+    await sequelize
+      .query(`ALTER TABLE usuario ADD COLUMN pin VARCHAR(255) NULL`)
       .catch(() => {});
     await sequelize
       .query(`ALTER TABLE usuario ADD COLUMN reset_token VARCHAR(255) NULL`)

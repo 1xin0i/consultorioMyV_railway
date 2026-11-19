@@ -2,9 +2,12 @@
 
 import { Navigate, useLocation } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
+import { usePinLock } from "../context/PinLockContext";
+import { Login } from "../pages/Login";
 
 export function ProtectedRoute({ children }) {
   const { estaAutenticado, cargando } = useAuth();
+  const { isPinLocked, unlock } = usePinLock();
   const location = useLocation();
 
   if (cargando) {
@@ -22,8 +25,11 @@ export function ProtectedRoute({ children }) {
     return <Navigate to="/login" state={{ from: location }} replace />;
   }
 
+  if (isPinLocked) {
+    return <Login vistaInicial="pin" onUnlock={unlock} />;
+  }
+
   return children;
 }
 
 export default ProtectedRoute;
-
