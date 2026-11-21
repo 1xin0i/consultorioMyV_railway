@@ -193,3 +193,78 @@ export const calcularMetricasJornada = (configuracion) => {
   };
 };
 
+
+const aMinutos = (horaStr, fallback = 0) => {
+  if (!horaStr) return fallback;
+  const [h, m] = String(horaStr).split(":").map(Number);
+  return isNaN(h) ? fallback : h * 60 + (m || 0);
+};
+
+/**
+ * Minutos de la jornada de un día que quedan sin atención por franjas horarias
+ * (por ejemplo, de 9:00 a 13:00). Las franjas que se superponen se cuentan una sola vez.
+ */
+export const minutosSinAtencionFranjas = (
+  fecha,
+  restricciones = [],
+  configuracion = {},
+) => {
+  const fStr = formatearFechaStr(fecha);
+  if (!fStr) return 0;
+  const apertura = aMinutos(configuracion.horaInicio, 8 * 60);
+  const cierre = aMinutos(configuracion.horaFin, 18 * 60);
+
+  const tramos = restricciones
+    .filter((r) => !r.todoElDia && fStr >= r.fechaInicio && fStr <= r.fechaFin)
+    .map((r) => [
+      Math.max(apertura, aMinutos(r.horaInicio, apertura)),
+      Math.min(cierre, aMinutos(r.horaFin, cierre)),
+    ])
+    .filter(([a, b]) => b > a)
+    .sort((x, y) => x[0] - y[0]);
+
+  let total = 0;
+  let finActual = -1;
+  for (const [a, b] of tramos) {
+    if (a >= finActual) {
+      total += b - a;
+      finActual = b;
+    } else if (b > finActual) {
+      total += b - finActual;
+      finActual = b;
+    }
+  }
+  return total;
+};
+
+/**
+ * Indica si un turno quedó en un horario sin atención: día no laboral,
+ * día completo sin atención (incluye feriados) o franja horaria sin atención.
+ */
+export const turnoEnHorarioSinAtencionFecha = (
+  turno,
+  restricciones = [],
+  diasLaborales = [],
+) => {
+  if (!turno?.fecha_hora_inicio) return false;
+  const inicio = new Date(turno.fecha_hora_inicio);
+  if (isNaN(inicio.getTime())) return false;
+  const fin = turno.fecha_hora_fin
+    ? new Date(turno.fecha_hora_fin)
+    : new Date(inicio.getTime() + (Number(turno.duracion_minutos) || 30) * 60000);
+
+  if (diasLaborales.length > 0 && !diasLaborales.includes(inicio.getDay())) {
+    return true;
+  }
+
+  const fStr = formatearFechaStr(inicio);
+  const hIni = inicio.getHours() * 60 + inicio.getMinutes();
+  const hFin = hIni + Math.max(1, Math.round((fin - inicio) / 60000));
+
+  return restricciones.some((r) => {
+    if (fStr < r.fechaInicio || fStr > r.fechaFin) return false;
+    if (r.todoElDia) return true;
+    return hIni < aMinutos(r.horaFin) && hFin > aMinutos(r.horaInicio);
+  });
+};
+

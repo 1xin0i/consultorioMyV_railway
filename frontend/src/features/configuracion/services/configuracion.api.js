@@ -11,6 +11,7 @@ export const configuracionApi = {
     httpClient.post("/restricciones-agenda", payload),
   eliminarRestriccion: (id) =>
     httpClient.delete(`/restricciones-agenda/${id}`),
+  obtenerFeriados: (anio) => httpClient.get(`/feriados/${anio}`),
 };
 
 export default configuracionApi;

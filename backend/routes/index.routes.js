@@ -22,6 +22,7 @@ import CategoriaGastoRoutes from "./CategoriaGasto.routes.js";
 import CajaRoutes from "./Caja.routes.js";
 import ConfiguracionAgendaRoutes from "./ConfiguracionAgenda.routes.js";
 import RestriccionAgendaRoutes from "./RestriccionAgenda.routes.js";
+import FeriadoRoutes from "./Feriado.routes.js";
 
 // ─── RUTAS PÚBLICAS (AUTENTICACIÓN) ──────────────────────────────────
 router.use("/api/auth", UsuarioRoutes);
@@ -42,5 +43,6 @@ router.use("/api/categorias-gastos", verificarToken, CategoriaGastoRoutes);
 router.use("/api/caja", verificarToken, CajaRoutes);
 router.use("/api/configuracion-agenda", verificarToken, ConfiguracionAgendaRoutes);
 router.use("/api/restricciones-agenda", verificarToken, RestriccionAgendaRoutes);
+router.use("/api/feriados", verificarToken, FeriadoRoutes);
 
 export default router;

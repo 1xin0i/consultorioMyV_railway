@@ -18,6 +18,9 @@ import {
   normalizarRestriccion,
   cargarConfigLocal,
   cargarRestriccionesLocal,
+  FERIADOS_STORAGE_KEY,
+  feriadoComoRestriccion,
+  cargarFeriadosLocal,
 } from "../utils/normalizarRestriccion";
 import {
   esDiaLaboralFecha,
@@ -28,6 +31,8 @@ import {
   obtenerRestriccionesDeFechaList,
   validarTurnoHorarioConfig,
   calcularMetricasJornada,
+  minutosSinAtencionFranjas,
+  turnoEnHorarioSinAtencionFecha,
 } from "../utils/disponibilidad";
 
 const ConfiguracionContext = createContext();
@@ -49,6 +54,42 @@ export function ConfiguracionProvider({ children }) {
   const [configuracion, setConfiguracion] = useState(cargarConfigLocal);
   const [restricciones, setRestricciones] = useState(cargarRestriccionesLocal);
   const [cargandoConfiguracion, setCargandoConfiguracion] = useState(false);
+  const [feriados, setFeriados] = useState(cargarFeriadosLocal);
+
+  // Feriados nacionales del año actual y del siguiente (el backend los consulta y los guarda).
+  useEffect(() => {
+    const tokenActivo = token || localStorage.getItem("token");
+    if (!tokenActivo) return;
+    const anio = new Date().getFullYear();
+    let cancelado = false;
+    Promise.all(
+      [anio, anio + 1].map((a) =>
+        configuracionApi
+          .obtenerFeriados(a)
+          .then((res) => (Array.isArray(res.data?.data) ? res.data.data : []))
+          .catch(() => null),
+      ),
+    ).then((resultados) => {
+      if (cancelado || resultados.every((r) => r === null)) return;
+      const lista = resultados.flat().filter(Boolean);
+      setFeriados(lista);
+      try {
+        localStorage.setItem(FERIADOS_STORAGE_KEY, JSON.stringify(lista));
+      } catch {
+        // ignorar
+      }
+    });
+    return () => {
+      cancelado = true;
+    };
+  }, [token]);
+
+  // Restricciones reales + feriados: es lo que usa la agenda para saber qué días no se atiende.
+  // (Los feriados no aparecen en la lista de días sin atención y no se pueden eliminar.)
+  const restriccionesAgenda = useMemo(
+    () => [...restricciones, ...feriados.map(feriadoComoRestriccion)],
+    [restricciones, feriados],
+  );
 
   const sincronizarDesdeServidor = useCallback(async () => {
     const tokenActivo = token || localStorage.getItem("token");
@@ -291,24 +332,24 @@ export function ConfiguracionProvider({ children }) {
   );
 
   const esDiaBloqueado = useCallback(
-    (fecha) => esDiaBloqueadoFecha(fecha, restricciones),
-    [restricciones],
+    (fecha) => esDiaBloqueadoFecha(fecha, restriccionesAgenda),
+    [restriccionesAgenda],
   );
 
   const obtenerRestriccionDia = useCallback(
-    (fecha) => obtenerRestriccionDiaFecha(fecha, restricciones),
-    [restricciones],
+    (fecha) => obtenerRestriccionDiaFecha(fecha, restriccionesAgenda),
+    [restriccionesAgenda],
   );
 
   const esSlotBloqueado = useCallback(
-    (fecha, horaStr) => esSlotBloqueadoFecha(fecha, horaStr, restricciones),
-    [restricciones],
+    (fecha, horaStr) => esSlotBloqueadoFecha(fecha, horaStr, restriccionesAgenda),
+    [restriccionesAgenda],
   );
 
   const obtenerRestriccionSlot = useCallback(
     (fecha, horaStr) =>
-      obtenerRestriccionSlotFecha(fecha, horaStr, restricciones),
-    [restricciones],
+      obtenerRestriccionSlotFecha(fecha, horaStr, restriccionesAgenda),
+    [restriccionesAgenda],
   );
 
   const obtenerRestriccionesDeFecha = useCallback(
@@ -322,9 +363,24 @@ export function ConfiguracionProvider({ children }) {
         fechaHoraInicioStr,
         duracionMinutos,
         configuracion,
-        restricciones,
+        restriccionesAgenda,
       ),
-    [configuracion, restricciones],
+    [configuracion, restriccionesAgenda],
+  );
+
+  const minutosSinAtencionDia = useCallback(
+    (fecha) => minutosSinAtencionFranjas(fecha, restriccionesAgenda, configuracion),
+    [restriccionesAgenda, configuracion],
+  );
+
+  const turnoEnHorarioSinAtencion = useCallback(
+    (turno) =>
+      turnoEnHorarioSinAtencionFecha(
+        turno,
+        restriccionesAgenda,
+        configuracion.diasLaborales,
+      ),
+    [restriccionesAgenda, configuracion.diasLaborales],
   );
 
   const metricasJornada = useMemo(
@@ -350,6 +406,9 @@ export function ConfiguracionProvider({ children }) {
       sincronizarDesdeServidor,
       cargandoConfiguracion,
       formatearFechaStr,
+      feriados,
+      minutosSinAtencionDia,
+      turnoEnHorarioSinAtencion,
       ...metricasJornada,
     }),
     [
@@ -368,6 +427,9 @@ export function ConfiguracionProvider({ children }) {
       obtenerRestriccionesDeFecha,
       sincronizarDesdeServidor,
       cargandoConfiguracion,
+      feriados,
+      minutosSinAtencionDia,
+      turnoEnHorarioSinAtencion,
       metricasJornada,
     ],
   );

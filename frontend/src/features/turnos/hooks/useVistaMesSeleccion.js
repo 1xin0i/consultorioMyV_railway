@@ -16,6 +16,8 @@ export function useVistaMesSeleccion({
   umbralMedia,
   corteBajaModulos,
   corteMediaModulos,
+  minutosSinAtencionDia,
+  turnoEnHorarioSinAtencion,
 }) {
   const { inicioMesTime, finMesTime } = useMemo(() => {
     const y = fechaActual.getFullYear();
@@ -84,10 +86,39 @@ export function useVistaMesSeleccion({
 
       const modulosOcupados = Math.round(minutosOcupados / intervaloMinutos);
 
+      // Las franjas sin atención (ej. de 9:00 a 13:00) reducen la capacidad del día.
+      const minutosSinAtencion = minutosSinAtencionDia
+        ? minutosSinAtencionDia(fecha)
+        : 0;
+      const minutosDisponibles = Math.max(
+        intervaloMinutos,
+        minutosJornada - minutosSinAtencion,
+      );
+      const capacidadDia = Math.max(
+        0,
+        Math.floor((minutosJornada - minutosSinAtencion) / intervaloMinutos),
+      );
+      const corteBajaDia = minutosSinAtencion
+        ? Math.max(1, Math.floor((capacidadDia * umbralBaja) / 100))
+        : corteBajaModulos;
+      const corteMediaDia = minutosSinAtencion
+        ? Math.max(corteBajaDia + 1, Math.floor((capacidadDia * umbralMedia) / 100))
+        : corteMediaModulos;
+
       const porcentaje = Math.min(
         100,
-        Math.round((minutosOcupados / minutosJornada) * 100),
+        Math.round((minutosOcupados / minutosDisponibles) * 100),
       );
+
+      // Turnos programados que quedaron en un horario sin atención (urgencias o días marcados después).
+      const programadosSinAtencion = turnoEnHorarioSinAtencion
+        ? turnosActivos.filter((t) => {
+            const estado = (t.EstadoTurno?.estado || "").toLowerCase();
+            const programado =
+              estado.includes("programado") || Number(t.id_estado) === 1;
+            return programado && turnoEnHorarioSinAtencion(t);
+          }).length
+        : 0;
 
       const diaLaboral = esDiaLaboral ? esDiaLaboral(fecha) : true;
       const bloqueado = esDiaBloqueado ? esDiaBloqueado(fecha) : false;
@@ -103,6 +134,9 @@ export function useVistaMesSeleccion({
         cantidadActivos: turnosActivos.length,
         modulosOcupados,
         porcentaje,
+        capacidadDia: minutosSinAtencion ? capacidadDia : undefined,
+        minutosSinAtencion,
+        programadosSinAtencion,
         diaLaboral,
         bloqueado,
         restriccion,
@@ -111,8 +145,8 @@ export function useVistaMesSeleccion({
           umbralBaja,
           umbralMedia,
           modulosOcupados,
-          corteBajaModulos,
-          corteMediaModulos,
+          corteBajaDia,
+          corteMediaDia,
         ),
       });
     }
@@ -137,6 +171,8 @@ export function useVistaMesSeleccion({
     umbralMedia,
     corteBajaModulos,
     corteMediaModulos,
+    minutosSinAtencionDia,
+    turnoEnHorarioSinAtencion,
   ]);
 
   const [seleccionDias, setSeleccionDias] = useState(null);

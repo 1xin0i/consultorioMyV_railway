@@ -1,6 +1,6 @@
 /** @format */
 
-import { Lock, Unlock } from "lucide-react";
+import { Lock, Unlock, Flag, AlertTriangle } from "lucide-react";
 
 export function CeldaDiaMes({
   diaItem,
@@ -16,7 +16,7 @@ export function CeldaDiaMes({
 }) {
   if (!diaItem.esMesActual) {
     return (
-      <div key={idx} className="bg-transparent min-h-[90px] sm:min-h-[110px]" />
+      <div key={idx} className="bg-transparent min-h-[52px] sm:min-h-[110px]" />
     );
   }
 
@@ -30,10 +30,19 @@ export function CeldaDiaMes({
     bloqueado,
     restriccion,
     estilosOcupacion,
+    programadosSinAtencion = 0,
+    minutosSinAtencion = 0,
   } = diaItem;
 
+  // Si el día tiene una franja sin atención, la capacidad es menor que la de la jornada completa.
+  const capacidad = diaItem.capacidadDia ?? capacidadDia;
   const diaBloqueado = bloqueado || !diaLaboral;
-  const modulosLibres = Math.max(0, capacidadDia - modulosOcupados);
+  const esFeriado = Boolean(restriccion?.esFeriado);
+  const IconoSinAtencion = esFeriado ? Flag : Lock;
+  const modulosLibres = Math.max(0, capacidad - modulosOcupados);
+  // Turnos programados en un horario sin atención: la celda se remarca para que no pase desapercibida.
+  const conAlerta = programadosSinAtencion > 0;
+  const textoAlerta = `${programadosSinAtencion} ${programadosSinAtencion === 1 ? "turno programado" : "turnos programados"} en horario sin atención`;
   const bordeOcupacion =
     modulosOcupados > 0 ? estilosOcupacion?.borderColor : null;
 
@@ -61,10 +70,12 @@ export function CeldaDiaMes({
           fin: diaItem.fecha,
         });
       }}
-      className={`rounded-2xl p-2 sm:p-2.5 flex flex-col justify-between min-h-[90px] sm:min-h-[110px] transition-all cursor-pointer relative overflow-hidden select-none ${
+      className={`rounded-xl sm:rounded-2xl p-1.5 sm:p-2.5 flex flex-col justify-between min-h-[52px] sm:min-h-[110px] transition-all cursor-pointer relative overflow-hidden select-none ${
         seleccionado
           ? "border-2 !border-[#0d8266] dark:!border-emerald-400 ring-2 ring-[#0d8266]/30 z-20 shadow-md bg-emerald-50 dark:bg-emerald-950/40"
-          : diaBloqueado
+          : conAlerta
+            ? "border-2 border-dashed border-amber-400 dark:border-amber-500 bg-amber-50/40 dark:bg-amber-950/20 hover:shadow-xs"
+            : diaBloqueado
             ? "bg-slate-50/80 dark:bg-slate-900/60 border border-slate-200/80 dark:border-slate-800 text-slate-500 dark:text-slate-400"
             : esHoy
               ? "bg-emerald-50/20 dark:bg-emerald-950/20 border-2 border-[#2eb086] ring-2 ring-[#2eb086]/20 z-10"
@@ -97,12 +108,23 @@ export function CeldaDiaMes({
           </span>
         )}
 
-        <div className="flex items-center gap-1">
+        <div className="flex items-center gap-1 min-w-0 w-full sm:w-auto">
           {diaBloqueado && (
-            <span className="text-[10px] text-slate-600 dark:text-slate-300 font-semibold flex items-center gap-1 sm:bg-slate-100 sm:dark:bg-slate-800 sm:border sm:border-slate-200/80 sm:dark:border-slate-700/80 sm:px-1.5 sm:py-0.5 rounded-md">
-              <Lock size={10} className="shrink-0 text-slate-500" />
+            <span
+              title={restriccion?.nombreFeriado || restriccion?.motivo || (!diaLaboral ? "Día no laboral" : "Sin atención")}
+              className={`text-[10px] font-semibold flex items-center gap-1 sm:border sm:px-1.5 sm:py-0.5 rounded-md min-w-0 ${
+                esFeriado
+                  ? "text-sky-700 dark:text-sky-300 sm:bg-sky-50 sm:dark:bg-sky-950/60 sm:border-sky-200 sm:dark:border-sky-800"
+                  : "text-slate-600 dark:text-slate-300 sm:bg-slate-100 sm:dark:bg-slate-800 sm:border-slate-200/80 sm:dark:border-slate-700/80"
+              }`}
+            >
+              <IconoSinAtencion
+                size={10}
+                className={`shrink-0 ${esFeriado ? "text-sky-600 dark:text-sky-400" : "text-slate-500"}`}
+              />
               <span className="hidden sm:inline truncate max-w-[120px]">
-                {restriccion?.motivo ||
+                {restriccion?.nombreFeriado ||
+                  restriccion?.motivo ||
                   (!diaLaboral ? "Día no laboral" : "Sin atención")}
               </span>
             </span>
@@ -122,12 +144,34 @@ export function CeldaDiaMes({
               <Unlock size={11} />
             </button>
           )}
+
+          {/* En celulares la advertencia va a la derecha del candado, sin agregar altura a la celda */}
+          {conAlerta && (
+            <AlertTriangle
+              size={11}
+              aria-label={textoAlerta}
+              className="sm:hidden ml-auto shrink-0 text-amber-600 dark:text-amber-400"
+            />
+          )}
         </div>
       </div>
 
-      {/* Parte inferior de la celda: Badge de módulos libres + Barra de progreso */}
-      {!diaBloqueado && (
-        <div className="flex flex-col items-end gap-1 w-full mt-2">
+      {/* Parte inferior: si hay turnos en horario sin atención, la advertencia reemplaza a la barra */}
+      {conAlerta ? (
+        <div className="hidden sm:flex justify-end w-full mt-2">
+          <span
+            title={textoAlerta}
+            className="inline-flex items-center gap-1 text-[10px] font-extrabold text-amber-800 dark:text-amber-300 bg-amber-100 dark:bg-amber-950/70 border border-amber-300 dark:border-amber-700 rounded-md px-1.5 py-0.5 leading-none"
+          >
+            <AlertTriangle size={11} className="shrink-0" />
+            <span>
+              {programadosSinAtencion}{" "}
+              {programadosSinAtencion === 1 ? "turno" : "turnos"}
+            </span>
+          </span>
+        </div>
+      ) : !diaBloqueado && (
+        <div className="flex flex-col items-end gap-1 w-full mt-1 sm:mt-2">
           <span
             className={`hidden sm:flex text-[10px] font-bold px-2 py-0.5 rounded-md border items-center gap-1 truncate ${
               modulosOcupados === 0
@@ -135,7 +179,7 @@ export function CeldaDiaMes({
                 : estilosOcupacion?.badgeColor ||
                   "text-emerald-800 bg-emerald-50/70 border-emerald-200/80"
             }`}
-            title={`${modulosOcupados} módulos ocupados (${cantidadActivos} turnos) de ${capacidadDia}. Quedan ${modulosLibres} módulos libres.`}
+            title={`${modulosOcupados} módulos ocupados (${cantidadActivos} turnos) de ${capacidad}. Quedan ${modulosLibres} módulos libres.${minutosSinAtencion ? ` Hay una franja sin atención de ${Math.round(minutosSinAtencion / 6) / 10} h.` : ""}`}
           >
             {modulosOcupados > 0 && (
               <span
@@ -146,7 +190,7 @@ export function CeldaDiaMes({
             )}
             <span>
               {modulosOcupados === 0
-                ? `${capacidadDia} libres`
+                ? `${capacidad} libres`
                 : modulosLibres <= 0
                   ? "Completo"
                   : `${modulosLibres} libres`}
@@ -222,6 +266,22 @@ export function LeyendaOcupacionMes({
           <span>
             <strong className="text-slate-700 dark:text-slate-300">
               Sin atención
+            </strong>
+          </span>
+        </div>
+
+        <div className="flex items-center gap-1.5">
+          <Flag size={11} className="text-sky-600 dark:text-sky-400 shrink-0" />
+          <span>
+            <strong className="text-sky-700 dark:text-sky-300">Feriado</strong>
+          </span>
+        </div>
+
+        <div className="flex items-center gap-1.5">
+          <AlertTriangle size={11} className="text-amber-600 shrink-0" />
+          <span>
+            <strong className="text-amber-800 dark:text-amber-400">
+              Turnos en horario sin atención
             </strong>
           </span>
         </div>

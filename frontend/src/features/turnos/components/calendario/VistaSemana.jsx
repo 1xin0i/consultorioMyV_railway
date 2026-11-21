@@ -1,7 +1,8 @@
 /** @format */
 
 import { useMemo, memo } from "react";
-import { Clock, Lock } from "lucide-react";
+import { Clock, Lock, Flag } from "lucide-react";
+import { useConfiguracion } from "@/features/configuracion";
 import useTurnoTouchClick from "../../hooks/useTurnoTouchClick";
 import {
   SLOTS_HORAS as DEFAULT_SLOTS,
@@ -23,8 +24,12 @@ const ItemTurnoSemana = memo(function ItemTurnoSemana({
   onEventClick,
 }) {
   const touchProps = useTurnoTouchClick(turno, onEventClick);
+  const { turnoEnHorarioSinAtencion } = useConfiguracion();
   const estado = turno.EstadoTurno?.estado || "Programado";
   const estilos = OBTENER_ESTILOS_ESTADO(estado);
+  const enHorarioSinAtencion =
+    estado.toLowerCase().includes("programado") &&
+    Boolean(turnoEnHorarioSinAtencion?.(turno));
   const paciente = turno.Paciente
     ? `${turno.Paciente.nombre} ${turno.Paciente.apellido}`
     : `Paciente #${turno.id_paciente}`;
@@ -36,7 +41,7 @@ const ItemTurnoSemana = memo(function ItemTurnoSemana({
       style={style}
       {...touchProps}
       title={`${paciente} (${horaInicio} - ${horaFin} hs) - ${estado}`}
-      className={`absolute pointer-events-auto p-0.5 sm:p-1 md:p-1.5 text-[9px] sm:text-[10px] md:text-[11px] rounded sm:rounded-md shadow-2xs border truncate font-bold flex flex-col justify-between cursor-pointer hover:shadow-md transition-shadow z-10 overflow-hidden leading-tight ${estilos.bg} ${estilos.border} ${estilos.text}`}
+      className={`absolute pointer-events-auto p-0.5 sm:p-1 md:p-1.5 text-[9px] sm:text-[10px] md:text-[11px] rounded sm:rounded-md shadow-2xs border truncate font-bold flex flex-col justify-between cursor-pointer hover:shadow-md transition-shadow z-10 overflow-hidden leading-tight ${estilos.bg} ${estilos.border} ${estilos.text} ${enHorarioSinAtencion ? "ring-2 ring-amber-500 dark:ring-amber-400" : ""}`}
     >
       <span
         className={`sm:hidden absolute inset-y-0 left-0 w-1 ${estilos.indicator}`}
@@ -255,12 +260,18 @@ export const VistaSemana = memo(function VistaSemana({
                     >
                       {nombreDia}
                     </p>
-                    {diaBloqueado && (
-                      <Lock
-                        size={10}
-                        className="text-slate-600 dark:text-slate-400 shrink-0"
-                      />
-                    )}
+                    {diaBloqueado &&
+                      (restriccionDia?.esFeriado ? (
+                        <Flag
+                          size={10}
+                          className="text-sky-600 dark:text-sky-400 shrink-0"
+                        />
+                      ) : (
+                        <Lock
+                          size={10}
+                          className="text-slate-600 dark:text-slate-400 shrink-0"
+                        />
+                      ))}
                   </div>
 
                   <div className="flex items-center justify-center mt-0.5">

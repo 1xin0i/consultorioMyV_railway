@@ -1,7 +1,8 @@
 /** @format */
 
 import { useMemo, memo } from "react";
-import { User, Clock, Lock } from "lucide-react";
+import { User, Clock, Lock, Flag, AlertTriangle } from "lucide-react";
+import { useConfiguracion } from "@/features/configuracion";
 import useTurnoTouchClick from "../../hooks/useTurnoTouchClick";
 import {
   SLOTS_HORAS as DEFAULT_SLOTS,
@@ -20,9 +21,13 @@ const ItemTurnoDia = memo(function ItemTurnoDia({
   onEventClick,
 }) {
   const touchProps = useTurnoTouchClick(turno, onEventClick);
+  const { turnoEnHorarioSinAtencion } = useConfiguracion();
   const estado = turno.EstadoTurno?.estado || "Programado";
   const estilos = OBTENER_ESTILOS_ESTADO(estado);
   const IconoEstado = estilos.icon;
+  const enHorarioSinAtencion =
+    estado.toLowerCase().includes("programado") &&
+    Boolean(turnoEnHorarioSinAtencion?.(turno));
   const paciente = turno.Paciente
     ? `${turno.Paciente.nombre} ${turno.Paciente.apellido}`
     : `Paciente #${turno.id_paciente}`;
@@ -33,13 +38,22 @@ const ItemTurnoDia = memo(function ItemTurnoDia({
     <div
       style={style}
       {...touchProps}
-      className={`absolute pointer-events-auto px-3 py-1.5 sm:py-2 rounded-xl text-xs sm:text-sm font-semibold shadow-2xs border cursor-pointer hover:shadow-md transition-shadow overflow-hidden flex flex-col justify-center z-10 ${estilos.bg} ${estilos.border} ${estilos.text}`}
+      title={
+        enHorarioSinAtencion
+          ? "Turno programado en un horario sin atención: conviene reprogramarlo o cancelarlo y avisarle al paciente."
+          : undefined
+      }
+      className={`absolute pointer-events-auto px-3 py-1.5 sm:py-2 rounded-xl text-xs sm:text-sm font-semibold shadow-2xs border cursor-pointer hover:shadow-md transition-shadow overflow-hidden flex flex-col justify-center z-10 ${estilos.bg} ${estilos.border} ${estilos.text} ${enHorarioSinAtencion ? "ring-2 ring-amber-500 dark:ring-amber-400" : ""}`}
     >
       <div className="flex flex-col justify-center gap-1 min-w-0">
         {/* Fila superior: Paciente y Badge de Estado */}
         <div className="flex items-center justify-between gap-2 min-w-0 leading-tight">
           <span className="flex items-center gap-1.5 font-bold tracking-wide truncate text-xs sm:text-sm">
-            <User size={14} className="shrink-0 opacity-80" />
+            {enHorarioSinAtencion ? (
+              <AlertTriangle size={14} className="shrink-0 text-amber-600 dark:text-amber-400" />
+            ) : (
+              <User size={14} className="shrink-0 opacity-80" />
+            )}
             <span className="truncate">{paciente}</span>
           </span>
           <span
@@ -196,10 +210,17 @@ export const VistaDia = memo(function VistaDia({
             >
               {bloqueado && (
                 <div className="flex items-center gap-1.5 text-xs font-semibold text-slate-700 dark:text-slate-300">
-                  <Lock
-                    size={13}
-                    className="text-slate-600 dark:text-slate-400 shrink-0"
-                  />
+                  {restriccion?.esFeriado ? (
+                    <Flag
+                      size={13}
+                      className="text-sky-600 dark:text-sky-400 shrink-0"
+                    />
+                  ) : (
+                    <Lock
+                      size={13}
+                      className="text-slate-600 dark:text-slate-400 shrink-0"
+                    />
+                  )}
                   <span className="truncate">
                     {restriccion?.motivo || "Sin atención"}
                   </span>

@@ -55,6 +55,35 @@ export const normalizarRestriccion = (item) => {
   };
 };
 
+export const FERIADOS_STORAGE_KEY = "consultorio_feriados_v1";
+
+/**
+ * Convierte un feriado ({ fecha, nombre, tipo }) en una restricción de día completo,
+ * así la agenda lo trata igual que un día sin atención. No tiene id: no se puede eliminar.
+ */
+export const feriadoComoRestriccion = (f) => ({
+  id: null,
+  id_restriccion: null,
+  esFeriado: true,
+  fechaInicio: f.fecha,
+  fechaFin: f.fecha,
+  todoElDia: true,
+  horaInicio: null,
+  horaFin: null,
+  motivo: f.tipo === "puente" ? "No laborable" : `Feriado: ${f.nombre}`,
+  nombreFeriado: f.nombre,
+});
+
+export const cargarFeriadosLocal = () => {
+  try {
+    const raw = localStorage.getItem(FERIADOS_STORAGE_KEY);
+    const parsed = raw ? JSON.parse(raw) : [];
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+};
+
 export const cargarConfigLocal = () => {
   try {
     const raw = localStorage.getItem(CONFIG_STORAGE_KEY);

@@ -28,6 +28,8 @@ export const VistaMes = memo(function VistaMes({
     modulosTotales,
     corteBajaModulos,
     corteMediaModulos,
+    minutosSinAtencionDia,
+    turnoEnHorarioSinAtencion,
   } = useConfiguracion();
 
   const intervaloMinutos = Number(configuracion?.intervaloMinutos) || 30;
@@ -47,6 +49,8 @@ export const VistaMes = memo(function VistaMes({
     umbralMedia,
     corteBajaModulos,
     corteMediaModulos,
+    minutosSinAtencionDia,
+    turnoEnHorarioSinAtencion,
   });
 
   return (
@@ -64,7 +68,7 @@ export const VistaMes = memo(function VistaMes({
       </div>
 
       {/* Grilla de días del mes con tarjetas redondeadas y separación limpia */}
-      <div className="grid grid-cols-7 gap-2 p-2.5 sm:p-3 flex-1 bg-[#f9fbfd] dark:bg-slate-950/40">
+      <div className="grid grid-cols-7 gap-1.5 sm:gap-2 p-2 sm:p-3 flex-1 bg-[#f9fbfd] dark:bg-slate-950/40">
         {diasCalendario.map((diaItem, idx) => (
           <CeldaDiaMes
             key={idx}
