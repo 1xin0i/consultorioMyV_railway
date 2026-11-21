@@ -69,6 +69,29 @@ export function AgendaHeader({
         </div>
 
         <div className="flex items-center gap-1.5 sm:gap-2 w-full sm:w-auto justify-between sm:justify-end">
+          {/* En la vista mensual no aplica: queda oculto pero ocupa su lugar, así el selector de vista no se mueve */}
+          {setMostrarCancelados && (
+            <button
+              type="button"
+              onClick={() => setMostrarCancelados(!mostrarCancelados)}
+              aria-pressed={mostrarCancelados}
+              aria-hidden={vista === "mes"}
+              tabIndex={vista === "mes" ? -1 : undefined}
+              title={
+                mostrarCancelados
+                  ? "Ocultar turnos cancelados"
+                  : "Mostrar turnos cancelados"
+              }
+              className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl border text-xs font-bold transition-all cursor-pointer shrink-0 ${vista === "mes" ? "invisible pointer-events-none" : ""} ${
+                mostrarCancelados
+                  ? "bg-[#fff1f2] text-rose-900 border-rose-300/80 dark:bg-rose-950/80 dark:text-rose-200 dark:border-rose-700"
+                  : "bg-white text-slate-600 border-gray-200 hover:bg-gray-50 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700 dark:hover:bg-slate-700"
+              }`}
+            >
+              {mostrarCancelados ? <Eye size={14} /> : <EyeOff size={14} />}
+              <span className="hidden sm:inline">Cancelados</span>
+            </button>
+          )}
           <div className="inline-flex rounded-xl border border-gray-200 dark:border-slate-700 bg-[#f2f5f6] dark:bg-slate-800 p-0.5 shadow-2xs flex-1 sm:flex-initial">
             {[
               { id: "dia", label: "Día" },
@@ -93,26 +116,6 @@ export function AgendaHeader({
             ))}
           </div>
 
-          {setMostrarCancelados && vista !== "mes" && (
-            <button
-              type="button"
-              onClick={() => setMostrarCancelados(!mostrarCancelados)}
-              aria-pressed={mostrarCancelados}
-              title={
-                mostrarCancelados
-                  ? "Ocultar turnos cancelados"
-                  : "Mostrar turnos cancelados"
-              }
-              className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl border text-xs font-bold transition-all cursor-pointer shrink-0 ${
-                mostrarCancelados
-                  ? "bg-[#fff1f2] text-rose-900 border-rose-300/80 dark:bg-rose-950/80 dark:text-rose-200 dark:border-rose-700"
-                  : "bg-white text-slate-600 border-gray-200 hover:bg-gray-50 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700 dark:hover:bg-slate-700"
-              }`}
-            >
-              {mostrarCancelados ? <Eye size={14} /> : <EyeOff size={14} />}
-              <span className="hidden sm:inline">Cancelados</span>
-            </button>
-          )}
         </div>
       </div>
     </div>
