@@ -11,6 +11,8 @@ import InputFiltro from "@/shared/components/ui/InputFiltro";
 
 const LABEL_CLASS =
   "block text-[11px] font-bold text-slate-700 uppercase tracking-wider mb-1";
+import SelectorFechaNacimiento from "@/shared/components/ui/SelectorFechaNacimiento";
+
 const INPUT_CLASS =
   "w-full border border-teal-100 bg-slate-50/60 p-2.5 rounded-xl text-sm text-slate-800 placeholder:text-slate-400 focus:outline-none focus:bg-white focus:ring-2 focus:ring-teal-500/30 focus:border-teal-500 transition-all shadow-2xs";
 
@@ -129,8 +131,7 @@ export function FormularioCrearEditar({
 
           <div>
             <label className={LABEL_CLASS}>Fecha de Nacimiento</label>
-            <input
-              type="date"
+            <SelectorFechaNacimiento
               name="fecha_nacimiento"
               value={datosFormulario?.fecha_nacimiento || ""}
               onChange={actualizarDatos}

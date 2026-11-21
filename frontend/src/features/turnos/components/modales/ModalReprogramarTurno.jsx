@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { AlertCircle } from "lucide-react";
 import Modal from "@/shared/components/ui/Modal";
+import SelectorFechaHora from "@/shared/components/ui/SelectorFechaHora";
 import { formatDateTimeInput } from "@/shared/utils";
 import { calcularHoraFin } from "../../utils/calcularHoraFin";
 import { useConfiguracion } from "@/features/configuracion";
@@ -22,7 +23,7 @@ export function ModalReprogramarTurno({
   const abierto = isOpen ?? modalReprogramarAbierto;
   const cerrar = onClose || cerrarModal;
   const turnoTarget = turno || turnoSeleccionado;
-  const { validarTurnoHorario } = useConfiguracion();
+  const { validarTurnoHorario, configuracion } = useConfiguracion();
 
   const [datosInternos, setDatosInternos] = useState({
     fecha_hora_inicio: "",
@@ -139,13 +140,13 @@ export function ModalReprogramarTurno({
           <label className="block text-sm font-semibold text-gray-700 mb-1">
             Nueva Fecha y Hora de Inicio *
           </label>
-          <input
-            type="datetime-local"
+          <SelectorFechaHora
             name="fecha_hora_inicio"
             value={datos.fecha_hora_inicio || ""}
             onChange={handleChange}
+            horaInicio={configuracion?.horaInicio}
+            horaFin={configuracion?.horaFin}
             required
-            className="w-full border border-gray-300 p-2.5 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#2eb086]/50 focus:border-[#2eb086]"
           />
         </div>
 
@@ -180,13 +181,11 @@ export function ModalReprogramarTurno({
           <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">
             Nueva Fecha y Hora de Fin (Calculado automáticamente)
           </label>
-          <input
-            type="datetime-local"
-            name="fecha_hora_fin"
-            value={datos.fecha_hora_fin || ""}
-            disabled
-            className="w-full bg-gray-100 border border-gray-300 p-2 rounded-lg text-sm text-gray-600 cursor-not-allowed font-medium"
-          />
+          <p className="text-sm font-semibold text-gray-700 dark:text-slate-300">
+            {datos.fecha_hora_fin && String(datos.fecha_hora_fin).includes("T")
+              ? `Termina a las ${String(datos.fecha_hora_fin).split("T")[1].slice(0, 5)} hs`
+              : "Elegí el día y la hora de inicio"}
+          </p>
         </div>
       </div>
 

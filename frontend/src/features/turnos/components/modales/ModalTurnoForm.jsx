@@ -5,6 +5,7 @@ import Modal from "@/shared/components/ui/Modal";
 import { UserPlus, AlertCircle, Plus, X } from "lucide-react";
 import { formatDateTimeInput } from "@/shared/utils";
 import InputFiltro from "@/shared/components/ui/InputFiltro";
+import SelectorFechaHora from "@/shared/components/ui/SelectorFechaHora";
 import { calcularHoraFin } from "../../utils/calcularHoraFin";
 import { useConfiguracion } from "@/features/configuracion";
 import turnosApi from "../../services/turnos.api";
@@ -24,7 +25,7 @@ export function ModalTurnoForm({
   const [modalCrearPacienteAbierto, setModalCrearPacienteAbierto] =
     useState(false);
 
-  const { validarTurnoHorario } = useConfiguracion();
+  const { validarTurnoHorario, configuracion } = useConfiguracion();
   const validacionHorario =
     !editando && datosFormulario?.fecha_hora_inicio && validarTurnoHorario
       ? validarTurnoHorario(
@@ -216,19 +217,16 @@ export function ModalTurnoForm({
                 Fecha y Hora de Inicio{" "}
                 <span className="text-rose-500 font-extrabold">*</span>
               </label>
-              <input
-                type="datetime-local"
+              <SelectorFechaHora
                 name="fecha_hora_inicio"
                 value={
                   formatDateTimeInput(datosFormulario.fecha_hora_inicio) || ""
                 }
                 onChange={actualizarDatos}
+                horaInicio={configuracion?.horaInicio}
+                horaFin={configuracion?.horaFin}
+                invalido={Boolean(validacionHorario && !validacionHorario.valido)}
                 required
-                className={`w-full border p-2.5 rounded-xl text-sm focus:outline-none focus:ring-2 transition-colors ${
-                  validacionHorario && !validacionHorario.valido
-                    ? "border-amber-400 bg-amber-50/30 text-amber-900 focus:ring-amber-400/50"
-                    : "border-gray-300 focus:ring-[#2eb086]/50 focus:border-[#2eb086]"
-                }`}
               />
               {validacionHorario && !validacionHorario.valido && (
                 <p className="text-xs text-amber-600 font-semibold mt-1 flex items-center gap-1">
@@ -264,15 +262,13 @@ export function ModalTurnoForm({
           {!editando && (
             <div className="col-span-1 md:col-span-2 bg-gray-50 p-3 rounded-xl border border-gray-200">
               <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">
-                Fecha y Hora de Fin (Calculado automáticamente)
+                Fin del turno (según la duración)
               </label>
-              <input
-                type="datetime-local"
-                name="fecha_hora_fin"
-                value={datosFormulario.fecha_hora_fin || ""}
-                disabled
-                className="w-full bg-gray-100 border border-gray-300 p-2 rounded-lg text-sm text-gray-600 cursor-not-allowed font-medium"
-              />
+              <p className="text-sm font-semibold text-gray-700 dark:text-slate-300">
+                {datosFormulario.fecha_hora_fin && String(datosFormulario.fecha_hora_fin).includes("T")
+                  ? `Termina a las ${String(datosFormulario.fecha_hora_fin).split("T")[1].slice(0, 5)} hs`
+                  : "Elegí el día y la hora de inicio"}
+              </p>
             </div>
           )}
 

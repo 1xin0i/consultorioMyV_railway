@@ -17,6 +17,7 @@ import {
   obtenerIniciales,
 } from "@/shared/utils/avatarColors";
 import { manejarErrorApi } from "@/shared/utils/errorHandler";
+import SelectorFechaNacimiento from "@/shared/components/ui/SelectorFechaNacimiento";
 import { obtenerCamposFaltantesPaciente } from "../../utils/pacienteIncompletoUtils";
 
 export function ModalFichasIncompletas({
@@ -266,8 +267,7 @@ export function ModalFichasIncompletas({
                           <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
                             Fecha de Nacimiento
                           </label>
-                          <input
-                            type="date"
+                          <SelectorFechaNacimiento
                             name="fecha_nacimiento"
                             value={formDatos.fecha_nacimiento}
                             onChange={handleInputChange}
