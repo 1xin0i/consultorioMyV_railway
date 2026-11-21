@@ -8,6 +8,12 @@ import { formatearTurnoParaReprogramar } from "../utils/formatTurnoParaReprogram
 import { useConfiguracion } from "@/features/configuracion";
 import turnosApi from "../services/turnos.api";
 
+// Un turno no se puede programar en el pasado (5 minutos de margen, igual que el servidor).
+const esFechaPasada = (fecha) => {
+  const ms = new Date(fecha).getTime();
+  return !isNaN(ms) && ms < Date.now() - 5 * 60000;
+};
+
 export function useTurnoActions(recargar, cerrarModal) {
   const [cargandoAccion, setCargandoAccion] = useState(false);
   const { validarTurnoHorario } = useConfiguracion();
@@ -23,6 +29,12 @@ export function useTurnoActions(recargar, cerrarModal) {
     }
     if (!datosFormulario?.fecha_hora_inicio) {
       toast.error("Por favor, selecciona la fecha y hora de inicio del turno.");
+      return;
+    }
+    if (!editando && esFechaPasada(datosFormulario.fecha_hora_inicio)) {
+      toast.error("La fecha y hora del turno ya pasaron. Elegí un horario futuro.", {
+        id: "error-fecha-pasada",
+      });
       return;
     }
 
@@ -194,6 +206,13 @@ export function useTurnoActions(recargar, cerrarModal) {
     cerrarModalReprogramar,
   ) => {
     if (!turnoSeleccionado) return;
+
+    if (esFechaPasada(datosReprogramacion.fecha_hora_inicio)) {
+      toast.error("La nueva fecha y hora ya pasaron. Elegí un horario futuro.", {
+        id: "error-fecha-pasada",
+      });
+      return;
+    }
 
     const ignorarRestr = Boolean(datosReprogramacion.ignorarRestricciones);
 

@@ -160,6 +160,16 @@ export const asegurarAgendaDisponible = async ({
   turnoIdExcluir = null,
   ignorarRestricciones = false,
 }) => {
+  // Un turno no puede programarse en el pasado (tampoco como urgencia).
+  // Se valida en cada pedido: 5 minutos de margen para no rechazar un turno "ahora mismo".
+  const inicioMs = new Date(fechaInicio).getTime();
+  if (!isNaN(inicioMs) && inicioMs < Date.now() - 5 * 60000) {
+    throw new AppError(400, {
+      error: "La fecha y hora del turno ya pasaron. Elegí un horario futuro.",
+      codigo: "FECHA_PASADA",
+    });
+  }
+
   if (await haySolapamientoHorarios(fechaInicio, fechaFin, turnoIdExcluir)) {
     throw new AppError(409, {
       error: "El horario seleccionado se superpone con un turno ya programado.",
