@@ -276,7 +276,7 @@ export function Bottombar() {
       <RecuperarPinModal
         isOpen={modalPinAbierto}
         onClose={() => setModalPinAbierto(false)}
-        usuarioActual={usuario?.nombre_usuario || usuario?.nombre}
+        usuarioActual={usuario?.email || usuario?.nombre_usuario || usuario?.nombre}
       />
     </div>
   );

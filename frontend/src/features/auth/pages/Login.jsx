@@ -137,13 +137,16 @@ export function Login({ vistaInicial, onUnlock }) {
   }, [vista, bloqueado]);
 
   // Sincronización de vista según props y estado de bloqueo
+  const previoPinLockedRef = useRef(isPinLocked);
   useEffect(() => {
     if (vistaInicial) {
       setVista(vistaInicial);
-    } else if (estaAutenticado && isPinLocked) {
+    } else if (!previoPinLockedRef.current && isPinLocked && estaAutenticado) {
+      // Solo forzar a vista 'pin' cuando ocurre una nueva transición a bloqueado
       setVista("pin");
     }
-  }, [vistaInicial, estaAutenticado, isPinLocked]);
+    previoPinLockedRef.current = isPinLocked;
+  }, [vistaInicial, isPinLocked, estaAutenticado]);
 
   // ─── ESTADOS VISTA A: LOGIN MAESTRO (EMAIL + CONTRASEÑA) ──────────
   const [email, setEmail] = useState("");
@@ -238,10 +241,7 @@ export function Login({ vistaInicial, onUnlock }) {
     setPassword("");
     setError("");
     if (alerta) setAlertaSeguridad(alerta);
-    // Si la sesión estaba autenticada y bloqueada, cerrar sesión para que ingrese limpiamente
-    if (estaAutenticado) {
-      logout();
-    }
+    // No cerrar sesión ni borrar tokens para permitir volver a ingresar con PIN sin error 401
     setVista("login");
   };
 
@@ -602,9 +602,7 @@ export function Login({ vistaInicial, onUnlock }) {
     }
   };
 
-  const tieneSesionPrevia = Boolean(
-    localStorage.getItem("token") || localStorage.getItem("jwt_dispositivo"),
-  );
+  const tieneSesionPrevia = Boolean(localStorage.getItem("token"));
 
   return (
     <div className="w-full h-[100dvh] overflow-hidden overscroll-none touch-none select-none flex flex-col lg:flex-row bg-white font-sans relative ">
