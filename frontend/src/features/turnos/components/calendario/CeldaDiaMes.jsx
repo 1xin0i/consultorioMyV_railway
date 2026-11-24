@@ -40,8 +40,13 @@ export function CeldaDiaMes({
   const esFeriado = Boolean(restriccion?.esFeriado);
   const IconoSinAtencion = esFeriado ? Flag : Lock;
   const modulosLibres = Math.max(0, capacidad - modulosOcupados);
+  const hoySinHora = new Date();
+  hoySinHora.setHours(0, 0, 0, 0);
+  const esDiaPasado = fecha.getTime() < hoySinHora.getTime();
+
   // Turnos programados en un horario sin atención: la celda se remarca para que no pase desapercibida.
-  const conAlerta = programadosSinAtencion > 0;
+  // En los días que ya pasaron no tiene sentido avisarlo.
+  const conAlerta = programadosSinAtencion > 0 && !esDiaPasado;
   const textoAlerta = `${programadosSinAtencion} ${programadosSinAtencion === 1 ? "turno programado" : "turnos programados"} en horario sin atención`;
   const bordeOcupacion =
     modulosOcupados > 0 ? estilosOcupacion?.borderColor : null;
@@ -49,10 +54,6 @@ export function CeldaDiaMes({
   const fechaIsoAttr = `${fecha.getFullYear()}-${String(
     fecha.getMonth() + 1,
   ).padStart(2, "0")}-${String(fecha.getDate()).padStart(2, "0")}`;
-
-  const hoySinHora = new Date();
-  hoySinHora.setHours(0, 0, 0, 0);
-  const esDiaPasado = fecha.getTime() < hoySinHora.getTime();
 
   return (
     <div
@@ -73,6 +74,9 @@ export function CeldaDiaMes({
       className={`rounded-xl sm:rounded-2xl p-1.5 sm:p-2.5 flex flex-col justify-between min-h-[52px] sm:min-h-[110px] transition-all cursor-pointer relative overflow-hidden select-none ${
         seleccionado
           ? "border-2 !border-[#0d8266] dark:!border-emerald-400 ring-2 ring-[#0d8266]/30 z-20 shadow-md bg-emerald-50 dark:bg-emerald-950/40"
+          : esDiaPasado
+            ? // Los días que ya pasaron se ven apagados y sin los colores de disponibilidad
+              "bg-slate-100/70 dark:bg-slate-900/40 border border-slate-200/70 dark:border-slate-800 text-slate-400 dark:text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800/60"
           : conAlerta
             ? "border-2 border-dashed border-amber-400 dark:border-amber-500 bg-amber-50/40 dark:bg-amber-950/20 hover:shadow-xs"
             : diaBloqueado
@@ -170,6 +174,16 @@ export function CeldaDiaMes({
             </span>
           </span>
         </div>
+      ) : esDiaPasado ? (
+        // Día pasado: solo cuántos turnos tuvo, sin módulos libres ni barra
+        !diaBloqueado &&
+        cantidadActivos > 0 && (
+          <div className="hidden sm:flex justify-end w-full mt-2">
+            <span className="text-[10px] font-semibold text-slate-400 dark:text-slate-500">
+              {cantidadActivos} {cantidadActivos === 1 ? "turno" : "turnos"}
+            </span>
+          </div>
+        )
       ) : !diaBloqueado && (
         <div className="flex flex-col items-end gap-1 w-full mt-1 sm:mt-2">
           <span
