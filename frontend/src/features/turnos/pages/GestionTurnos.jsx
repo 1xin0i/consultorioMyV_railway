@@ -32,7 +32,7 @@ const COLUMNAS_TURNOS = [
   { etiqueta: "Práctica", campo: null, ordenable: false },
   { etiqueta: "Fecha y Hora", campo: "fecha_hora_inicio", ordenable: true },
   { etiqueta: "Estado", campo: "id_estado", ordenable: true, centrado: true },
-  { etiqueta: "Honorarios", campo: "precio_final", ordenable: true },
+  { etiqueta: "Importe", campo: "precio_final", ordenable: true },
   { etiqueta: "Notas", campo: null, ordenable: false, centrado: true },
   { etiqueta: "Acciones", campo: null, ordenable: false, centrado: true },
 ];

@@ -22,6 +22,7 @@ const ItemTurnoSemana = memo(function ItemTurnoSemana({
   style,
   duracionMinutos,
   onEventClick,
+  liberado = false,
 }) {
   const touchProps = useTurnoTouchClick(turno, onEventClick);
   const { turnoEnHorarioSinAtencion } = useConfiguracion();
@@ -41,7 +42,7 @@ const ItemTurnoSemana = memo(function ItemTurnoSemana({
       style={style}
       {...touchProps}
       title={`${paciente} (${horaInicio} - ${horaFin} hs) - ${estado}`}
-      className={`absolute pointer-events-auto p-0.5 sm:p-1 md:p-1.5 text-[9px] sm:text-[10px] md:text-[11px] rounded sm:rounded-md shadow-2xs border truncate font-bold flex flex-col justify-between cursor-pointer hover:shadow-md transition-shadow z-10 overflow-hidden leading-tight ${estilos.bg} ${estilos.border} ${estilos.text} ${enHorarioSinAtencion ? "ring-2 ring-amber-500 dark:ring-amber-400" : ""}`}
+      className={`absolute pointer-events-auto p-0.5 sm:p-1 md:p-1.5 text-[9px] sm:text-[10px] md:text-[11px] rounded sm:rounded-md shadow-2xs border truncate font-bold flex flex-col justify-between cursor-pointer hover:shadow-md transition-shadow z-10 overflow-hidden leading-tight ${estilos.bg} ${estilos.border} ${estilos.text} ${liberado ? "opacity-75" : ""} ${enHorarioSinAtencion ? "ring-2 ring-amber-500 dark:ring-amber-400" : ""}`}
     >
       <span
         className={`sm:hidden absolute inset-y-0 left-0 w-1 ${estilos.indicator}`}
@@ -392,10 +393,11 @@ export const VistaSemana = memo(function VistaSemana({
                 {/* Capa flotante de turnos del día */}
                 <div className="absolute inset-0 pointer-events-none">
                   {turnosPosicionados.map(
-                    ({ turno, style, duracionMinutos }) => (
+                    ({ turno, style, duracionMinutos, liberado }) => (
                       <ItemTurnoSemana
                         key={turno.id_turno}
                         turno={turno}
+                        liberado={liberado}
                         style={style}
                         duracionMinutos={duracionMinutos}
                         onEventClick={onEventClick}

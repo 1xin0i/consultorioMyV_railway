@@ -12,6 +12,11 @@ import {
   Eye,
 } from "lucide-react";
 import { MenuFlotantePortal } from "@/shared/components/ui/MenuFlotantePortal";
+import toast from "react-hot-toast";
+import {
+  puedeMarcarseAtendido,
+  MENSAJE_ATENCION_ANTICIPADA,
+} from "../utils/atencionTurno";
 
 export function BotonAcciones({
   turno,
@@ -90,6 +95,10 @@ export function BotonAcciones({
                 type="button"
                 onClick={() => {
                   cerrarMenu();
+                  if (!puedeMarcarseAtendido(turno)) {
+                    toast.error(MENSAJE_ATENCION_ANTICIPADA, { id: "atencion-anticipada" });
+                    return;
+                  }
                   abrirParaAtender(turno);
                 }}
                 className="flex items-center gap-2.5 px-3.5 py-2 hover:bg-emerald-50 dark:hover:bg-emerald-950/50 text-emerald-700 dark:text-emerald-300 transition-colors cursor-pointer text-left"

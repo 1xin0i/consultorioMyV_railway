@@ -92,7 +92,7 @@ const incluirSolicitudConMetodo = () => ({
 
 /* ───────────── Filtros y orden del listado paginado ───────────── */
 
-export const construirWhereListado = ({ estadoFiltrado, mes, search }) => {
+export const construirWhereListado = async ({ estadoFiltrado, mes, search }) => {
   const where = { activo: true };
 
   if (estadoFiltrado && estadoFiltrado !== "todos" && estadoFiltrado !== "all") {
@@ -111,19 +111,44 @@ export const construirWhereListado = ({ estadoFiltrado, mes, search }) => {
     }
   }
 
-  // Búsqueda por nombre, apellido, dni, teléfono
-  if (search !== "") {
+  // Búsqueda por nombre, apellido, DNI o teléfono del paciente, o por fecha (dd/mm/aaaa).
+  // Los pacientes se buscan antes, en una consulta aparte: el listado paginado arma una
+  // subconsulta sin la tabla de pacientes, y filtrar por "$Paciente.nombre$" ahí da error.
+  const texto = String(search ?? "").trim();
+  if (texto !== "") {
+    const like = { [Op.like]: `%${texto}%` };
+    const pacientes = await Paciente.findAll({
+      attributes: ["id_paciente"],
+      where: {
+        [Op.or]: [
+          { nombre: like },
+          { apellido: like },
+          { dni: like },
+          { telefono: like },
+          sequelize.where(
+            sequelize.fn("concat", sequelize.col("nombre"), " ", sequelize.col("apellido")),
+            like,
+          ),
+          sequelize.where(
+            sequelize.fn("concat", sequelize.col("apellido"), " ", sequelize.col("nombre")),
+            like,
+          ),
+        ],
+      },
+      raw: true,
+    });
+    const idsPacientes = pacientes.map((p) => p.id_paciente);
+
+    // La fecha se guarda en UTC: se pasa a hora argentina (UTC-3) antes de compararla.
+    const fechaLocal = sequelize.fn(
+      "DATE_FORMAT",
+      sequelize.fn("DATE_SUB", sequelize.col("Turno.fecha_hora_inicio"), sequelize.literal("INTERVAL 3 HOUR")),
+      "%d/%m/%Y %H:%i",
+    );
+
     where[Op.or] = [
-      { fecha_hora_inicio: { [Op.like]: `%${search}%` } },
-      { fecha_hora_fin: { [Op.like]: `%${search}%` } },
-      { "$Paciente.nombre$": { [Op.like]: `%${search}%` } },
-      { "$Paciente.apellido$": { [Op.like]: `%${search}%` } },
-      { "$Paciente.dni$": { [Op.like]: `%${search}%` } },
-      { "$Paciente.telefono$": { [Op.like]: `%${search}%` } },
-      sequelize.where(
-        sequelize.fn("concat", sequelize.col("Paciente.nombre"), " ", sequelize.col("Paciente.apellido")),
-        { [Op.like]: `%${search}%` },
-      ),
+      { id_paciente: { [Op.in]: idsPacientes.length > 0 ? idsPacientes : [-1] } },
+      sequelize.where(fechaLocal, like),
     ];
   }
 

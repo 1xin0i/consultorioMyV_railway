@@ -12,8 +12,8 @@ import { useAuth } from "./AuthContext";
 
 export const PinLockContext = createContext(null);
 
-// Umbral estricto de inactividad: 35 minutos exactos (2.100.000 ms)
-export const TIEMPO_INACTIVIDAD_MS = 35 * 60 * 1000;
+// Umbral de inactividad: 15 minutos sin uso piden el PIN (a confirmar con el odontólogo)
+export const TIEMPO_INACTIVIDAD_MS = 15 * 60 * 1000;
 
 export function PinLockProvider({ children }) {
   const { estaAutenticado, token } = useAuth();
@@ -33,7 +33,7 @@ export function PinLockProvider({ children }) {
       return false;
     }
 
-    // 1. Si transcurrieron más de 35 minutos de inactividad, bloquear obligatoriamente
+    // 1. Si transcurrieron más de 15 minutos de inactividad, bloquear obligatoriamente
     if (ahora - ultimaActividad >= TIEMPO_INACTIVIDAD_MS) {
       sessionStorage.setItem("pin_unlocked", "false");
       return true;
@@ -88,7 +88,7 @@ export function PinLockProvider({ children }) {
     setIsPinLocked(estaBloqueado);
   }, [estaAutenticado]);
 
-  // ─── DETECTOR DE INACTIVIDAD GLOBAL DE 35 MINUTOS ─────────────────
+  // ─── DETECTOR DE INACTIVIDAD GLOBAL DE 15 MINUTOS ─────────────────
   useEffect(() => {
     if (!estaAutenticado || isPinLocked) {
       if (timerInactividadRef.current) {

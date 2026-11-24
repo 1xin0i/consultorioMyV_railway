@@ -116,7 +116,7 @@ export function renderTarjetaTurno({
           completo: true,
         },
         {
-          etiqueta: "Total Honorarios",
+          etiqueta: "Importe",
           valor: `$ ${montoTotal.toLocaleString("es-AR")}`,
         },
         {
@@ -295,7 +295,7 @@ export function renderFilaTurno({
         </span>
       </td>
 
-      {/* 5. Honorarios */}
+      {/* 5. Importe */}
       <td className="px-3 py-3 whitespace-nowrap">
         <div className="flex flex-col">
           <span className="font-extrabold text-slate-900 dark:text-slate-100 text-xs">

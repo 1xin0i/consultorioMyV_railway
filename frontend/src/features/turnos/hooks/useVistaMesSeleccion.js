@@ -1,7 +1,11 @@
 /** @format */
 
 import { useMemo, useState, useRef, useEffect, useCallback } from "react";
-import { OBTENER_ESTILOS_OCUPACION_MES, esMismoDia } from "../utils/agendaStyles";
+import {
+  OBTENER_ESTILOS_OCUPACION_MES,
+  esMismoDia,
+  turnoNoOcupaFranja,
+} from "../utils/agendaStyles";
 
 export function useVistaMesSeleccion({
   fechaActual,
@@ -72,10 +76,8 @@ export function useVistaMesSeleccion({
       const key = `${fecha.getFullYear()}-${fecha.getMonth()}-${fecha.getDate()}`;
       const turnosDelDia = turnosPorDiaMap.get(key) || [];
 
-      const turnosActivos = turnosDelDia.filter((t) => {
-        const estado = (t.EstadoTurno?.estado || "").toLowerCase();
-        return !estado.includes("cancelado");
-      });
+      // Cancelados e inasistentes no ocupan módulos
+      const turnosActivos = turnosDelDia.filter((t) => !turnoNoOcupaFranja(t));
 
       const minutosOcupados = turnosActivos.reduce((acc, t) => {
         const ini = new Date(t.fecha_hora_inicio);

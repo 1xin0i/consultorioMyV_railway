@@ -652,7 +652,7 @@ export function Login({ vistaInicial, onUnlock }) {
 
             <div className="flex flex-col justify-center">
               <h1 className="text-4xl lg:text-[44px] font-bold text-slate-900 tracking-tight leading-none m-0">
-                M&amp;V Odontologia
+                M&amp;V Turnos
               </h1>
               <p className="text-lg lg:text-xl font-medium text-slate-600 mt-2 tracking-tight">
                 Gestión de Turnos
@@ -684,7 +684,7 @@ export function Login({ vistaInicial, onUnlock }) {
             />
           </div>
           <h1 className="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight m-0">
-            M&amp;V Odontologia
+            M&amp;V Turnos
           </h1>
           <p className="text-[11px] sm:text-xs font-medium text-slate-600 mt-0.5">
             Gestión de Turnos

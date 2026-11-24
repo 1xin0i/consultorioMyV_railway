@@ -19,6 +19,7 @@ const ItemTurnoDia = memo(function ItemTurnoDia({
   style,
   duracionMinutos,
   onEventClick,
+  liberado = false,
 }) {
   const touchProps = useTurnoTouchClick(turno, onEventClick);
   const { turnoEnHorarioSinAtencion } = useConfiguracion();
@@ -43,7 +44,7 @@ const ItemTurnoDia = memo(function ItemTurnoDia({
           ? "Turno programado en un horario sin atención: conviene reprogramarlo o cancelarlo y avisarle al paciente."
           : undefined
       }
-      className={`absolute pointer-events-auto px-3 py-1.5 sm:py-2 rounded-xl text-xs sm:text-sm font-semibold shadow-2xs border cursor-pointer hover:shadow-md transition-shadow overflow-hidden flex flex-col justify-center z-10 ${estilos.bg} ${estilos.border} ${estilos.text} ${enHorarioSinAtencion ? "ring-2 ring-amber-500 dark:ring-amber-400" : ""}`}
+      className={`absolute pointer-events-auto px-3 py-1.5 sm:py-2 rounded-xl text-xs sm:text-sm font-semibold shadow-2xs border cursor-pointer hover:shadow-md transition-shadow overflow-hidden flex flex-col justify-center z-10 ${estilos.bg} ${estilos.border} ${estilos.text} ${liberado ? "opacity-75 !px-2" : ""} ${enHorarioSinAtencion ? "ring-2 ring-amber-500 dark:ring-amber-400" : ""}`}
     >
       <div className="flex flex-col justify-center gap-1 min-w-0">
         {/* Fila superior: Paciente y Badge de Estado */}
@@ -60,7 +61,8 @@ const ItemTurnoDia = memo(function ItemTurnoDia({
             className={`text-[10px] sm:text-[11px] px-2 py-0.5 rounded-md font-bold uppercase tracking-wider flex items-center gap-1 shrink-0 ${estilos.badge}`}
           >
             <IconoEstado size={11} />
-            <span>{estado}</span>
+            {/* En la columna angosta de cancelados e inasistentes, solo el ícono */}
+            <span className={liberado ? "hidden" : ""}>{estado}</span>
           </span>
         </div>
 
@@ -232,10 +234,11 @@ export const VistaDia = memo(function VistaDia({
 
         {/* Capa flotante de turnos superpuestos según su duración exacta */}
         <div className="absolute inset-0 pointer-events-none">
-          {turnosPosicionados.map(({ turno, style, duracionMinutos }) => (
+          {turnosPosicionados.map(({ turno, style, duracionMinutos, liberado }) => (
             <ItemTurnoDia
               key={turno.id_turno}
               turno={turno}
+              liberado={liberado}
               style={style}
               duracionMinutos={duracionMinutos}
               onEventClick={onEventClick}

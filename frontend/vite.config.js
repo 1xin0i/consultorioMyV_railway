@@ -59,10 +59,10 @@ export default defineConfig(({ mode }) => {
         ],
         manifest: {
           id: "/",
-          name: "Consultorio Odontológico M&V",
+          name: "M&V Turnos",
           short_name: "M&V Turnos",
           description:
-            "Sistema de gestión odontológica, turnos, pacientes y caja para el Consultorio M&V.",
+            "Turnos, pacientes, ingresos y egresos del consultorio odontológico M&V Dental.",
           start_url: "/",
           scope: "/",
           display: "standalone",

@@ -206,6 +206,13 @@ export const getTurnoPosicion = (turno, slotHeight, horaInicioAgenda = HORA_INIC
   return { top, height, duracionMinutos };
 };
 
+/** Cancelados e inasistentes: el paciente no viene, así que la franja queda libre. */
+export const turnoNoOcupaFranja = (turno) => {
+  const estado = (turno?.EstadoTurno?.estado || "").toLowerCase();
+  if (estado) return estado.includes("cancelado") || estado.includes("inasist");
+  return [3, 4].includes(Number(turno?.id_estado));
+};
+
 export const procesarTurnosColocacion = (turnosDelDia, slotHeight, horaInicioAgenda = HORA_INICIO_AGENDA) => {
   if (!turnosDelDia || turnosDelDia.length === 0) return [];
 
@@ -227,12 +234,24 @@ export const procesarTurnosColocacion = (turnosDelDia, slotHeight, horaInicioAge
   // Ordenar por hora de inicio ascendente
   turnosConPos.sort((a, b) => a.top - b.top || b.height - a.height);
 
+  // Los cancelados y los inasistentes ya no ocupan la franja: se dibujan como una
+  // columna angosta a la derecha, y el resto del horario queda libre para agendar otro turno.
+  const ANCHO_LIBERADO = 30; // % del ancho del día
+  const solapan = (a, b) =>
+    Math.max(a.top, b.top) < Math.min(a.bottom, b.bottom);
+
   return turnosConPos.map((item) => {
-    // Detectar turnos que se solapan en tiempo
+    const liberado = turnoNoOcupaFranja(item.turno);
+    // Solo se reparten el espacio los turnos del mismo tipo (que ocupan o que no)
     const solapados = turnosConPos.filter(
       (otro) =>
-        Math.max(item.top, otro.top) < Math.min(item.bottom, otro.bottom),
+        turnoNoOcupaFranja(otro.turno) === liberado && solapan(item, otro),
     );
+    const hayLiberadoAlLado =
+      !liberado &&
+      turnosConPos.some(
+        (otro) => turnoNoOcupaFranja(otro.turno) && solapan(item, otro),
+      );
 
     const totalCols = Math.max(1, solapados.length);
     const colIdx = solapados.findIndex(
@@ -240,11 +259,19 @@ export const procesarTurnosColocacion = (turnosDelDia, slotHeight, horaInicioAge
     );
     const safeColIdx = colIdx >= 0 ? colIdx : 0;
 
-    const widthPercent = 100 / totalCols;
-    const leftPercent = safeColIdx * widthPercent;
+    const inicioZona = liberado ? 100 - ANCHO_LIBERADO : 0;
+    const anchoZona = liberado
+      ? ANCHO_LIBERADO
+      : hayLiberadoAlLado
+        ? 100 - ANCHO_LIBERADO
+        : 100;
+
+    const widthPercent = anchoZona / totalCols;
+    const leftPercent = inicioZona + safeColIdx * widthPercent;
 
     return {
       ...item,
+      liberado,
       style: {
         top: `${item.top}px`,
         height: `${item.height}px`,

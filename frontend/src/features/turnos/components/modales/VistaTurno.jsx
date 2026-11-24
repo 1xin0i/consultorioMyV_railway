@@ -12,6 +12,11 @@ import {
   Banknote,
 } from "lucide-react";
 import { useDetalleTurno } from "../../hooks/useDetalleTurno";
+import toast from "react-hot-toast";
+import {
+  puedeMarcarseAtendido,
+  MENSAJE_ATENCION_ANTICIPADA,
+} from "../../utils/atencionTurno";
 import {
   SubtituloFechaTurno,
   TarjetaPacienteTurno,
@@ -101,7 +106,7 @@ export const VistaTurno = memo(function VistaTurno({
           telLimpio={telLimpio}
         />
 
-        {/* Estado y Honorarios */}
+        {/* Estado e importe */}
         <GridEstadoHonorariosTurno
           estilosCardEstado={estilosCardEstado}
           estadoNombre={estadoNombre}
@@ -209,7 +214,13 @@ export const VistaTurno = memo(function VistaTurno({
             {esProgramado && (
               <button
                 type="button"
-                onClick={() => abrirParaAtender?.(turno)}
+                onClick={() => {
+                  if (!puedeMarcarseAtendido(turno)) {
+                    toast.error(MENSAJE_ATENCION_ANTICIPADA, { id: "atencion-anticipada" });
+                    return;
+                  }
+                  abrirParaAtender?.(turno);
+                }}
                 className="w-full sm:w-auto px-5 py-2.5 text-xs sm:text-sm font-bold text-white bg-[#0d8266] hover:bg-[#09664f] rounded-xl shadow-xs active:scale-95 transition-all cursor-pointer flex items-center justify-center gap-2 whitespace-nowrap"
               >
                 <CheckCircle2 size={16} />

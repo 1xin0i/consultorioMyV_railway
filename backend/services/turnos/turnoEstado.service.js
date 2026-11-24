@@ -4,6 +4,10 @@ import sequelize from "../../config/database.js";
 import * as historialRepo from "../../repositories/historialEstadoTurno.repository.js";
 import { getState } from "./state/index.js";
 import { asegurarAgendaDisponible } from "./agenda.service.js";
+import { AppError } from "../../errors/AppError.js";
+
+// Un turno solo se marca como atendido si ya empezó o empieza dentro de este margen.
+const MINUTOS_ANTES_PARA_ATENDER = 30;
 import {
   normalizarPracticasAtencion,
   reemplazarPracticasAtendidas,
@@ -26,6 +30,14 @@ export const atender = (turno, body) => {
   const { notas_consulta, practicas_realizadas, obras_sociales, practicas, precio_final } = body;
 
   const destino = getState(turno.id_estado).atender();
+
+  const inicioMs = new Date(turno.fecha_hora_inicio).getTime();
+  if (!isNaN(inicioMs) && inicioMs - Date.now() > MINUTOS_ANTES_PARA_ATENDER * 60000) {
+    throw new AppError(400, {
+      error: `Solo se puede marcar como atendido un turno que ya empezó o que empieza en los próximos ${MINUTOS_ANTES_PARA_ATENDER} minutos.`,
+      codigo: "ATENCION_ANTICIPADA",
+    });
+  }
 
   return aplicarTransicion({
     turno,
