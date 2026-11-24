@@ -4,6 +4,7 @@ import { Paciente, PacienteObraSocial, ObraSocial } from "../models/index.model.
 import { validarTelefono, validarDni } from "../validations/Paciente.validation.js";
 import { Op, Sequelize } from "sequelize";
 import { parsePagination, buildPaginationMeta } from "../utils/pagination.js";
+import { construirWherePaciente } from "../repositories/paciente.repository.js";
 
 // Obtener todos los pacientes
 export const getAllPacientes = async (req, res) => {
@@ -17,29 +18,7 @@ export const getAllPacientes = async (req, res) => {
     });
 
     const estadoFiltrado = req.query.estadoFiltrado ?? req.query.activo;
-    const where = {};
-
-    if (estadoFiltrado === "inactivos" || estadoFiltrado === "false" || estadoFiltrado === "0") {
-      where.activo = false;
-    } else if (estadoFiltrado === "todos" || estadoFiltrado === "all" || estadoFiltrado === "") {
-      // mostrar todos (activos e inactivos)
-    } else if (estadoFiltrado === "activos" || estadoFiltrado === "true" || estadoFiltrado === "1") {
-      where.activo = true;
-    }
-
-    // Busqueda por nombre apellido dni telefono
-    if (search !== "") {
-      where[Op.or] = [
-        { nombre: { [Op.like]: `%${search}%` } },
-        { apellido: { [Op.like]: `%${search}%` } },
-        { dni: { [Op.like]: `%${search}%` } },
-        { telefono: { [Op.like]: `%${search}%` } },
-        Sequelize.where(
-          Sequelize.fn("concat", Sequelize.col("nombre"), " ", Sequelize.col("apellido")),
-          { [Op.like]: `%${search}%` }
-        ),
-      ];
-    }
+    const where = construirWherePaciente({ search, estadoFiltrado });
 
     let orderClause = [[sortField, sortOrder]];
     if (sortField === "paciente") {

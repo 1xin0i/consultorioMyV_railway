@@ -88,9 +88,9 @@ INSERT INTO turno (id_turno, id_paciente, id_estado, fecha_hora_inicio, fecha_ho
 (3, 3, 3, '2026-11-07 14:00:00', '2026-11-07 15:15:00', 75000.00, 'Tratamiento de conducto en molar 46. Procedimiento exitoso sin dolor residual.', TRUE),
 (4, 4, 2, '2026-11-08 16:00:00', '2026-11-08 16:40:00', 0.00, 'El paciente canceló con 24hs de anticipación por motivos laborales.', TRUE),
 (5, 5, 4, '2026-11-09 11:30:00', '2026-11-09 12:15:00', 0.00, 'No se presentó ni respondió llamados de confirmación.', TRUE),
-(6, 6, 1, '2026-11-12 09:30:00', '2026-11-12 10:15:00', 25000.00, 'Control semestral y tartrectomía programada.', TRUE),
-(7, 7, 1, '2026-11-12 11:00:00', '2026-11-12 12:00:00', 60000.00, 'Extracción quirúrgica pieza 38 indicada por ortodoncista.', TRUE),
-(8, 8, 1, '2026-11-13 15:00:00', '2026-11-13 16:00:00', 95000.00, 'Sesión 1 de blanqueamiento dental ambulatorio/consultorio.', TRUE)
+(6, 6, 1, '2026-11-12 09:30:00', '2026-11-12 10:15:00', 0.00, 'Control semestral y tartrectomía programada.', TRUE),
+(7, 7, 1, '2026-11-12 11:00:00', '2026-11-12 12:00:00', 0.00, 'Extracción quirúrgica pieza 38 indicada por ortodoncista.', TRUE),
+(8, 8, 1, '2026-11-13 15:00:00', '2026-11-13 16:00:00', 0.00, 'Sesión 1 de blanqueamiento dental ambulatorio/consultorio.', TRUE)
 ON DUPLICATE KEY UPDATE notas_consulta = VALUES(notas_consulta);
 
 -- 8. HISTORIAL DE ESTADOS DE TURNO
